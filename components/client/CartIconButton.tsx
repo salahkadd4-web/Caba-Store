@@ -37,6 +37,7 @@ export default function CartIconButton({ produitId, stock }: { produitId: string
           setInCart(false)
           setCartItemId(null)
           window.dispatchEvent(new CustomEvent('cart-updated'))
+          new BroadcastChannel('cart').postMessage('updated')
         }
       } else {
         // Ajouter puis re-fetch pour récupérer l'id du cartItem
@@ -51,6 +52,7 @@ export default function CartIconButton({ produitId, stock }: { produitId: string
         const item = data?.items?.find((i: any) => i.productId === produitId)
         if (item) { setInCart(true); setCartItemId(item.id) }
         window.dispatchEvent(new CustomEvent('cart-updated'))
+        new BroadcastChannel('cart').postMessage('updated')
       }
     } finally {
       setLoading(false)

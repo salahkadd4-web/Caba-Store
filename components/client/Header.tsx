@@ -40,23 +40,32 @@ export default function Header() {
   const [cartCount, setCartCount]       = useState(0)
   const userMenuRef = useRef<HTMLDivElement>(null)
 
-  // ── Panier : count + écoute des mises à jour ──
+ // ── Panier : count + écoute des mises à jour ──
   useEffect(() => {
-    const fetchCartCount = async () => {
-      try {
-        const res  = await fetch('/api/panier')
-        const data = await res.json()
-        const total = data?.items?.reduce((sum: number, i: any) => sum + (i.quantite ?? 1), 0) ?? 0
-        setCartCount(total)
-      } catch { setCartCount(0) }
-    }
+      if (!session) { setCartCount(0); return }
 
-    if (!session) { setCartCount(0); return }
+      const fetchCount = async () => {
+        try {
+          const res  = await fetch('/api/panier/count')
+          const data = await res.json()
+          setCartCount(data.count ?? 0)
+        } catch { setCartCount(0) }
+      }
 
-    fetchCartCount()
-    window.addEventListener('cart-updated', fetchCartCount)
-    return () => window.removeEventListener('cart-updated', fetchCartCount)
-  }, [session])
+      fetchCount()
+
+      // Même onglet : mis à jour depuis AddToCartButton / CartIconButton
+      window.addEventListener('cart-updated', fetchCount)
+
+      // Inter-onglets : BroadcastChannel (marche sur tous les navigateurs modernes)
+      const channel = new BroadcastChannel('cart')
+      channel.onmessage = fetchCount
+
+      return () => {
+        window.removeEventListener('cart-updated', fetchCount)
+        channel.close()
+      }
+    }, [session])
 
   const isMobile    = useIsMobile()
   const hidden      = useHideOnScroll()
