@@ -22,6 +22,7 @@ model User {
   age            Int?
   genre          Genre?
   wilaya         String?
+  adresse String?
   cart           Cart?
   favorites      Favorite[]
   orders         Order[]

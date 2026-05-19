@@ -102,10 +102,11 @@ export default function NouvelleCommandePage() {
       fetch('/api/panier').then(r => r.json()),
       fetch('/api/profil').then(r => r.json()),
     ]).then(([panierData, profilData]) => {
-      setPanier(panierData)
-      setHasTelephone(!!profilData.telephone)
-      setLoading(false)
-    })
+        setPanier(panierData)
+        setHasTelephone(!!profilData.telephone)
+        if (profilData.adresse) setAdresse(profilData.adresse)  // ← ajouter
+        setLoading(false)
+      })
   }, [])
 
   const selectedExpedition = METHODES_EXPEDITION.find(m => m.label === methodeExpedition) ?? METHODES_EXPEDITION[0]
