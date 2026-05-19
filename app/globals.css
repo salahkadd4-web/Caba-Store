@@ -229,3 +229,12 @@ button[disabled] {
   transform: none !important;
   box-shadow: none !important;
 }
+
+/* ── Pull-to-refresh : spinner ── */
+@keyframes ptr-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.ptr-spin {
+  animation: ptr-spin 0.75s linear infinite;
+}
