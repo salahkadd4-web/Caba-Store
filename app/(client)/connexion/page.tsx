@@ -5,11 +5,10 @@ import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import { Check } from 'lucide-react'
 
-// ─── Web client ID (type 3) — correct pour @capgo/capacitor-social-login ───
 const GOOGLE_WEB_CLIENT_ID = '502936788244-mn58pnn6u9v5ekp3o14ord4778gp7ki3.apps.googleusercontent.com'
 
-/** Lien "Parcourir en tant qu'invité" — affiché uniquement dans l'app Capacitor */
 function GuestLink() {
   const [isNative, setIsNative] = useState(false)
 
@@ -41,6 +40,7 @@ function GuestLink() {
 function ConnexionContent() {
   const router       = useRouter()
   const searchParams = useSearchParams()
+  // 'client' | 'vendeur' | null
   const inscription  = searchParams.get('inscription')
   const reset        = searchParams.get('reset')
 
@@ -49,18 +49,14 @@ function ConnexionContent() {
   const [error,         setError]         = useState('')
   const [form,          setForm]          = useState({ identifiant: '', motDePasse: '' })
 
-  // ── Initialiser SocialLogin UNE SEULE FOIS au montage ────────────────────
   useEffect(() => {
     const initGoogle = async () => {
       try {
         const { Capacitor } = await import('@capacitor/core')
         if (!Capacitor.isNativePlatform()) return
-
         // @ts-ignore
         const { SocialLogin } = await import('@capgo/capacitor-social-login')
-        await SocialLogin.initialize({
-          google: { webClientId: GOOGLE_WEB_CLIENT_ID },
-        })
+        await SocialLogin.initialize({ google: { webClientId: GOOGLE_WEB_CLIENT_ID } })
       } catch (e) {
         console.error('SocialLogin init error:', e)
       }
@@ -117,7 +113,6 @@ function ConnexionContent() {
       const { Capacitor } = await import('@capacitor/core')
 
       if (Capacitor.isNativePlatform()) {
-        // ── Flux natif (Android / iOS) ──────────────────────────────────────
         // @ts-ignore
         const { SocialLogin } = await import('@capgo/capacitor-social-login')
 
@@ -132,7 +127,6 @@ function ConnexionContent() {
           return
         }
 
-        // ── Vérifier si le compte existe déjà ───────────────────────────────
         const res  = await fetch('/api/auth/google-native', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -146,7 +140,6 @@ function ConnexionContent() {
         }
 
         if (data.exists) {
-          // ✅ Compte existant → connexion directe
           const signInResult = await signIn('credentials-google', {
             userId:   data.userId,
             redirect: false,
@@ -165,13 +158,9 @@ function ConnexionContent() {
             setError('Erreur de session. Veuillez réessayer.')
           }
         } else {
-          // 🆕 Nouveau compte → page de finalisation
           router.push(`/inscription/finaliser-google?token=${data.tempToken}`)
         }
-
       } else {
-        // ── Flux web : NextAuth OAuth standard ──────────────────────────────
-        // Si nouveau compte → auth.ts signIn callback redirige vers finaliser-google
         await signIn('google', { callbackUrl: '/' })
       }
     } catch (err: any) {
@@ -193,7 +182,6 @@ function ConnexionContent() {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col lg:flex-row transition-colors duration-300">
 
-      {/* ── Panneau gauche (desktop uniquement) ── */}
       <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-black dark:bg-gray-900 items-center justify-center p-12 border-r border-gray-800">
         <div className="absolute z-10 [mask-image:radial-gradient(ellipse_at_center,transparent_-50%,black_10%)]">
           <Image src="/logo_noir.png" alt="" width={750} height={750}
@@ -207,7 +195,6 @@ function ConnexionContent() {
         </div>
       </div>
 
-      {/* ── Formulaire ── */}
       <div className="flex-1 flex flex-col items-center justify-center p-8 overflow-y-auto">
         <div className="w-full max-w-sm py-8">
 
@@ -217,11 +204,36 @@ function ConnexionContent() {
             <div className="w-8 h-px bg-black dark:bg-white mt-4" />
           </div>
 
-          {inscription === 'success' && (
-            <div className="border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs px-4 py-3 mb-6 tracking-wide">
-              Compte créé avec succès. Connectez-vous.
+          {/* ── Bannière succès inscription client ── */}
+          {inscription === 'client' && (
+            <div className="border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950 px-4 py-3 mb-6 space-y-1">
+              <p className="text-xs font-medium text-green-700 dark:text-green-400 flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5" />
+                Compte créé avec succès !
+              </p>
+              <p className="text-xs text-green-600 dark:text-green-500 tracking-wide">
+                Connectez-vous pour accéder à votre espace.
+              </p>
             </div>
           )}
+
+          {/* ── Bannière succès inscription vendeur ── */}
+          {inscription === 'vendeur' && (
+            <div className="border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950 px-4 py-3 mb-6 space-y-1.5">
+              <p className="text-xs font-medium text-green-700 dark:text-green-400 flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5" />
+                Boutique créée avec succès !
+              </p>
+              <p className="text-xs text-green-600 dark:text-green-500 tracking-wide">
+                Votre compte vendeur sera activé après validation par notre équipe.
+              </p>
+              <p className="text-xs text-green-600 dark:text-green-500 tracking-wide">
+                Connectez-vous dès maintenant pour accéder à votre espace.
+              </p>
+            </div>
+          )}
+
+          {/* ── Bannière succès reset mot de passe ── */}
           {reset === 'success' && (
             <div className="border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs px-4 py-3 mb-6 tracking-wide">
               Mot de passe mis à jour avec succès.
@@ -234,7 +246,6 @@ function ConnexionContent() {
             </div>
           )}
 
-          {/* ── Bouton Google ── */}
           <button onClick={handleGoogle} disabled={loadingGoogle || loading}
             className="w-full flex items-center justify-center gap-3 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-700 dark:text-gray-200 text-xs uppercase tracking-[0.15em] py-3.5 transition-colors duration-300 disabled:opacity-50 mb-6">
             {loadingGoogle ? <span className="text-gray-400">...</span> : <GoogleIcon />}
@@ -247,7 +258,6 @@ function ConnexionContent() {
             <div className="flex-1 h-px bg-gray-200 dark:bg-gray-800" />
           </div>
 
-          {/* ── Formulaire email/mdp ── */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400 mb-2">
@@ -287,7 +297,6 @@ function ConnexionContent() {
             </Link>
           </p>
 
-          {/* ── Lien invité (mobile Capacitor uniquement) ── */}
           <GuestLink />
         </div>
 
