@@ -443,7 +443,7 @@ export default function NouvelleCommandePage() {
       {/* ══ MODAL CONFIRMATION ══ */}
       {showModal && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 px-4"
+          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 px-4"
           onClick={e => { if (e.target === e.currentTarget) setShowModal(false) }}
         >
           {/*
@@ -455,12 +455,10 @@ export default function NouvelleCommandePage() {
             bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-2xl
             shadow-2xl border border-gray-100 dark:border-gray-800
             w-full max-w-md
-            pb-[env(safe-area-inset-bottom)]
-            mb-0 sm:mb-0
             max-h-[calc(100dvh-5rem)] sm:max-h-[90vh]
             overflow-y-auto
-            [padding-bottom:max(1.5rem,calc(64px+env(safe-area-inset-bottom)))]
-            sm:[padding-bottom:1.5rem]
+            pb-[calc(1.5rem+env(safe-area-inset-bottom))]
+            sm:pb-6
           ">
             {/* Drag handle (mobile) */}
             <div className="flex justify-center pt-3 pb-1 sm:hidden">
