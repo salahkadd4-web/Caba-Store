@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useEffect, Suspense, useRef } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   Banknote, Check, CheckCircle2, Loader2, Package,
-  RefreshCw, Wrench, XCircle, ChevronDown, ChevronUp,
-  Minus, Plus, AlertCircle, RotateCcw, Info,
+  RefreshCw, Wrench, XCircle, AlertCircle, Info,
 } from 'lucide-react'
 
 /* ══════════════════════════════════════════
@@ -35,9 +34,6 @@ type Order = {
   items: OrderItem[]
 }
 
-/* Sélection de retour : itemId → quantité choisie */
-type RetourSelection = Record<string, number>
-
 /* ══════════════════════════════════════════
    CONSTANTES
 ══════════════════════════════════════════ */
@@ -45,7 +41,7 @@ const REASONS = [
   { label: 'Produit défectueux',          icon: '⚠️' },
   { label: 'Produit contrefait',           icon: '🚫' },
   { label: 'Produit endommagé livraison',  icon: '📦' },
-  { label: "Changement d'avis",           icon: '🔄' },
+  { label: "Changement d'avis",            icon: '🔄' },
   { label: 'Panne après utilisation',     icon: '🔧' },
   { label: 'Mauvaise taille',             icon: '📏' },
   { label: 'Allergie/Réaction',           icon: '🩺' },
@@ -55,18 +51,16 @@ const REASONS = [
 ]
 
 const RESOLUTIONS = [
-  { value: 'REFUND',   label: 'Remboursement', icon: Banknote,  desc: 'Recevoir le montant payé'          },
+  { value: 'REFUND',   label: 'Remboursement', icon: Banknote,  desc: 'Recevoir le montant payé'           },
   { value: 'EXCHANGE', label: 'Échange',        icon: RefreshCw, desc: 'Recevoir un produit de remplacement' },
-  { value: 'REPAIR',   label: 'Réparation',     icon: Wrench,    desc: 'Faire réparer le produit'           },
+  { value: 'REPAIR',   label: 'Réparation',     icon: Wrench,    desc: 'Faire réparer le produit'            },
 ]
 
-const STEPS = ['Commande', 'Articles', 'Motif', 'Confirmation']
+const STEPS = ['Commande', 'Article', 'Motif', 'Confirmation']
 
 /* ══════════════════════════════════════════
-   COMPOSANTS UTILITAIRES
+   STEPPER
 ══════════════════════════════════════════ */
-
-/* Stepper */
 function Stepper({ current }: { current: number }) {
   return (
     <div className="flex items-center mb-8">
@@ -74,7 +68,7 @@ function Stepper({ current }: { current: number }) {
         <div key={label} className="flex items-center flex-1 last:flex-none">
           <div className="flex flex-col items-center shrink-0">
             <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all duration-300 ${
-              i < current  ? 'bg-indigo-600 border-indigo-600 text-white'
+              i < current   ? 'bg-indigo-600 border-indigo-600 text-white'
               : i === current ? 'bg-white dark:bg-gray-900 border-indigo-600 text-indigo-600 shadow-md shadow-indigo-100 dark:shadow-indigo-900'
               : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400'
             }`}>
@@ -97,201 +91,14 @@ function Stepper({ current }: { current: number }) {
   )
 }
 
-/* QteInput saisie libre + stepper */
-function QteInput({ value, max, onChange }: { value: number; max: number; onChange: (v: number) => void }) {
-  const [raw, setRaw] = useState(String(value))
-  const ref           = useRef<HTMLInputElement>(null)
-  const focused       = () => document.activeElement === ref.current
-  const prev          = useRef(value)
-  if (prev.current !== value && !focused()) { prev.current = value; setRaw(String(value)) }
-
-  const commit = (s: string) => {
-    const n = parseInt(s, 10)
-    const c = isNaN(n) || n < 0 ? 0 : Math.min(n, max)
-    setRaw(String(c)); onChange(c)
-  }
-
-  return (
-    <div className="flex items-center gap-1">
-      <button type="button" tabIndex={-1}
-        onClick={() => { const n = Math.max(0, value - 1); setRaw(String(n)); onChange(n) }}
-        disabled={value <= 0}
-        className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center disabled:opacity-30 hover:bg-gray-200 dark:hover:bg-gray-700 transition text-gray-600 dark:text-gray-300">
-        <Minus className="w-3 h-3" />
-      </button>
-      <input ref={ref} type="number" min={0} max={max} value={raw}
-        onChange={e => setRaw(e.target.value)}
-        onBlur={e => commit(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter') { commit(raw); ref.current?.blur() } }}
-        onFocus={e => e.target.select()}
-        className="w-12 text-center font-bold text-sm tabular-nums bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg py-1 focus:outline-none focus:ring-2 focus:ring-indigo-400 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none transition"
-      />
-      <button type="button" tabIndex={-1}
-        onClick={() => { const n = Math.min(max, value + 1); setRaw(String(n)); onChange(n) }}
-        disabled={value >= max}
-        className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center disabled:opacity-30 hover:bg-gray-200 dark:hover:bg-gray-700 transition text-gray-600 dark:text-gray-300">
-        <Plus className="w-3 h-3" />
-      </button>
-    </div>
-  )
-}
-
 /* ══════════════════════════════════════════
-   ÉTAPE 1 — Sélection des articles à retourner
-   (groupés par produit, chips couleur/taille, QteInput)
+   LIBELLÉ VARIANTE
 ══════════════════════════════════════════ */
-function ProductGroup({
-  productId,
-  productNom,
-  productImage,
-  items,
-  selection,
-  onSelect,
-}: {
-  productId:    string
-  productNom:   string
-  productImage: string | null
-  items:        OrderItem[]
-  selection:    RetourSelection
-  onSelect:     (itemId: string, qte: number) => void
-}) {
-  const [open, setOpen] = useState(true)
-
-  /* Qté totale sélectionnée pour ce produit */
-  const qteChoisie  = items.reduce((s, i) => s + (selection[i.id] ?? 0), 0)
-  const qteTotal    = items.reduce((s, i) => s + i.quantite, 0)
-  const allSelected = items.every(i => (selection[i.id] ?? 0) === i.quantite)
-
-  const toggleAll = () => {
-    if (allSelected) items.forEach(i => onSelect(i.id, 0))
-    else items.forEach(i => onSelect(i.id, i.quantite))
-  }
-
-  /* Libellé chip pour un item */
-  const chipLabel = (item: OrderItem) => {
-    const parts = []
-    if (item.variantNom)         parts.push(item.variantNom)
-    if (item.variantOptionValeur) parts.push(item.variantOptionValeur)
-    return parts.join(' / ') || 'Sans variante'
-  }
-
-  return (
-    <div className={`rounded-2xl border-2 overflow-hidden transition-all duration-200 ${
-      qteChoisie > 0
-        ? 'border-indigo-400 dark:border-indigo-600 shadow-md shadow-indigo-100 dark:shadow-indigo-900/20'
-        : 'border-gray-100 dark:border-gray-800'
-    } bg-white dark:bg-gray-900`}>
-
-      {/* En-tête produit */}
-      <div className="flex items-center gap-3 px-4 py-3">
-        <div className="w-14 h-14 bg-gray-100 dark:bg-gray-800 rounded-xl overflow-hidden shrink-0 flex items-center justify-center">
-          {productImage
-            ? <img src={productImage} alt={productNom} className="w-full h-full object-cover" />
-            : <Package className="w-6 h-6 text-gray-300 dark:text-gray-600" />
-          }
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-gray-800 dark:text-gray-100 text-sm line-clamp-2 leading-snug">
-            {productNom}
-          </h3>
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <span className="text-xs text-gray-400">{items.length} ligne{items.length > 1 ? 's' : ''} · {qteTotal} article{qteTotal > 1 ? 's' : ''}</span>
-            {qteChoisie > 0 && (
-              <span className="text-xs bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-semibold px-2 py-0.5 rounded-full">
-                {qteChoisie} sél.
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Bouton tout sélectionner / désélectionner */}
-        <div className="flex items-center gap-2 shrink-0">
-          <button type="button" onClick={toggleAll}
-            className={`text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all ${
-              allSelected
-                ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400'
-                : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-indigo-400 dark:hover:border-indigo-600 hover:text-indigo-600 dark:hover:text-indigo-400'
-            }`}>
-            {allSelected ? <><Check className="w-3 h-3 inline mr-1" />Tout</>
-                         : <><RotateCcw className="w-3 h-3 inline mr-1" />Tout</>}
-          </button>
-          <button type="button" onClick={() => setOpen(o => !o)}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-            {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-        </div>
-      </div>
-
-      {/* Lignes articles — expansibles */}
-      {open && (
-        <div className="border-t border-gray-100 dark:border-gray-800">
-          {items.map((item, idx) => {
-            const qte   = selection[item.id] ?? 0
-            const isOn  = qte > 0
-            const label = chipLabel(item)
-
-            return (
-              <div key={item.id}
-                className={`flex items-center gap-3 px-4 py-3 transition ${
-                  idx < items.length - 1 ? 'border-b border-gray-100 dark:border-gray-800' : ''
-                } ${isOn ? 'bg-indigo-50/40 dark:bg-indigo-950/20' : ''}`}>
-
-                {/* Toggle clic pour activer/désactiver la ligne */}
-                <button type="button"
-                  onClick={() => onSelect(item.id, isOn ? 0 : item.quantite)}
-                  className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 transition-all ${
-                    isOn
-                      ? 'border-indigo-500 bg-indigo-500 dark:border-indigo-400 dark:bg-indigo-600'
-                      : 'border-gray-300 dark:border-gray-600 hover:border-indigo-400 dark:hover:border-indigo-500'
-                  }`}>
-                  {isOn && <Check className="w-3.5 h-3.5 text-white" />}
-                </button>
-
-                {/* Infos variante */}
-                <div className="flex-1 min-w-0">
-                  <span className={`text-sm font-semibold ${isOn ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-300'}`}>
-                    {label}
-                  </span>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {item.prix.toFixed(2)} DA/u · commandé ×{item.quantite}
-                  </p>
-                </div>
-
-                {/* Quantité à retourner */}
-                <div className="shrink-0 flex flex-col items-end gap-0.5">
-                  {isOn ? (
-                    <>
-                      <QteInput
-                        value={qte}
-                        max={item.quantite}
-                        onChange={v => onSelect(item.id, v)}
-                      />
-                      <p className="text-[10px] text-gray-400">sur {item.quantite} commandé{item.quantite > 1 ? 's' : ''}</p>
-                    </>
-                  ) : (
-                    <p className="text-xs text-gray-400 italic">Non sélectionné</p>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-
-          {/* Sous-total retour produit */}
-          {qteChoisie > 0 && (
-            <div className="px-4 py-2 bg-indigo-50/60 dark:bg-indigo-950/30 flex items-center justify-between border-t border-indigo-100 dark:border-indigo-900">
-              <span className="text-xs text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
-                <Info className="w-3 h-3" /> Montant potentiellement remboursé
-              </span>
-              <span className="text-sm font-bold text-indigo-700 dark:text-indigo-300">
-                {items.reduce((s, i) => s + i.prix * (selection[i.id] ?? 0), 0).toFixed(2)} DA
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )
+function chipLabel(item: OrderItem): string {
+  const parts = []
+  if (item.variantNom)          parts.push(item.variantNom)
+  if (item.variantOptionValeur) parts.push(item.variantOptionValeur)
+  return parts.join(' / ') || 'Sans variante'
 }
 
 /* ══════════════════════════════════════════
@@ -301,22 +108,22 @@ function RetourContent() {
   const searchParams = useSearchParams()
   const preOrderId   = searchParams.get('orderId') ?? ''
 
-  const [step, setStep]                   = useState(0)
-  const [commandes, setCommandes]         = useState<Order[]>([])
-  const [loading, setLoading]             = useState(true)
+  const [step,          setStep]          = useState(0)
+  const [commandes,     setCommandes]     = useState<Order[]>([])
+  const [loading,       setLoading]       = useState(true)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
 
-  /* Étape 1 — sélection des articles */
-  const [selection, setSelection]         = useState<RetourSelection>({})
+  /* Étape 1 — un seul item sélectionné */
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
 
   /* Étape 2 */
-  const [reason, setReason]               = useState('')
-  const [resolution, setResolution]       = useState<'REFUND' | 'EXCHANGE' | 'REPAIR'>('REFUND')
-  const [description, setDescription]     = useState('')
+  const [reason,       setReason]       = useState('')
+  const [resolution,   setResolution]   = useState<'REFUND' | 'EXCHANGE' | 'REPAIR'>('REFUND')
+  const [description,  setDescription]  = useState('')
 
   /* Envoi */
-  const [submitting, setSubmitting]       = useState(false)
-  const [result, setResult]               = useState<{
+  const [submitting, setSubmitting] = useState(false)
+  const [result,     setResult]     = useState<{
     success?: boolean; message?: string; claimId?: string
     processingDays?: number; error?: string
   } | null>(null)
@@ -334,49 +141,23 @@ function RetourContent() {
       .catch(() => setLoading(false))
   }, [preOrderId])
 
-  /* Grouper les items d'une commande par produit */
-  const productGroups = (order: Order) => {
-    const map = new Map<string, OrderItem[]>()
-    for (const item of order.items) {
-      const pid = item.product.id
-      if (!map.has(pid)) map.set(pid, [])
-      map.get(pid)!.push(item)
-    }
-    return [...map.entries()].map(([pid, items]) => ({
-      productId: pid,
-      productNom: items[0].product.nom,
-      productImage: items[0].product.images?.[0] ?? null,
-      items,
-    }))
-  }
+  /* Item actuellement sélectionné */
+  const selectedItem = selectedOrder?.items.find(i => i.id === selectedItemId) ?? null
 
-  /* Lignes avec qte > 0 */
-  const lignesSelectionnees = selectedOrder
-    ? selectedOrder.items.filter(i => (selection[i.id] ?? 0) > 0)
-    : []
-
-  const totalRetour = lignesSelectionnees.reduce((s, i) => s + i.prix * (selection[i.id] ?? 0), 0)
-
-  /* Validation étape 1 : au moins un article sélectionné */
-  const canNextStep1 = lignesSelectionnees.length > 0
-
-  /* Compiler productName + description auto pour l'API */
+  /* Construire le payload API */
   const buildApiPayload = () => {
-    const lines = lignesSelectionnees.map(item => {
-      const label = [item.variantNom, item.variantOptionValeur].filter(Boolean).join(' / ')
-      const qte   = selection[item.id]
-      return `${item.product.nom}${label ? ` (${label})` : ''} ×${qte}`
-    })
-    const productName   = [...new Set(lignesSelectionnees.map(i => i.product.nom))].join(', ')
-    const autoDesc      = lines.join(' | ')
-    const finalDesc     = description
-      ? `${description}\n\nDétail articles : ${autoDesc}`
-      : `Articles retournés : ${autoDesc}`
+    if (!selectedItem) return { productName: '', description: '' }
+    const label = chipLabel(selectedItem)
+    const detail = `${selectedItem.product.nom}${label !== 'Sans variante' ? ` (${label})` : ''} ×1`
+    const productName = selectedItem.product.nom
+    const finalDesc   = description
+      ? `${description}\n\nArticle retourné : ${detail}`
+      : `Article retourné : ${detail}`
     return { productName, description: finalDesc }
   }
 
   const handleSubmit = async () => {
-    if (!selectedOrder || lignesSelectionnees.length === 0 || !reason) return
+    if (!selectedOrder || !selectedItem || !reason) return
     setSubmitting(true)
     const { productName, description: desc } = buildApiPayload()
     try {
@@ -384,11 +165,11 @@ function RetourContent() {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          orderId: selectedOrder.id,
+          orderId:           selectedOrder.id,
           productName,
           reason,
           desiredResolution: resolution,
-          description: desc,
+          description:       desc,
         }),
       })
       const data = await res.json()
@@ -400,10 +181,10 @@ function RetourContent() {
     }
   }
 
-  /* Navigation */
+  /* Validation par étape */
   const canNext = [
     !!selectedOrder,
-    canNextStep1,
+    !!selectedItemId,
     !!reason,
   ][step] ?? true
 
@@ -420,8 +201,12 @@ function RetourContent() {
         <div className="bg-white dark:bg-gray-900 rounded-xl p-3 mb-4 border border-green-100 dark:border-green-900 space-y-1">
           <p className="text-xs text-gray-500">Statut</p>
           <p className="font-bold text-amber-600 dark:text-amber-400">En attente de traitement</p>
-          {result.processingDays && <p className="text-xs text-gray-400">Délai estimé : {result.processingDays} jours ouvrés</p>}
-          {result.claimId && <p className="text-xs font-mono text-gray-400">Réf. {result.claimId}</p>}
+          {result.processingDays && (
+            <p className="text-xs text-gray-400">Délai estimé : {result.processingDays} jours ouvrés</p>
+          )}
+          {result.claimId && (
+            <p className="text-xs font-mono text-gray-400">Réf. {result.claimId}</p>
+          )}
         </div>
         <Link href="/commandes"
           className="inline-block px-6 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition">
@@ -463,17 +248,18 @@ function RetourContent() {
       <Package className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
       <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">Aucune commande livrée</h2>
       <p className="text-sm text-gray-500 mb-6">Les retours sont disponibles uniquement pour les commandes livrées.</p>
-      <Link href="/commandes" className="text-indigo-600 dark:text-indigo-400 text-sm font-medium hover:underline">← Mes commandes</Link>
+      <Link href="/commandes" className="text-indigo-600 dark:text-indigo-400 text-sm font-medium hover:underline">
+        ← Mes commandes
+      </Link>
     </div>
   )
 
-  /* ══════════════════════════════════════════
-     RENDU FORMULAIRE
-  ══════════════════════════════════════════ */
   return (
     <div className="max-w-xl mx-auto px-4 py-10">
+
       <div className="mb-6">
-        <Link href="/commandes" className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1 mb-4">
+        <Link href="/commandes"
+          className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1 mb-4">
           ← Retour
         </Link>
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Demande de retour</h1>
@@ -498,8 +284,9 @@ function RetourContent() {
                 <input type="radio" name="order" checked={selectedOrder?.id === c.id}
                   onChange={() => {
                     setSelectedOrder(c)
-                    setSelection({})
-                    setReason(''); setResolution('REFUND')
+                    setSelectedItemId(null)
+                    setReason('')
+                    setResolution('REFUND')
                   }}
                   className="accent-indigo-600 shrink-0" />
                 <div className="flex-1 min-w-0">
@@ -507,64 +294,124 @@ function RetourContent() {
                     #{c.id.slice(-8).toUpperCase()}
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    {new Date(c.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    {new Date(c.createdAt).toLocaleDateString('fr-FR', {
+                      day: 'numeric', month: 'long', year: 'numeric',
+                    })}
                     {' · '}{c.items.length} article{c.items.length > 1 ? 's' : ''}
                     {' · '}{c.total.toFixed(2)} DA
                   </p>
                 </div>
-                <span className="text-xs bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full font-medium shrink-0">Livrée</span>
+                <span className="text-xs bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full font-medium shrink-0">
+                  Livrée
+                </span>
               </label>
             ))}
           </div>
         </div>
       )}
 
-      {/* ══ ÉTAPE 1 — Sélection des articles ══ */}
+      {/* ══ ÉTAPE 1 — Sélection d'UN article ══ */}
       {step === 1 && selectedOrder && (
         <div className="space-y-3">
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-              Quels articles retourner ?
-            </p>
-            {lignesSelectionnees.length > 0 && (
-              <button type="button"
-                onClick={() => setSelection({})}
-                className="text-xs text-gray-400 hover:text-red-500 transition flex items-center gap-1">
-                <RotateCcw className="w-3 h-3" /> Réinitialiser
-              </button>
-            )}
-          </div>
 
-          {/* Hint IHM */}
+          {/* Hint */}
           <div className="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900 rounded-xl px-4 py-2.5 flex items-start gap-2">
             <Info className="w-4 h-4 text-indigo-500 dark:text-indigo-400 shrink-0 mt-0.5" />
             <p className="text-xs text-indigo-700 dark:text-indigo-400 leading-relaxed">
-              Cochez les articles à retourner, puis ajustez la quantité si nécessaire. Vous pouvez retourner plusieurs couleurs ou tailles en une seule demande.
+              Sélectionnez l&apos;article que vous souhaitez retourner. Une seule demande par article est possible.
             </p>
           </div>
 
-          {/* Cartes produits */}
-          {productGroups(selectedOrder).map(group => (
-            <ProductGroup
-              key={group.productId}
-              {...group}
-              selection={selection}
-              onSelect={(id, qte) => setSelection(prev => ({ ...prev, [id]: qte }))}
-            />
-          ))}
+          {/* Liste des articles — radio */}
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
+            {selectedOrder.items.map((item, idx) => {
+              const isSelected = selectedItemId === item.id
+              const label      = chipLabel(item)
+              const image      = item.product.images?.[0] ?? null
 
-          {/* Récap flottant si sélection active */}
-          {lignesSelectionnees.length > 0 && (
-            <div className="sticky bottom-4 bg-white dark:bg-gray-900 border border-indigo-200 dark:border-indigo-800 rounded-2xl px-4 py-3 shadow-lg shadow-indigo-100/50 dark:shadow-indigo-900/30 flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs text-gray-500">
-                  {lignesSelectionnees.reduce((s, i) => s + (selection[i.id] ?? 0), 0)} article{lignesSelectionnees.reduce((s, i) => s + (selection[i.id] ?? 0), 0) > 1 ? 's' : ''} sélectionné{lignesSelectionnees.reduce((s, i) => s + (selection[i.id] ?? 0), 0) > 1 ? 's' : ''}
+              return (
+                <label
+                  key={item.id}
+                  className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-all ${
+                    idx < selectedOrder.items.length - 1
+                      ? 'border-b border-gray-100 dark:border-gray-800'
+                      : ''
+                  } ${
+                    isSelected
+                      ? 'bg-indigo-50 dark:bg-indigo-950/30'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                  }`}
+                >
+                  {/* Radio visuel */}
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                    isSelected
+                      ? 'border-indigo-500 bg-indigo-500 dark:border-indigo-400 dark:bg-indigo-500'
+                      : 'border-gray-300 dark:border-gray-600'
+                  }`}>
+                    {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                  </div>
+                  <input
+                    type="radio"
+                    name="item"
+                    checked={isSelected}
+                    onChange={() => setSelectedItemId(item.id)}
+                    className="sr-only"
+                  />
+
+                  {/* Image produit */}
+                  <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-xl overflow-hidden shrink-0 flex items-center justify-center">
+                    {image
+                      ? <img src={image} alt={item.product.nom} className="w-full h-full object-cover" />
+                      : <Package className="w-5 h-5 text-gray-300 dark:text-gray-600" />
+                    }
+                  </div>
+
+                  {/* Infos */}
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-semibold leading-snug line-clamp-1 ${
+                      isSelected ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-800 dark:text-gray-100'
+                    }`}>
+                      {item.product.nom}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">{label}</p>
+                  </div>
+
+                  {/* Prix — quantité fixe 1 */}
+                  <div className="text-right shrink-0">
+                    <p className={`text-sm font-bold ${
+                      isSelected ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-200'
+                    }`}>
+                      {item.prix.toFixed(2)} DA
+                    </p>
+                    <p className="text-[11px] text-gray-400">
+                      Qté commandée : {item.quantite}
+                    </p>
+                  </div>
+                </label>
+              )
+            })}
+          </div>
+
+          {/* Badge article sélectionné */}
+          {selectedItem && (
+            <div className="flex items-center gap-2.5 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 rounded-xl px-4 py-3">
+              <Check className="w-4 h-4 text-indigo-500 dark:text-indigo-400 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 truncate">
+                  {selectedItem.product.nom}
+                  {chipLabel(selectedItem) !== 'Sans variante' && (
+                    <span className="font-normal ml-1 text-indigo-500 dark:text-indigo-400">
+                      · {chipLabel(selectedItem)}
+                    </span>
+                  )}
                 </p>
-                <p className="text-sm font-bold text-indigo-700 dark:text-indigo-300">{totalRetour.toFixed(2)} DA</p>
+                <p className="text-[11px] text-indigo-500 dark:text-indigo-500 mt-0.5">
+                  Quantité retournée : 1
+                </p>
               </div>
-              <span className="text-xs text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
-                <Check className="w-3.5 h-3.5" /> Prêt pour l&apos;étape suivante
-              </span>
+              <p className="text-sm font-bold text-indigo-700 dark:text-indigo-300 shrink-0">
+                {selectedItem.prix.toFixed(2)} DA
+              </p>
             </div>
           )}
         </div>
@@ -573,6 +420,7 @@ function RetourContent() {
       {/* ══ ÉTAPE 2 — Motif + résolution ══ */}
       {step === 2 && (
         <div className="space-y-4">
+
           {/* Motif */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5">
             <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Motif du retour</p>
@@ -644,40 +492,36 @@ function RetourContent() {
       )}
 
       {/* ══ ÉTAPE 3 — Récapitulatif ══ */}
-      {step === 3 && selectedOrder && (
+      {step === 3 && selectedOrder && selectedItem && (
         <div className="space-y-4">
-          {/* Articles sélectionnés */}
+
+          {/* Article sélectionné */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
             <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
-              <p className="text-sm font-bold text-gray-700 dark:text-gray-200">Articles à retourner</p>
+              <p className="text-sm font-bold text-gray-700 dark:text-gray-200">Article à retourner</p>
             </div>
-            <div className="divide-y divide-gray-100 dark:divide-gray-800">
-              {lignesSelectionnees.map(item => {
-                const label = [item.variantNom, item.variantOptionValeur].filter(Boolean).join(' / ')
-                const qte   = selection[item.id]
-                return (
-                  <div key={item.id} className="flex items-center gap-3 px-5 py-3">
-                    <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-xl overflow-hidden shrink-0 flex items-center justify-center">
-                      {item.product.images?.[0]
-                        ? <img src={item.product.images[0]} alt="" className="w-full h-full object-cover" />
-                        : <Package className="w-5 h-5 text-gray-400" />
-                      }
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 line-clamp-1">{item.product.nom}</p>
-                      {label && <p className="text-xs text-gray-500">{label}</p>}
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm font-bold text-gray-800 dark:text-gray-100">×{qte}</p>
-                      <p className="text-xs text-gray-400">{(item.prix * qte).toFixed(2)} DA</p>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-            <div className="px-5 py-3 bg-indigo-50 dark:bg-indigo-950/40 border-t border-indigo-100 dark:border-indigo-900 flex justify-between items-center">
-              <span className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">Total potentiel</span>
-              <span className="text-base font-bold text-indigo-700 dark:text-indigo-300">{totalRetour.toFixed(2)} DA</span>
+            <div className="flex items-center gap-3 px-5 py-4">
+              <div className="w-14 h-14 bg-gray-100 dark:bg-gray-800 rounded-xl overflow-hidden shrink-0 flex items-center justify-center">
+                {selectedItem.product.images?.[0]
+                  ? <img src={selectedItem.product.images[0]} alt="" className="w-full h-full object-cover" />
+                  : <Package className="w-6 h-6 text-gray-400" />
+                }
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 line-clamp-1">
+                  {selectedItem.product.nom}
+                </p>
+                {chipLabel(selectedItem) !== 'Sans variante' && (
+                  <p className="text-xs text-gray-500 mt-0.5">{chipLabel(selectedItem)}</p>
+                )}
+                <p className="text-xs text-gray-400 mt-1">Quantité retournée : 1</p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-base font-bold text-indigo-700 dark:text-indigo-300">
+                  {selectedItem.prix.toFixed(2)} DA
+                </p>
+                <p className="text-[10px] text-gray-400">potentiel</p>
+              </div>
             </div>
           </div>
 
@@ -719,11 +563,6 @@ function RetourContent() {
           <button type="button" onClick={next} disabled={!canNext}
             className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold py-3.5 rounded-xl transition flex items-center justify-center gap-2">
             Suivant →
-            {step === 1 && lignesSelectionnees.length > 0 && (
-              <span className="bg-white/20 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                {lignesSelectionnees.reduce((s, i) => s + (selection[i.id] ?? 0), 0)} art.
-              </span>
-            )}
           </button>
         )}
         {step === 3 && (
@@ -731,7 +570,8 @@ function RetourContent() {
             className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold py-3.5 rounded-xl transition flex items-center justify-center gap-2">
             {submitting
               ? <><Loader2 className="w-4 h-4 animate-spin" /> Envoi en cours…</>
-              : '↩ Confirmer le retour'}
+              : '↩ Confirmer le retour'
+            }
           </button>
         )}
       </div>
