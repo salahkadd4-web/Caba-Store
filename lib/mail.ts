@@ -46,6 +46,25 @@ export async function sendConfirmationEmail(email: string, code: string, prenom:
   })
 }
 
+// ── Code de confirmation d'identité (profil sans mot de passe) ───────────────
+export async function sendIdentityOtpEmail(email: string, code: string, prenom: string) {
+  await transporter.sendMail({
+    from: `"Boutique en ligne" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: 'Code de confirmation — Modification du profil',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 400px; margin: auto;">
+        <h2>Bonjour ${prenom},</h2>
+        <p>Vous avez demandé à modifier votre profil.</p>
+        <p>Votre code de confirmation est :</p>
+        <h1 style="color: #2563eb; letter-spacing: 8px;">${code}</h1>
+        <p>Ce code expire dans <strong>15 minutes</strong>.</p>
+        <p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
+      </div>
+    `,
+  })
+}
+
 // ── Notification expiration abonnement ────────────────────────────────────────
 
 const SEUIL_CONFIG: Record<string, { couleur: string; titre: string; urgence: string }> = {

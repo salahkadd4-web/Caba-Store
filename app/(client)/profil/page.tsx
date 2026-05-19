@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
-import { Check, Lock, X } from 'lucide-react'
+import { Check, Lock, Mail, X } from 'lucide-react'
 
 const WILAYAS = [
   'Adrar','Chlef','Laghouat','Oum El Bouaghi','Batna','Béjaïa','Biskra','Béchar','Blida','Bouira',
@@ -49,6 +49,7 @@ function InfoRow({ label, value }: { label: string; value?: string }) {
   )
 }
 
+/** Bloc confirmation pour comptes AVEC mot de passe */
 function ConfirmPasswordBlock({ value, onChange, inputClass, labelClass }: {
   value: string; onChange: (v: string) => void; inputClass: string; labelClass: string
 }) {
@@ -68,6 +69,65 @@ function ConfirmPasswordBlock({ value, onChange, inputClass, labelClass }: {
   )
 }
 
+/** Bloc confirmation par OTP pour comptes Google (SANS mot de passe) */
+function ConfirmOtpBlock({
+  otpValue, onOtpChange, onSendCode, sending, codeSent, inputClass, labelClass, otpClass,
+}: {
+  otpValue: string
+  onOtpChange: (v: string) => void
+  onSendCode: () => void
+  sending: boolean
+  codeSent: boolean
+  inputClass: string
+  labelClass: string
+  otpClass: string
+}) {
+  return (
+    <div className="border-t border-gray-200 dark:border-gray-800 pt-5 space-y-4">
+      <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-3">
+        <p className="text-xs text-blue-700 dark:text-blue-300">
+          <Mail className="w-4 h-4 inline mr-1" />
+          Votre compte Google ne possède pas de mot de passe.
+          Un code de confirmation sera envoyé à votre email.
+        </p>
+      </div>
+      {!codeSent ? (
+        <button
+          type="button"
+          onClick={onSendCode}
+          disabled={sending}
+          className="w-full border border-gray-300 dark:border-gray-600 hover:border-black dark:hover:border-white text-gray-700 dark:text-gray-300 text-xs uppercase tracking-[0.2em] py-3 transition-colors disabled:opacity-50"
+        >
+          {sending ? 'Envoi...' : 'Envoyer un code par email'}
+        </button>
+      ) : (
+        <div>
+          <label className={labelClass}>Code reçu par email *</label>
+          <input
+            type="text"
+            inputMode="numeric"
+            maxLength={6}
+            value={otpValue}
+            onChange={e => onOtpChange(e.target.value.replace(/\D/g, ''))}
+            required
+            className={otpClass}
+            placeholder="000000"
+            autoFocus
+          />
+          <button
+            type="button"
+            onClick={onSendCode}
+            disabled={sending}
+            className="mt-2 text-xs text-gray-400 dark:text-gray-500 hover:text-black dark:hover:text-white transition-colors underline underline-offset-2"
+          >
+            {sending ? 'Renvoi...' : 'Renvoyer le code'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 type Section     = 'infos' | 'password' | 'email'
 type EmailEtape  = 'form' | 'codeAncien' | 'codeNouveau'
 type View        = 'profil' | 'edit'
@@ -75,20 +135,32 @@ type EmailStatus = 'idle' | 'checking' | 'available' | 'same' | 'taken'
 
 export default function ProfilPage() {
   const { data: session, update } = useSession()
-  const [view,    setView]    = useState<View>('profil')
-  const [section, setSection] = useState<Section>('infos')
-  const [loading, setLoading] = useState(true)
-  const [saving,  setSaving]  = useState(false)
-  const [success, setSuccess] = useState('')
-  const [error,   setError]   = useState('')
+  const [view,       setView]       = useState<View>('profil')
+  const [section,    setSection]    = useState<Section>('infos')
+  const [loading,    setLoading]    = useState(true)
+  const [saving,     setSaving]     = useState(false)
+  const [success,    setSuccess]    = useState('')
+  const [error,      setError]      = useState('')
+  const [hasPassword, setHasPassword] = useState<boolean | null>(null)
 
   const [profil, setProfil] = useState({
     nom: '', prenom: '', telephone: '', age: '', genre: '', wilaya: '',
-    adresse: '',  // ← décodé depuis le champ wilaya de la DB
+    adresse: '',
   })
 
+  // ── Confirmation infos : mot de passe OU otp ─────────────────────────────
   const [motDePasseConfirm, setMotDePasseConfirm] = useState('')
+  const [infosOtp,          setInfosOtp]          = useState('')
+  const [infosOtpSent,      setInfosOtpSent]      = useState(false)
+  const [infosOtpSending,   setInfosOtpSending]   = useState(false)
+
+  // ── Mot de passe ─────────────────────────────────────────────────────────
   const [pwd, setPwd] = useState({ actuel: '', nouveau: '', confirmer: '' })
+  const [pwdOtp,       setPwdOtp]       = useState('')
+  const [pwdOtpSent,   setPwdOtpSent]   = useState(false)
+  const [pwdOtpSending,setPwdOtpSending]= useState(false)
+
+  // ── Email ─────────────────────────────────────────────────────────────────
   const [emailForm, setEmailForm] = useState({
     motDePasse: '', nouvelEmail: '', codeAncien: '', codeNouveau: '',
     etape: 'form' as EmailEtape,
@@ -97,6 +169,7 @@ export default function ProfilPage() {
   const [emailStatus,   setEmailStatus]   = useState<EmailStatus>('idle')
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
 
+  // ── Debounce vérif email ──────────────────────────────────────────────────
   useEffect(() => {
     const val = emailForm.nouvelEmail.trim()
     if (!val) { setEmailStatus('idle'); return }
@@ -118,6 +191,7 @@ export default function ProfilPage() {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
   }, [emailForm.nouvelEmail, session?.user?.email])
 
+  // ── Chargement profil ─────────────────────────────────────────────────────
   useEffect(() => {
     fetch('/api/profil')
       .then(r => r.json())
@@ -129,8 +203,9 @@ export default function ProfilPage() {
           age:       data.age       ? String(data.age) : '',
           genre:     data.genre     || '',
           wilaya:    data.wilaya    || '',
-          adresse:   data.adresse   || '',  // ← décodé par la route GET
+          adresse:   data.adresse   || '',
         })
+        setHasPassword(!!data.hasPassword)
         setLoading(false)
       })
   }, [])
@@ -138,54 +213,99 @@ export default function ProfilPage() {
   const clearMessages = () => { setError(''); setSuccess('') }
   const goToEdit = () => { clearMessages(); setSection('infos'); setView('edit') }
   const goBack   = () => {
-    clearMessages(); setMotDePasseConfirm('')
-    setPwd({ actuel: '', nouveau: '', confirmer: '' })
+    clearMessages()
+    setMotDePasseConfirm(''); setInfosOtp(''); setInfosOtpSent(false)
+    setPwd({ actuel: '', nouveau: '', confirmer: '' }); setPwdOtp(''); setPwdOtpSent(false)
     setEmailForm({ motDePasse: '', nouvelEmail: '', codeAncien: '', codeNouveau: '', etape: 'form' })
     setEmailStatus('idle'); setView('profil')
   }
 
-  const handleSaveInfos = async (e: React.FormEvent) => {
-    e.preventDefault(); clearMessages()
-    if (!motDePasseConfirm) { setError('Veuillez entrer votre mot de passe pour confirmer'); return }
-    setSaving(true)
+  // ── Envoi OTP profil (infos ou password) ─────────────────────────────────
+  const sendProfileOtp = async (onDone: () => void, onSending: (v: boolean) => void) => {
+    onSending(true)
     try {
-      const res = await fetch('/api/profil', {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...profil,
-          age: profil.age ? parseInt(profil.age) : null,
-          motDePasse: motDePasseConfirm,
-          // adresse est envoyé séparément, encodé côté route
-        }),
+      const res  = await fetch('/api/profil/otp', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'send' }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
-      setSuccess('Informations mises à jour !'); setMotDePasseConfirm(''); await update()
+      setSuccess('Code envoyé à votre email.')
+      onDone()
+    } catch { setError('Erreur serveur') }
+    finally  { onSending(false) }
+  }
+
+  // ── Enregistrement infos ──────────────────────────────────────────────────
+  const handleSaveInfos = async (e: React.FormEvent) => {
+    e.preventDefault(); clearMessages()
+
+    // Vérification locale avant envoi
+    if (hasPassword && !motDePasseConfirm) {
+      setError('Veuillez entrer votre mot de passe pour confirmer'); return
+    }
+    if (!hasPassword && !infosOtp) {
+      setError('Veuillez entrer le code de confirmation'); return
+    }
+
+    setSaving(true)
+    try {
+      const body: Record<string, unknown> = {
+        ...profil,
+        age: profil.age ? parseInt(profil.age) : null,
+      }
+      if (hasPassword) body.motDePasse = motDePasseConfirm
+      else             body.otp        = infosOtp
+
+      const res  = await fetch('/api/profil', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error); return }
+      setSuccess('Informations mises à jour !')
+      setMotDePasseConfirm(''); setInfosOtp(''); setInfosOtpSent(false)
+      await update()
     } catch { setError('Erreur serveur') } finally { setSaving(false) }
   }
 
+  // ── Changement / définition mot de passe ─────────────────────────────────
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault(); clearMessages()
     if (!pwdRules.every(r => r.test(pwd.nouveau))) { setError('Le nouveau mot de passe ne respecte pas les conditions'); return }
     if (pwd.nouveau !== pwd.confirmer) { setError('Les mots de passe ne correspondent pas'); return }
+    if (hasPassword && !pwd.actuel) { setError('Veuillez entrer votre mot de passe actuel'); return }
+    if (!hasPassword && !pwdOtp)    { setError('Veuillez entrer le code de confirmation');   return }
+
     setSaving(true)
     try {
-      const res = await fetch('/api/profil/password', {
+      const body: Record<string, unknown> = { nouveauMotDePasse: pwd.nouveau }
+      if (hasPassword) body.motDePasseActuel = pwd.actuel
+      else             body.otp              = pwdOtp
+
+      const res  = await fetch('/api/profil/password', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ motDePasseActuel: pwd.actuel, nouveauMotDePasse: pwd.nouveau }),
+        body: JSON.stringify(body),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
-      setSuccess('Mot de passe modifié avec succès !'); setPwd({ actuel: '', nouveau: '', confirmer: '' })
+      setSuccess(data.message)
+      setPwd({ actuel: '', nouveau: '', confirmer: '' }); setPwdOtp(''); setPwdOtpSent(false)
+      // Après avoir défini un mot de passe, mettre à jour l'état local
+      if (!hasPassword) setHasPassword(true)
     } catch { setError('Erreur serveur') } finally { setSaving(false) }
   }
 
+  // ── Changement email ──────────────────────────────────────────────────────
   const handleRequestEmailChange = async (e: React.FormEvent) => {
     e.preventDefault(); clearMessages(); setSaving(true)
     try {
-      const res = await fetch('/api/profil/email', {
+      const body: Record<string, unknown> = { etape: 1, nouvelEmail: emailForm.nouvelEmail }
+      // Pour les comptes avec mot de passe, on l'envoie ; pour Google c'est optionnel
+      if (hasPassword) body.motDePasse = emailForm.motDePasse
+      const res  = await fetch('/api/profil/email', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ etape: 1, motDePasse: emailForm.motDePasse, nouvelEmail: emailForm.nouvelEmail }),
+        body: JSON.stringify(body),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
@@ -196,7 +316,7 @@ export default function ProfilPage() {
   const handleVerifyOldEmail = async (e: React.FormEvent) => {
     e.preventDefault(); clearMessages(); setSaving(true)
     try {
-      const res = await fetch('/api/profil/email', {
+      const res  = await fetch('/api/profil/email', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ etape: 2, codeAncien: emailForm.codeAncien, nouvelEmail: emailForm.nouvelEmail }),
       })
@@ -209,7 +329,7 @@ export default function ProfilPage() {
   const handleConfirmEmailChange = async (e: React.FormEvent) => {
     e.preventDefault(); clearMessages(); setSaving(true)
     try {
-      const res = await fetch('/api/profil/email', {
+      const res  = await fetch('/api/profil/email', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ etape: 3, nouvelEmail: emailForm.nouvelEmail, codeNouveau: emailForm.codeNouveau }),
       })
@@ -221,6 +341,7 @@ export default function ProfilPage() {
     } catch { setError('Erreur serveur') } finally { setSaving(false) }
   }
 
+  // ── Styles ────────────────────────────────────────────────────────────────
   const inputClass = "w-full border-b border-gray-300 dark:border-gray-600 focus:border-black dark:focus:border-white outline-none py-3 text-sm text-gray-800 dark:text-gray-100 bg-transparent transition-colors"
   const labelClass = "block text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400 mb-2"
   const otpClass   = "w-full border-b border-gray-300 dark:border-gray-600 focus:border-black dark:focus:border-white outline-none py-3 text-xl text-center tracking-[0.4em] text-gray-800 dark:text-gray-100 bg-transparent transition-colors"
@@ -257,6 +378,12 @@ export default function ProfilPage() {
           <div className="min-w-0">
             <p className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-100 truncate">{profil.prenom} {profil.nom}</p>
             <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 truncate">{session?.user?.email}</p>
+            {hasPassword === false && (
+              <span className="inline-flex items-center gap-1 mt-1 text-[10px] uppercase tracking-wide bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Connexion Google
+              </span>
+            )}
           </div>
         </div>
 
@@ -298,7 +425,9 @@ export default function ProfilPage() {
         <button onClick={() => { setSection('infos');    clearMessages() }} className={tabClass('infos')}>
           <span className="sm:hidden">Infos</span><span className="hidden sm:inline">Informations</span>
         </button>
-        <button onClick={() => { setSection('password'); clearMessages() }} className={tabClass('password')}>Mot de passe</button>
+        <button onClick={() => { setSection('password'); clearMessages() }} className={tabClass('password')}>
+          {hasPassword === false ? 'Créer MDP' : 'Mot de passe'}
+        </button>
         <button onClick={() => { setSection('email');    clearMessages() }} className={tabClass('email')}>Email</button>
       </div>
 
@@ -347,8 +476,6 @@ export default function ProfilPage() {
               {WILAYAS.map(w => <option key={w} value={w}>{w}</option>)}
             </select>
           </div>
-
-          {/* ── Adresse par défaut ── */}
           <div>
             <label className={labelClass}>
               Adresse de livraison par défaut
@@ -366,11 +493,33 @@ export default function ProfilPage() {
             </p>
           </div>
 
-          <ConfirmPasswordBlock value={motDePasseConfirm} onChange={setMotDePasseConfirm}
-            inputClass={inputClass} labelClass={labelClass} />
+          {/* Confirmation : mot de passe OU OTP selon le type de compte */}
+          {hasPassword ? (
+            <ConfirmPasswordBlock value={motDePasseConfirm} onChange={setMotDePasseConfirm}
+              inputClass={inputClass} labelClass={labelClass} />
+          ) : (
+            <ConfirmOtpBlock
+              otpValue={infosOtp}
+              onOtpChange={setInfosOtp}
+              onSendCode={() => sendProfileOtp(() => setInfosOtpSent(true), setInfosOtpSending)}
+              sending={infosOtpSending}
+              codeSent={infosOtpSent}
+              inputClass={inputClass}
+              labelClass={labelClass}
+              otpClass={otpClass}
+            />
+          )}
+
           <div className="flex gap-3 pt-1">
             <button type="button" onClick={goBack} className={btnCancel}>Annuler</button>
-            <button type="submit" disabled={saving || !motDePasseConfirm} className={btnSubmit}>
+            <button
+              type="submit"
+              disabled={
+                saving ||
+                (hasPassword ? !motDePasseConfirm : (!infosOtpSent || infosOtp.length < 6))
+              }
+              className={btnSubmit}
+            >
               {saving ? 'Enregistrement...' : 'Enregistrer'}
             </button>
           </div>
@@ -380,6 +529,16 @@ export default function ProfilPage() {
       {/* ── Mot de passe ── */}
       {section === 'password' && (
         <form onSubmit={handleChangePassword} className="space-y-5">
+          {/* Bannière pour comptes Google */}
+          {!hasPassword && (
+            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-3">
+              <p className="text-xs text-blue-700 dark:text-blue-300">
+                <Mail className="w-4 h-4 inline mr-1" />
+                Votre compte Google n&apos;a pas encore de mot de passe.
+                Vous pouvez en créer un pour vous connecter également par email.
+              </p>
+            </div>
+          )}
           <div>
             <label className={labelClass}>Nouveau mot de passe</label>
             <input type="password" value={pwd.nouveau} onChange={e => setPwd({...pwd, nouveau: e.target.value})}
@@ -393,20 +552,43 @@ export default function ProfilPage() {
             {pwd.confirmer && pwd.nouveau !== pwd.confirmer && <p className="text-xs text-red-500 dark:text-red-400 mt-1">Les mots de passe ne correspondent pas</p>}
             {pwd.confirmer && pwd.nouveau === pwd.confirmer  && <p className="text-xs text-green-600 dark:text-green-400 mt-1"><Check className="w-4 h-4 inline mr-1" />Les mots de passe correspondent</p>}
           </div>
-          <div className="border-t border-gray-200 dark:border-gray-800 pt-5 space-y-4">
-            <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3">
-              <p className="text-xs text-amber-700 dark:text-amber-400"><Lock className="w-4 h-4 inline mr-1" />Entrez votre mot de passe actuel pour confirmer les modifications</p>
+
+          {/* Confirmation : mot de passe actuel OU OTP */}
+          {hasPassword ? (
+            <div className="border-t border-gray-200 dark:border-gray-800 pt-5 space-y-4">
+              <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3">
+                <p className="text-xs text-amber-700 dark:text-amber-400"><Lock className="w-4 h-4 inline mr-1" />Entrez votre mot de passe actuel pour confirmer les modifications</p>
+              </div>
+              <div>
+                <label className={labelClass}>Mot de passe actuel *</label>
+                <input type="password" value={pwd.actuel} onChange={e => setPwd({...pwd, actuel: e.target.value})}
+                  required className={inputClass} placeholder="••••••••" />
+              </div>
             </div>
-            <div>
-              <label className={labelClass}>Mot de passe actuel *</label>
-              <input type="password" value={pwd.actuel} onChange={e => setPwd({...pwd, actuel: e.target.value})}
-                required className={inputClass} placeholder="••••••••" />
-            </div>
-          </div>
+          ) : (
+            <ConfirmOtpBlock
+              otpValue={pwdOtp}
+              onOtpChange={setPwdOtp}
+              onSendCode={() => sendProfileOtp(() => setPwdOtpSent(true), setPwdOtpSending)}
+              sending={pwdOtpSending}
+              codeSent={pwdOtpSent}
+              inputClass={inputClass}
+              labelClass={labelClass}
+              otpClass={otpClass}
+            />
+          )}
+
           <div className="flex gap-3 pt-1">
             <button type="button" onClick={goBack} className={btnCancel}>Annuler</button>
-            <button type="submit" disabled={saving || !pwd.actuel} className={btnSubmit}>
-              {saving ? 'Modification...' : 'Modifier'}
+            <button
+              type="submit"
+              disabled={
+                saving ||
+                (hasPassword ? !pwd.actuel : (!pwdOtpSent || pwdOtp.length < 6))
+              }
+              className={btnSubmit}
+            >
+              {saving ? 'Modification...' : hasPassword ? 'Modifier' : 'Créer le mot de passe'}
             </button>
           </div>
         </form>
@@ -456,11 +638,37 @@ export default function ProfilPage() {
                 {emailStatus === 'same'      && <p className="text-xs text-red-500 dark:text-red-400 mt-1"><X className="w-4 h-4 inline mr-1" />Identique à votre email actuel</p>}
                 {emailStatus === 'taken'     && <p className="text-xs text-red-500 dark:text-red-400 mt-1"><X className="w-4 h-4 inline mr-1" />Email déjà utilisé</p>}
               </div>
-              <ConfirmPasswordBlock value={emailForm.motDePasse} onChange={v => setEmailForm(f => ({ ...f, motDePasse: v }))}
-                inputClass={inputClass} labelClass={labelClass} />
+
+              {/* Mot de passe uniquement pour les comptes qui en ont un */}
+              {hasPassword && (
+                <ConfirmPasswordBlock
+                  value={emailForm.motDePasse}
+                  onChange={v => setEmailForm(f => ({ ...f, motDePasse: v }))}
+                  inputClass={inputClass}
+                  labelClass={labelClass}
+                />
+              )}
+
+              {!hasPassword && (
+                <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-3">
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    <Mail className="w-4 h-4 inline mr-1" />
+                    Un code sera envoyé à votre email actuel et au nouvel email pour confirmer le changement.
+                  </p>
+                </div>
+              )}
+
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={goBack} className={btnCancel}>Annuler</button>
-                <button type="submit" disabled={saving || emailStatus !== 'available' || !emailForm.motDePasse} className={btnSubmit}>
+                <button
+                  type="submit"
+                  disabled={
+                    saving ||
+                    emailStatus !== 'available' ||
+                    (hasPassword ? !emailForm.motDePasse : false)
+                  }
+                  className={btnSubmit}
+                >
                   {saving ? 'Envoi...' : 'Envoyer le code'}
                 </button>
               </div>
