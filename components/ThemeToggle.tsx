@@ -33,24 +33,25 @@ const options: { key: 'light' | 'dark' | 'system'; label: string }[] = [
   { key: 'system', label: 'Système' },
 ]
 
-const BTN            = 48   // diamètre bouton px
-const EDGE           = 12   // marge bords écran
-const NAV_BOTTOM     = 80   // hauteur bottom nav + safe area
-const DRAG_THRESHOLD = 6    // px avant de considérer un glissement
-const SNAP_MS        = 300  // durée animation snap
+const BTN            = 48
+const EDGE           = 12
+const NAV_BOTTOM     = 80
+const DRAG_THRESHOLD = 6
+const SNAP_MS        = 300
 
 export default function ThemeToggle() {
   const { theme, setTheme } = useTheme()
+
   const [open,     setOpen]     = useState(false)
   const [dragging, setDragging] = useState(false)
   const [snapping, setSnapping] = useState(false)
 
-  /* Position — null jusqu'à l'hydratation (évite le SSR mismatch) */
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
 
-  const wrapRef = useRef<HTMLDivElement>(null)
+  /* ✅ Nouveau : un ref desktop + un ref mobile */
+  const desktopRef = useRef<HTMLDivElement>(null)
+  const mobileRef  = useRef<HTMLDivElement>(null)
 
-  /* État interne du drag stocké en ref → zéro re-render pendant le glissement */
   const drag = useRef<{
     startClientX: number
     startClientY: number
@@ -59,49 +60,54 @@ export default function ThemeToggle() {
     moved:        boolean
   } | null>(null)
 
-  /* ── Clamp dans les limites de l'écran ── */
   const clamp = useCallback((x: number, y: number) => ({
     x: Math.max(EDGE, Math.min(window.innerWidth  - BTN - EDGE, x)),
     y: Math.max(EDGE, Math.min(window.innerHeight - BTN - EDGE, y)),
   }), [])
 
-  /* ── Snap vers le bord gauche ou droit le plus proche ── */
   const snapToEdge = useCallback((x: number, y: number) => {
     const snappedX = x + BTN / 2 < window.innerWidth / 2
       ? EDGE
       : window.innerWidth - BTN - EDGE
-    const snappedY = Math.max(EDGE, Math.min(window.innerHeight - BTN - NAV_BOTTOM, y))
+
+    const snappedY = Math.max(
+      EDGE,
+      Math.min(window.innerHeight - BTN - NAV_BOTTOM, y)
+    )
+
     setSnapping(true)
     setPos({ x: snappedX, y: snappedY })
-    localStorage.setItem('theme-btn-pos', JSON.stringify({ x: snappedX, y: snappedY }))
+
+    localStorage.setItem(
+      'theme-btn-pos',
+      JSON.stringify({ x: snappedX, y: snappedY })
+    )
+
     setTimeout(() => setSnapping(false), SNAP_MS)
   }, [])
 
-  /* ── Position initiale — coin bas-gauche par défaut ── */
   useEffect(() => {
     const saved = localStorage.getItem('theme-btn-pos')
+
     if (saved) {
       try {
         const p = JSON.parse(saved) as { x: number; y: number }
         setPos(clamp(p.x, p.y))
         return
-      } catch { /* ignored */ }
+      } catch {}
     }
+
     setPos({
       x: EDGE,
       y: window.innerHeight - BTN - NAV_BOTTOM,
     })
   }, [clamp])
 
-  /* ══════════════════════════════════════════
-     POINTER EVENTS
-     setPointerCapture → le div reçoit TOUS les
-     événements même si le doigt sort de la zone.
-     touchAction:'none' → bloque le scroll natif.
-  ══════════════════════════════════════════ */
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (!pos) return
+
     e.currentTarget.setPointerCapture(e.pointerId)
+
     drag.current = {
       startClientX: e.clientX,
       startClientY: e.clientY,
@@ -109,16 +115,20 @@ export default function ThemeToggle() {
       startPosY:    pos.y,
       moved:        false,
     }
+
     setSnapping(false)
   }, [pos])
 
   const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (!drag.current) return
+
     const dx = e.clientX - drag.current.startClientX
     const dy = e.clientY - drag.current.startClientY
 
-    if (!drag.current.moved &&
-        (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
+    if (
+      !drag.current.moved &&
+      (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)
+    ) {
       drag.current.moved = true
       setDragging(true)
       setOpen(false)
@@ -148,70 +158,88 @@ export default function ThemeToggle() {
     drag.current = null
   }, [snapToEdge])
 
-  /* Fermer le menu si on appuie ailleurs */
+  /* ✅ Nouveau close handler qui vérifie desktop + mobile */
   useEffect(() => {
     if (!open) return
+
     const close = (e: PointerEvent) => {
-      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false)
+      const target = e.target as Node
+
+      const inDesktop = desktopRef.current?.contains(target)
+      const inMobile  = mobileRef.current?.contains(target)
+
+      if (!inDesktop && !inMobile) {
+        setOpen(false)
+      }
     }
+
     document.addEventListener('pointerdown', close)
-    return () => document.removeEventListener('pointerdown', close)
+
+    return () => {
+      document.removeEventListener('pointerdown', close)
+    }
   }, [open])
 
-  /* Direction du popup selon la position dans l'écran */
   const menuAbove = pos ? pos.y > window.innerHeight * 0.55 : true
   const menuRight = pos ? pos.x > window.innerWidth  * 0.5  : false
 
-  /* ══════════════════════════════════════════
-     RENDU
-  ══════════════════════════════════════════ */
   return (
     <>
       {/* ─────────────────────────────────────
-          DESKTOP — comportement original inchangé
+          DESKTOP
       ───────────────────────────────────────── */}
       <div
+        ref={desktopRef}
         className="hidden md:flex fixed bottom-6 right-6 z-50 flex-col items-center gap-2"
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
       >
         <div className={`flex flex-col gap-2 transition-all duration-300 ${
-          open ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
+          open
+            ? 'opacity-100 translate-y-0'
+            : 'opacity-0 translate-y-4 pointer-events-none'
         }`}>
           {options.map(opt => (
-            <button key={opt.key} onClick={() => setTheme(opt.key)} title={opt.label}
+            <button
+              key={opt.key}
+              onClick={() => setTheme(opt.key)}
+              title={opt.label}
               className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 border
                 ${theme === opt.key
                   ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 border-gray-900 dark:border-white scale-110'
                   : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:scale-105'
-                }`}>
+                }`}
+            >
               {icons[opt.key]}
             </button>
           ))}
         </div>
+
         <button
           className="w-12 h-12 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-xl flex items-center justify-center border-2 border-gray-700 dark:border-gray-200 hover:scale-110 transition-all duration-300"
-          title="Thème">
+          title="Thème"
+        >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <path d="M8 21h8M12 17v4"/>
           </svg>
         </button>
       </div>
 
       {/* ─────────────────────────────────────
-          MOBILE — bulle draggable
+          MOBILE
       ───────────────────────────────────────── */}
       {pos && (
         <div
-          ref={wrapRef}
+          ref={mobileRef}
           className="md:hidden fixed z-50"
           style={{
             left:        pos.x,
             top:         pos.y,
             width:       BTN,
             height:      BTN,
-            touchAction: 'none',   /* INDISPENSABLE — bloque le scroll pendant le drag */
+            touchAction: 'none',
             userSelect:  'none',
             cursor:      dragging ? 'grabbing' : 'grab',
             transition:  snapping
@@ -222,20 +250,26 @@ export default function ThemeToggle() {
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
-          onPointerCancel={() => { drag.current = null; setDragging(false) }}
+          onPointerCancel={() => {
+            drag.current = null
+            setDragging(false)
+          }}
         >
 
           {/* ── Popup options ── */}
           {open && (
             <div className={`absolute flex flex-col gap-2
               ${menuAbove ? 'bottom-14' : 'top-14'}
-              ${menuRight ? 'right-0'   : 'left-0'}
+              ${menuRight ? 'right-0' : 'left-0'}
             `}>
               {options.map(opt => (
                 <button
                   key={opt.key}
-                  onPointerDown={e => e.stopPropagation()} /* évite de démarrer un drag depuis le menu */
-                  onClick={() => { setTheme(opt.key); setOpen(false) }}
+                  onPointerDown={e => e.stopPropagation()}
+                  onClick={() => {
+                    setTheme(opt.key)
+                    setOpen(false)
+                  }}
                   className={`w-11 h-11 rounded-full flex items-center justify-center shadow-xl border-2 transition-all active:scale-95
                     ${theme === opt.key
                       ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 border-gray-900 dark:border-white scale-110'
@@ -262,9 +296,13 @@ export default function ThemeToggle() {
             `}
           >
             {icons[theme as 'light' | 'dark' | 'system'] ?? icons.system}
+
             <div className="flex gap-0.5 mt-0.5">
               {[0, 1, 2].map(i => (
-                <span key={i} className="w-1 h-1 rounded-full bg-current opacity-50" />
+                <span
+                  key={i}
+                  className="w-1 h-1 rounded-full bg-current opacity-50"
+                />
               ))}
             </div>
           </div>
