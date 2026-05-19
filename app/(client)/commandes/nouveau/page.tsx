@@ -7,6 +7,7 @@ import {
   Check, CheckCircle2, ClipboardList, CreditCard, MapPin,
   Package, ShoppingBag, ShoppingCart, Smartphone, Truck,
   ChevronRight, TrendingDown, Ruler,
+  Banknote, Landmark, ArrowLeftRight, Lock,
 } from 'lucide-react'
 
 /* ── Types ── */
@@ -39,12 +40,38 @@ function getPrixUnitaire(product: CartItem['product'], quantite: number): number
   return product.prix
 }
 
+/* ── Modes de paiement avec icônes Lucide ── */
 const MODES_PAIEMENT = [
-  { label: 'Paiement à la livraison', icon: '💵' },
-  { label: 'CCP',                     icon: '🏦' },
-  { label: 'Dahabia',                 icon: '💳' },
-  { label: 'Virement bancaire',       icon: '🔁' },
-  { label: 'BaridiMob',               icon: '📱' },
+  {
+    label:     'Paiement à la livraison',
+    icon:      Banknote,
+    disabled:  false,
+    subtitle:  'Payez en espèces à la réception',
+  },
+  {
+    label:     'CCP',
+    icon:      Landmark,
+    disabled:  true,
+    subtitle:  'Prochainement disponible',
+  },
+  {
+    label:     'Dahabia',
+    icon:      CreditCard,
+    disabled:  true,
+    subtitle:  'Prochainement disponible',
+  },
+  {
+    label:     'Virement bancaire',
+    icon:      ArrowLeftRight,
+    disabled:  true,
+    subtitle:  'Prochainement disponible',
+  },
+  {
+    label:     'BaridiMob',
+    icon:      Smartphone,
+    disabled:  true,
+    subtitle:  'Prochainement disponible',
+  },
 ]
 
 const METHODES_EXPEDITION = [
@@ -83,23 +110,17 @@ export default function NouvelleCommandePage() {
 
   const selectedExpedition = METHODES_EXPEDITION.find(m => m.label === methodeExpedition) ?? METHODES_EXPEDITION[0]
 
-  /* ── Calculs avec prix dégressifs ── */
-  // Quantité totale par produit (pour appliquer le bon palier dégressif)
   const qteParProduit = new Map<string, number>()
   for (const item of panier?.items ?? []) {
     qteParProduit.set(item.product.id, (qteParProduit.get(item.product.id) ?? 0) + item.quantite)
   }
 
   const lignesCalc = (panier?.items ?? []).map(item => {
-    // ✅ Prix basé sur la quantité TOTALE du produit, pas item.quantite seul
     const prixUnit  = getPrixUnitaire(item.product, qteParProduit.get(item.product.id) ?? item.quantite)
     const prixBase  = item.product.prix
     const estReduit = prixUnit < prixBase
     return {
-      item,
-      prixUnit,
-      prixBase,
-      estReduit,
+      item, prixUnit, prixBase, estReduit,
       sousLigne: prixUnit * item.quantite,
       economie:  estReduit ? (prixBase - prixUnit) * item.quantite : 0,
     }
@@ -215,22 +236,80 @@ export default function NouvelleCommandePage() {
                 className={inputCls} />
             </div>
 
-            {/* Mode de paiement */}
+            {/* ── Mode de paiement ── */}
             <div>
-              <label className={labelCls}><CreditCard className="w-4 h-4 inline mr-1 text-blue-500" /> Mode de paiement *</label>
+              <label className={labelCls}>
+                <CreditCard className="w-4 h-4 inline mr-1 text-blue-500" /> Mode de paiement *
+              </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {MODES_PAIEMENT.map(m => (
-                  <button key={m.label} type="button" onClick={() => setModePaiement(m.label)}
-                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm font-medium transition-all ${
-                      modePaiement === m.label
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'
-                        : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
-                    }`}>
-                    <span className="text-base">{m.icon}</span>
-                    <span className="truncate">{m.label}</span>
-                    {modePaiement === m.label && <Check className="w-3.5 h-3.5 shrink-0 ml-auto text-blue-500" />}
-                  </button>
-                ))}
+                {MODES_PAIEMENT.map(m => {
+                  const Icon      = m.icon
+                  const isActive  = modePaiement === m.label
+                  const isDisabled = m.disabled
+
+                  return (
+                    <button
+                      key={m.label}
+                      type="button"
+                      onClick={() => !isDisabled && setModePaiement(m.label)}
+                      disabled={isDisabled}
+                      title={isDisabled ? m.subtitle : undefined}
+                      className={`
+                        relative flex flex-col items-start gap-1.5 px-3 py-3 rounded-xl border-2 text-left
+                        transition-all duration-200
+                        ${isDisabled
+                          ? 'border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/40 opacity-50 cursor-not-allowed'
+                          : isActive
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/60 shadow-sm shadow-blue-100 dark:shadow-blue-900'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-900'
+                        }
+                      `}
+                    >
+                      {/* Icône + badge lock */}
+                      <div className="flex items-center justify-between w-full">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                          isDisabled
+                            ? 'bg-gray-100 dark:bg-gray-800'
+                            : isActive
+                              ? 'bg-blue-100 dark:bg-blue-900'
+                              : 'bg-gray-100 dark:bg-gray-800'
+                        }`}>
+                          <Icon className={`w-4 h-4 ${
+                            isDisabled
+                              ? 'text-gray-400 dark:text-gray-600'
+                              : isActive
+                                ? 'text-blue-600 dark:text-blue-400'
+                                : 'text-gray-500 dark:text-gray-400'
+                          }`} />
+                        </div>
+                        {isDisabled
+                          ? <Lock className="w-3 h-3 text-gray-400 dark:text-gray-600 shrink-0" />
+                          : isActive
+                            ? <Check className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                            : null
+                        }
+                      </div>
+
+                      {/* Label — toujours lisible, pas de truncate */}
+                      <div>
+                        <p className={`text-xs font-semibold leading-tight ${
+                          isDisabled
+                            ? 'text-gray-400 dark:text-gray-600'
+                            : isActive
+                              ? 'text-blue-700 dark:text-blue-300'
+                              : 'text-gray-700 dark:text-gray-300'
+                        }`}>
+                          {m.label}
+                        </p>
+                        {isDisabled && (
+                          <p className="text-[10px] text-gray-400 dark:text-gray-600 mt-0.5 leading-tight">
+                            Bientôt disponible
+                          </p>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
@@ -286,7 +365,6 @@ export default function NouvelleCommandePage() {
               Résumé ({panier.items.length} article{panier.items.length > 1 ? 's' : ''})
             </h2>
 
-            {/* Liste articles */}
             <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
               {lignesCalc.map(({ item, prixUnit, prixBase, estReduit, sousLigne }) => {
                 const typeOpt = item.product.typeOption || 'Taille'
@@ -299,7 +377,6 @@ export default function NouvelleCommandePage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-gray-700 dark:text-gray-300 line-clamp-1">{item.product.nom}</p>
-                      {/* Variante / taille */}
                       {(item.variant || item.variantOption) && (
                         <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                           {item.variant?.couleur && (
@@ -340,11 +417,9 @@ export default function NouvelleCommandePage() {
               })}
             </div>
 
-            {/* Totaux */}
             <div className="border-t border-gray-100 dark:border-gray-800 pt-3 space-y-2">
               <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
-                <span>Sous-total</span>
-                <span>{sousTotal.toFixed(2)} DA</span>
+                <span>Sous-total</span><span>{sousTotal.toFixed(2)} DA</span>
               </div>
               {totalEconomies > 0 && (
                 <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
@@ -367,60 +442,95 @@ export default function NouvelleCommandePage() {
 
       {/* ══ MODAL CONFIRMATION ══ */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 px-4 pb-4 sm:pb-0">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md p-6 border border-gray-100 dark:border-gray-800">
-            <div className="text-center mb-5">
-              <div className="w-14 h-14 bg-blue-50 dark:bg-blue-950 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                <ShoppingBag className="w-7 h-7 text-blue-600 dark:text-blue-400" />
-              </div>
-              <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">Confirmer la commande ?</h2>
-              <p className="text-gray-400 text-sm mt-1">Vérifiez les détails avant de valider</p>
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 px-4"
+          onClick={e => { if (e.target === e.currentTarget) setShowModal(false) }}
+        >
+          {/*
+            Mobile  : collé en bas, padding bottom = navbar (~64px) + safe area + espace visuel
+            Desktop : centré verticalement, max-w-md
+            overflow-y-auto + max-h pour éviter que le modal dépasse l'écran
+          */}
+          <div className="
+            bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-2xl
+            shadow-2xl border border-gray-100 dark:border-gray-800
+            w-full max-w-md
+            pb-[env(safe-area-inset-bottom)]
+            mb-0 sm:mb-0
+            max-h-[calc(100dvh-5rem)] sm:max-h-[90vh]
+            overflow-y-auto
+            [padding-bottom:max(1.5rem,calc(64px+env(safe-area-inset-bottom)))]
+            sm:[padding-bottom:1.5rem]
+          ">
+            {/* Drag handle (mobile) */}
+            <div className="flex justify-center pt-3 pb-1 sm:hidden">
+              <div className="w-10 h-1 rounded-full bg-gray-200 dark:bg-gray-700" />
             </div>
 
-            <div className="space-y-2 mb-4">
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                <p className="text-xs text-gray-400 mb-1 flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> Adresse</p>
-                <p className="text-sm text-gray-800 dark:text-gray-200">{adresse}</p>
+            <div className="px-6 pt-4 pb-2">
+              {/* Header */}
+              <div className="text-center mb-5">
+                <div className="w-14 h-14 bg-blue-50 dark:bg-blue-950 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                  <ShoppingBag className="w-7 h-7 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">Confirmer la commande ?</h2>
+                <p className="text-gray-400 text-sm mt-1">Vérifiez les détails avant de valider</p>
               </div>
-              <div className="grid grid-cols-2 gap-2">
+
+              {/* Détails */}
+              <div className="space-y-2 mb-4">
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                  <p className="text-xs text-gray-400 mb-1 flex items-center gap-1"><CreditCard className="w-3.5 h-3.5" /> Paiement</p>
-                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{modePaiement}</p>
+                  <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5" /> Adresse
+                  </p>
+                  <p className="text-sm text-gray-800 dark:text-gray-200">{adresse}</p>
                 </div>
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                  <p className="text-xs text-gray-400 mb-1 flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> Livraison</p>
-                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{methodeExpedition}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
+                    <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                      <CreditCard className="w-3.5 h-3.5" /> Paiement
+                    </p>
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 leading-snug">{modePaiement}</p>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
+                    <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                      <Truck className="w-3.5 h-3.5" /> Livraison
+                    </p>
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 leading-snug">{methodeExpedition}</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="border-t border-gray-100 dark:border-gray-800 pt-3 space-y-1.5 mb-5">
-              <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
-                <span>Sous-total</span><span>{sousTotal.toFixed(2)} DA</span>
-              </div>
-              {totalEconomies > 0 && (
-                <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
-                  <span>Économies</span><span>−{totalEconomies.toFixed(2)} DA</span>
+              {/* Totaux */}
+              <div className="border-t border-gray-100 dark:border-gray-800 pt-3 space-y-1.5 mb-5">
+                <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
+                  <span>Sous-total</span><span>{sousTotal.toFixed(2)} DA</span>
                 </div>
-              )}
-              <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
-                <span>Livraison</span><span>{fraisLivraison} DA</span>
+                {totalEconomies > 0 && (
+                  <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                    <span>Économies</span><span>−{totalEconomies.toFixed(2)} DA</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
+                  <span>Livraison</span><span>{fraisLivraison} DA</span>
+                </div>
+                <div className="flex justify-between font-bold text-lg border-t border-gray-100 dark:border-gray-800 pt-2">
+                  <span className="text-gray-800 dark:text-gray-100">Total</span>
+                  <span className="text-blue-600 dark:text-blue-400">{total.toFixed(2)} DA</span>
+                </div>
               </div>
-              <div className="flex justify-between font-bold text-lg border-t border-gray-100 dark:border-gray-800 pt-2">
-                <span className="text-gray-800 dark:text-gray-100">Total</span>
-                <span className="text-blue-600 dark:text-blue-400">{total.toFixed(2)} DA</span>
-              </div>
-            </div>
 
-            <div className="flex gap-3">
-              <button onClick={() => setShowModal(false)}
-                className="flex-1 border-2 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-semibold py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                Annuler
-              </button>
-              <button onClick={handleConfirmer} disabled={submitting}
-                className="flex-1 flex items-center justify-center gap-2 bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-black font-semibold py-3 rounded-xl transition disabled:opacity-50">
-                {submitting ? 'En cours…' : <><CheckCircle2 className="w-5 h-5" /> Confirmer</>}
-              </button>
+              {/* Boutons */}
+              <div className="flex gap-3">
+                <button onClick={() => setShowModal(false)}
+                  className="flex-1 border-2 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-semibold py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                  Annuler
+                </button>
+                <button onClick={handleConfirmer} disabled={submitting}
+                  className="flex-1 flex items-center justify-center gap-2 bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-black font-semibold py-3 rounded-xl transition disabled:opacity-50">
+                  {submitting ? 'En cours…' : <><CheckCircle2 className="w-5 h-5" /> Confirmer</>}
+                </button>
+              </div>
             </div>
           </div>
         </div>
