@@ -6,7 +6,7 @@ import Header from '@/components/client/Header'
 import ThemeToggle from '@/components/ThemeToggle'
 import BottomNav from '@/components/BottomNav'
 import AndroidBackButton from '@/components/client/AndroidBackButton'
-
+import PullToRefresh from '@/components/client/PullToRefresh'
 
 export const metadata: Metadata = {
   title: 'Caba Store',
@@ -43,9 +43,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <SessionProvider>
             <AndroidBackButton />
             <Header />
-            <main className="pb-16 md:pb-0">
-              {children}
-            </main>
+            <PullToRefresh>
+              <main className="pb-16 md:pb-0">
+                {children}
+              </main>
+            </PullToRefresh>
             <BottomNav />
             <ThemeToggle />
           </SessionProvider>

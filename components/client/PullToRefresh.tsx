@@ -3,75 +3,55 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 
-const THRESHOLD = 72    // px to pull before release triggers refresh
-const MAX_PULL  = 110   // max visual pull distance
+const THRESHOLD = 80   // px de traction pour déclencher le refresh
 
 export default function PullToRefresh({ children }: { children: React.ReactNode }) {
-  const [pullY,      setPullY]      = useState(0)
-  const [refreshing, setRefreshing] = useState(false)
-  const [released,   setReleased]   = useState(false)   // true while snapping back / spinning
+  const [phase, setPhase]   = useState<'idle' | 'pulling' | 'ready' | 'refreshing'>('idle')
+  const [progress, setProgress] = useState(0)   // 0 → 1
 
-  const startY     = useRef(0)
-  const isPulling  = useRef(false)
-  const router     = useRouter()
+  const startY      = useRef(0)
+  const isPulling   = useRef(false)
+  const router      = useRouter()
 
-  // ── Touch handlers ──────────────────────────────────────────────────────────
+  // ── Handlers touch ──────────────────────────────────────────────────────────
 
   const onTouchStart = useCallback((e: TouchEvent) => {
-    // Déclencher uniquement depuis le haut de la page et pas pendant un refresh
-    if (window.scrollY === 0 && !refreshing) {
+    if (window.scrollY === 0 && phase === 'idle') {
       startY.current  = e.touches[0].clientY
       isPulling.current = true
     }
-  }, [refreshing])
+  }, [phase])
 
   const onTouchMove = useCallback((e: TouchEvent) => {
-    if (!isPulling.current || refreshing) return
+    if (!isPulling.current) return
 
     const delta = e.touches[0].clientY - startY.current
+    if (delta <= 0) { isPulling.current = false; setPhase('idle'); setProgress(0); return }
 
-    if (delta <= 0) {
-      // Scroll normal vers le haut → on annule le pull
-      isPulling.current = false
-      if (pullY > 0) setPullY(0)
-      return
-    }
+    // Résistance : ratio logarithmique pour un effet naturel
+    const ratio = Math.min(delta / THRESHOLD, 1.5)
+    const prog  = Math.min(ratio, 1)
 
-    // Résistance progressive : plus on tire, plus c'est lent
-    const resistance = delta < THRESHOLD ? 0.55 : 0.35
-    const newY = Math.min(delta * resistance, MAX_PULL)
-    setPullY(newY)
+    setProgress(prog)
+    setPhase(prog >= 1 ? 'ready' : 'pulling')
 
-    // Empêcher le scroll natif seulement si on tire réellement
-    if (delta > 8) e.preventDefault()
-  }, [refreshing, pullY])
+    if (delta > 10) e.preventDefault()
+  }, [])
 
   const onTouchEnd = useCallback(() => {
     if (!isPulling.current) return
     isPulling.current = false
 
-    if (pullY >= THRESHOLD) {
-      // Seuil atteint → refresh
-      setReleased(true)
-      setRefreshing(true)
-      setPullY(THRESHOLD * 0.75) // maintenir un peu visible
-
+    if (phase === 'ready') {
+      setPhase('refreshing')
+      setProgress(1)
       router.refresh()
-
-      setTimeout(() => {
-        setRefreshing(false)
-        setReleased(false)
-        setPullY(0)
-      }, 1200)
+      setTimeout(() => { setPhase('idle'); setProgress(0) }, 1400)
     } else {
-      // Seuil non atteint → retour élastique
-      setReleased(true)
-      setPullY(0)
-      setTimeout(() => setReleased(false), 300)
+      setPhase('idle')
+      setProgress(0)
     }
-  }, [pullY, router])
-
-  // ── Event listeners ─────────────────────────────────────────────────────────
+  }, [phase, router])
 
   useEffect(() => {
     document.addEventListener('touchstart', onTouchStart, { passive: true })
@@ -84,98 +64,69 @@ export default function PullToRefresh({ children }: { children: React.ReactNode 
     }
   }, [onTouchStart, onTouchMove, onTouchEnd])
 
-  // ── Derived values ───────────────────────────────────────────────────────────
+  // ── Indicateur visuel (fixed, ne bouge pas le contenu) ──────────────────────
 
-  const progress       = Math.min(pullY / THRESHOLD, 1)
-  const showIndicator  = pullY > 4 || refreshing
-  const indicatorScale = refreshing ? 1 : 0.6 + progress * 0.4
-  const indicatorY     = pullY > 0 ? pullY * 0.55 : refreshing ? THRESHOLD * 0.42 : 0
+  const visible = phase !== 'idle'
+
+  // L'indicateur glisse depuis le haut : -48px → 12px
+  const indicatorY = visible
+    ? (phase === 'refreshing' ? 12 : -48 + progress * 60)
+    : -48
 
   return (
-    <div style={{ position: 'relative', overflowX: 'hidden' }}>
-
-      {/* ── Indicateur de rafraîchissement ───────────────────── */}
+    <>
+      {/* Bulle indicateur */}
       <div
         aria-hidden
         style={{
           position:   'fixed',
-          top:        57,                         // sous le header mobile fixe
+          top:        57,                   // sous le header mobile (57px)
           left:       '50%',
-          transform:  `translateX(-50%) translateY(${indicatorY}px) scale(${indicatorScale})`,
-          transition: released ? 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s' : 'none',
-          opacity:    showIndicator ? 1 : 0,
-          zIndex:     99,
+          transform:  `translateX(-50%) translateY(${indicatorY}px)`,
+          transition: phase === 'refreshing' || phase === 'idle'
+            ? 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s'
+            : 'none',
+          opacity:    visible ? 1 : 0,
+          zIndex:     9999,
           pointerEvents: 'none',
         }}
       >
         <div style={{
-          width:        40,
-          height:       40,
-          borderRadius: '50%',
-          background:   'var(--background, #fff)',
-          boxShadow:    '0 2px 12px rgba(0,0,0,0.18)',
-          display:      'flex',
-          alignItems:   'center',
+          width:          40,
+          height:         40,
+          borderRadius:   '50%',
+          background:     'var(--background, #fff)',
+          boxShadow:      '0 3px 14px rgba(0,0,0,0.22)',
+          border:         '1px solid rgba(128,128,128,0.15)',
+          display:        'flex',
+          alignItems:     'center',
           justifyContent: 'center',
-          border:       '1px solid rgba(0,0,0,0.06)',
+          flexDirection:  'column',
+          gap:            2,
         }}>
-          {refreshing ? (
-            /* Spinner actif */
-            <svg
-              className="ptr-spin"
-              width="18" height="18" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor"
-              strokeWidth="2.5" strokeLinecap="round"
-              style={{ color: 'var(--foreground, #111)' }}
-            >
+          {phase === 'refreshing' ? (
+            <svg className="ptr-spin" width="18" height="18" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+              style={{ color: 'var(--foreground, #111)' }}>
               <path d="M21 12a9 9 0 1 1-6.219-8.56" />
             </svg>
           ) : (
-            /* Flèche qui tourne selon la progression */
-            <svg
-              width="18" height="18" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor"
-              strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+            <svg width="18" height="18" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" strokeWidth="2.5"
+              strokeLinecap="round" strokeLinejoin="round"
               style={{
-                color:      progress >= 1 ? '#22c55e' : 'var(--foreground, #111)',
-                transform:  `rotate(${progress * 180}deg)`,
-                transition: 'color 0.2s, transform 0.05s',
-              }}
-            >
+                color:     phase === 'ready' ? '#22c55e' : 'var(--foreground, #111)',
+                transform: `rotate(${progress * 180}deg)`,
+                transition:'color 0.2s',
+              }}>
               <path d="M12 5v14M5 12l7 7 7-7" />
             </svg>
           )}
         </div>
-
-        {/* Texte hint */}
-        <p style={{
-          position:   'absolute',
-          top:        '100%',
-          left:       '50%',
-          transform:  'translateX(-50%)',
-          marginTop:  6,
-          fontSize:   10,
-          fontWeight: 500,
-          color:      'var(--foreground, #111)',
-          opacity:    0.45,
-          whiteSpace: 'nowrap',
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-        }}>
-          {refreshing ? 'Chargement…' : progress >= 1 ? 'Relâcher' : 'Tirer pour rafraîchir'}
-        </p>
       </div>
 
-      {/* ── Contenu décalé vers le bas lors du pull ──────────── */}
-      <div
-        style={{
-          transform:  `translateY(${pullY}px)`,
-          transition: released ? 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1)' : 'none',
-          willChange: 'transform',
-        }}
-      >
-        {children}
-      </div>
-    </div>
+      {/* Contenu — inchangé, pas de translateY */}
+      {children}
+    </>
   )
 }
