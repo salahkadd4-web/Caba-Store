@@ -157,10 +157,13 @@ export async function PATCH(
   }
 
   if (action === 'set_flowmerce_key') {
-    const { flowmerceApiKey } = body
+    const { flowmerceApiKey, flowmerceShopId } = body
     await prisma.vendeurProfile.update({
-      where: { id }, 
-      data:  { flowmerceApiKey: flowmerceApiKey || null },
+      where: { id },
+      data:  {
+        flowmerceApiKey: flowmerceApiKey || null,
+        ...(flowmerceShopId !== undefined ? { flowmerceShopId: flowmerceShopId || null } : {}),
+      },
     })
     return NextResponse.json({ message: 'Clé Flowmerce mise à jour' })
   }

@@ -15,6 +15,7 @@ import { prisma } from '@/lib/prisma'
 
 const FLOWMERCE_URL     = (process.env.FLOWMERCE_URL     || '').replace(/\/$/, '')
 const FLOWMERCE_API_KEY = process.env.FLOWMERCE_API_KEY  || ''   // clé admin — fallback
+const FLOWMERCE_SHOP_ID = process.env.FLOWMERCE_SHOP_ID  || ''   // shop_id admin — fallback
 
 // ── Raisons FR → codes Flowmerce ──────────────────────────────────────────
 const REASON_MAP: Record<string, string> = {
@@ -123,7 +124,7 @@ export async function POST(req: NextRequest) {
               stock:    true,
               category: { select: { nom: true } },
               vendeur: {
-                select: { flowmerceApiKey: true, nomBoutique: true },
+                select: { flowmerceApiKey: true, flowmerceShopId: true, nomBoutique: true },
               },
             },
           },
@@ -151,13 +152,20 @@ export async function POST(req: NextRequest) {
   const item: OrderItemWithProduct | undefined =
     order.items.find((i: OrderItemWithProduct) => i.product.nom === productName) ?? order.items[0]
 
-  // ── 4. Résoudre la clé API Flowmerce ────────────────────────────────────
-  // Priorité : clé du vendeur → fallback clé admin (produits sans vendeur)
+  // ── 4. Résoudre les identifiants Flowmerce ──────────────────────────────
+  // Priorité : identifiants du vendeur → fallback identifiants admin (produits sans vendeur)
   const flowmerceApiKey = item?.product?.vendeur?.flowmerceApiKey || FLOWMERCE_API_KEY
+  const flowmerceShopId = item?.product?.vendeur?.flowmerceShopId || FLOWMERCE_SHOP_ID
 
   if (!flowmerceApiKey) {
     return NextResponse.json(
       { error: 'Retour indisponible — clé Flowmerce non configurée. Contactez l\'administrateur.' },
+      { status: 503 }
+    )
+  }
+  if (!flowmerceShopId) {
+    return NextResponse.json(
+      { error: 'Retour indisponible — Shop ID Flowmerce non configuré. Contactez l\'administrateur.' },
       { status: 503 }
     )
   }
@@ -227,6 +235,7 @@ export async function POST(req: NextRequest) {
     shipping_cost:      order.fraisLivraison ?? 0,
     external_return_id: `cabastore-${orderId}`,
     external_source:    'CabaStore',
+    shop_id:            flowmerceShopId,
     ml_payload:         mlPayload,
   }
 
