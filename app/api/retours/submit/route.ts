@@ -60,6 +60,18 @@ const SHIPPING_MAP: Record<string, string> = {
   'EXPRESS':     'Express',
 }
 
+// ── Genre interne → libellé ML Flowmerce ─────────────────────────────────
+const GENDER_MAP: Record<string, 'Male' | 'Female' | 'Unknown'> = {
+  'HOMME':  'Male',
+  'FEMME':  'Female',
+  'MALE':   'Male',
+  'FEMALE': 'Female',
+  'M':      'Male',
+  'F':      'Female',
+}
+
+const SHOP_RETURN_WINDOW_DAYS = 30
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
@@ -135,7 +147,9 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const item = order.items.find(i => i.product.nom === productName) ?? order.items[0]
+  type OrderItemWithProduct = typeof order.items[number]
+  const item: OrderItemWithProduct | undefined =
+    order.items.find((i: OrderItemWithProduct) => i.product.nom === productName) ?? order.items[0]
 
   // ── 4. Résoudre la clé API Flowmerce ────────────────────────────────────
   // Priorité : clé du vendeur → fallback clé admin (produits sans vendeur)
@@ -156,35 +170,73 @@ export async function POST(req: NextRequest) {
     Math.floor((Date.now() - new Date(order.createdAt).getTime()) / 86_400_000)
   )
 
-  // ── 6. Appel Flowmerce : POST /api/claims/external ──────────────────────
+  // ── 6. Construire ml_payload (tous les champs OBLIGATOIRES côté ML) ─────
+  const reasonCode      = REASON_MAP[reason] ?? 'CHANGE_MIND'
+  const productCategory = CATEGORY_MAP[item?.product?.category?.nom ?? ''] ?? 'Other'
+  const paymentMethod   = PAYMENT_MAP[order.modePaiement ?? '']      ?? 'Cash on Delivery'
+  const shippingMethod  = SHIPPING_MAP[order.methodeExpedition ?? ''] ?? 'Home Delivery'
+
+  const customerGender: 'Male' | 'Female' | 'Unknown' =
+    GENDER_MAP[String(user.genre ?? '').toUpperCase()] ?? 'Unknown'
+
+  const productPriceDa = Math.max(1, Math.round(item?.prix ?? 1))
+  const orderTotalDa   = Math.max(1, Math.round(order.total ?? 1))
+  const shippingCostDa = Math.max(0, Math.round(order.fraisLivraison ?? 0))
+  const orderQuantity  = Math.max(1, item?.quantite ?? 1)
+  const withinPolicy   = daysToReturn <= SHOP_RETURN_WINDOW_DAYS ? 1 : 0
+
+  const mlPayload = {
+    Customer_Gender:         customerGender,
+    Customer_Age:            user.age ?? 0,
+    Customer_Wilaya:         user.wilaya || 'Unknown',
+    Customer_Past_Returns:   0,
+    Shop_Name:               shopName,
+    Product_Category:        productCategory,
+    Product_Price_DA:        productPriceDa,
+    Order_Quantity:          orderQuantity,
+    Total_Amount_DA:         orderTotalDa,
+    Payment_Method:          paymentMethod,
+    Shipping_Method:         shippingMethod,
+    Shipping_Cost_DA:        shippingCostDa,
+    Return_Reason:           reasonCode,
+    Days_to_Return:          daysToReturn,
+    Shop_Return_Window_Days: SHOP_RETURN_WINDOW_DAYS,
+    Within_Return_Policy:    withinPolicy,
+    Fraud_Score:             0,
+    Customer_Satisfaction:   3,
+    Is_Suspicious:           0,
+  }
+
+  // ── 7. Appel Flowmerce : POST /api/claims/create ────────────────────────
   const claimPayload = {
     customer_name:      `${user.nom} ${user.prenom}`,
     customer_email:     user.email ?? '',
     customer_phone:     user.telephone ?? '',
     product_name:       productName,
     product_price:      item?.prix ?? 0,
-    product_category:   CATEGORY_MAP[item?.product?.category?.nom ?? ''] ?? 'Other',
+    product_category:   productCategory,
     order_id:           orderId,
     order_date:         order.createdAt.toISOString().split('T')[0],
     order_total:        order.total,
-    reason:             REASON_MAP[reason] ?? 'CHANGE_MIND',
+    reason:             reasonCode,
     description:        description || `${reason} — CabaStore`,
     desired_resolution: desiredResolution,
     shop_name:          shopName,
-    payment_method:     PAYMENT_MAP[order.modePaiement ?? '']      ?? 'Cash on Delivery',
-    shipping_method:    SHIPPING_MAP[order.methodeExpedition ?? ''] ?? 'Home Delivery',
+    payment_method:     paymentMethod,
+    shipping_method:    shippingMethod,
     shipping_cost:      order.fraisLivraison ?? 0,
     external_return_id: `cabastore-${orderId}`,
     external_source:    'CabaStore',
+    ml_payload:         mlPayload,
   }
 
   let flowmerceRes: Response
   try {
-    flowmerceRes = await fetch(`${FLOWMERCE_URL}/api/claims/external`, {
+    flowmerceRes = await fetch(`${FLOWMERCE_URL}/api/claims/create`, {
       method:  'POST',
       headers: {
-        'Content-Type':  'application/json',
-        'Authorization': `Bearer ${flowmerceApiKey}`,
+        'Content-Type': 'application/json',
+        'x-api-key':    flowmerceApiKey,
       },
       body:    JSON.stringify(claimPayload),
       signal:  AbortSignal.timeout(10_000),
