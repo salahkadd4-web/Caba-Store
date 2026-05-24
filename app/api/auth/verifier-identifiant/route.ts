@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { rateLimit, rateLimits, sanitize, isValidEmail, isValidPhone } from '@/lib/security'
+import { rateLimit, sanitize, isValidEmail, isValidPhone } from '@/lib/security'
 
 export async function POST(req: NextRequest) {
-  // Rate limiting — 10/min pour la vérification en temps réel
   const limited = rateLimit(req, { maxRequests: 10, windowMs: 60 * 1000 })
   if (limited) return limited
 
   try {
     const body = await req.json()
-    const identifiant = sanitize(body.identifiant).toLowerCase()
+
+    // ✅ Même normalisation que l'inscription et authorize()
+    const identifiant = sanitize(body.identifiant ?? '')
+      .trim()
+      .replace(/\s/g, '')
+      .toLowerCase()
 
     if (!identifiant) {
       return NextResponse.json({ exists: false })
@@ -31,10 +35,17 @@ export async function POST(req: NextRequest) {
           { telephone: identifiant },
         ],
       },
-      select: { id: true },
+      select: {
+        id:        true,
+        motDePasse: true,   // ✅ pour détecter les comptes Google
+      },
     })
 
-    return NextResponse.json({ exists: !!user })
+    return NextResponse.json({
+      exists:          !!user,
+      // ✅ true si le compte existe mais n'a pas de mot de passe → compte Google
+      isGoogleAccount: user ? !user.motDePasse : false,
+    })
   } catch {
     return NextResponse.json({ exists: false })
   }
