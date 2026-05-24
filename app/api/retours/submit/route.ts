@@ -156,7 +156,7 @@ export async function POST(req: NextRequest) {
     Math.floor((Date.now() - new Date(order.createdAt).getTime()) / 86_400_000)
   )
 
-  // ── 6. Appel Flowmerce : POST /api/claims/external ──────────────────────
+  // ── 6. Appel Flowmerce : POST /api/claims/external pour le moment ──────────────────────
   const claimPayload = {
     customer_name:      `${user.nom} ${user.prenom}`,
     customer_email:     user.email ?? '',
