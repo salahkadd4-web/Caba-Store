@@ -9,6 +9,13 @@ import { authConfig } from './auth.config'
 const isProd  = process.env.NODE_ENV === 'production'
 const PROD_URL = process.env.NEXTAUTH_URL || 'https://caba-store.vercel.app'
 
+// ── Normalisation de l'identifiant (cohérent avec l'inscription) ──────────────
+// L'inscription fait : email.toLowerCase() + telephone.replace(/\s/g, '')
+// → On applique les deux ici pour matcher exactement ce qui est en DB.
+function normalizeIdentifiant(raw: string): string {
+  return raw.trim().replace(/\s/g, '').toLowerCase()
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
 
@@ -25,8 +32,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.identifiant || !credentials?.motDePasse) return null
 
-        const identifiant = credentials.identifiant as string
-        const motDePasse  = credentials.motDePasse  as string
+        // ✅ Normaliser avant la requête DB
+        const identifiant = normalizeIdentifiant(credentials.identifiant as string)
+        const motDePasse  = credentials.motDePasse as string
+
+        if (!identifiant) return null
 
         const user = await prisma.user.findFirst({
           where: {
@@ -40,8 +50,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!user) return null
 
+        // Compte Google (pas de mot de passe) → erreur spéciale
         if (!user.motDePasse) {
-          throw new Error('GOOGLE_ACCOUNT')
+          // NextAuth v5 encode les erreurs thrown comme 'CredentialsSignin',
+          // on utilise donc un code dans l'URL de callback (géré dans connexion/page.tsx)
+          // On retourne null ici ; la page de connexion détecte le compte Google
+          // via /api/auth/verifier-identifiant (qui expose isGoogleAccount).
+          return null
         }
 
         const passwordMatch = await bcrypt.compare(motDePasse, user.motDePasse)
@@ -105,8 +120,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             return true
           }
 
-          // 🆕 Nouveau compte → créer un token temporaire et rediriger
-          // L'utilisateur doit saisir son téléphone et choisir son rôle.
+          // 🆕 Nouveau compte Google → token temporaire + redirection finalisation
           const tempToken = crypto.randomBytes(32).toString('hex')
           const email     = user.email ?? ''
           const name      = user.name  ?? ''
@@ -133,8 +147,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             },
           })
 
-          // Rediriger vers la page de finalisation
-          // NextAuth v5 : retourner une URL string depuis signIn redirige vers celle-ci
           const base = isProd ? PROD_URL : ''
           return `${base}/inscription/finaliser-google?token=${tempToken}`
 
@@ -147,12 +159,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
 
     async jwt({ token, user, account }) {
+      // ── Premier appel après connexion : user est défini ──
       if (user) {
         token.id            = user.id!
         token.role          = (user as any).role
-        token.telephone     = (user as any).telephone ?? null
+        token.telephone     = (user as any).telephone     ?? null
         token.vendeurStatut = (user as any).vendeurStatut ?? null
       }
+
+      // ── Google OAuth : enrichir le token depuis la DB ──
       if (account?.provider === 'google' && token.email) {
         const dbUser = await prisma.user.findFirst({
           where: { email: token.email },
@@ -165,23 +180,24 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.vendeurStatut = dbUser.vendeurProfile?.statut ?? null
         }
       }
+
       return token
     },
 
     async session({ session, token }) {
       if (token) {
-        session.user.id            = token.id   as string
-        session.user.role          = token.role as string
-        ;(session.user as any).telephone     = token.telephone     ?? null
-        ;(session.user as any).vendeurStatut = token.vendeurStatut ?? null
+        session.user.id                          = token.id            as string
+        session.user.role                        = token.role          as string
+        ;(session.user as any).telephone         = token.telephone     ?? null
+        ;(session.user as any).vendeurStatut     = token.vendeurStatut ?? null
       }
       return session
     },
 
     async redirect({ url, baseUrl }) {
       const base = isProd ? PROD_URL : baseUrl
-      if (url.startsWith('/')) return `${base}${url}`
-      if (url.startsWith(base)) return url
+      if (url.startsWith('/'))    return `${base}${url}`
+      if (url.startsWith(base))   return url
       if (isProd && url.includes('localhost')) return base
       return base
     },
