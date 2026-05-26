@@ -4,49 +4,81 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { Ratelimit } from '@upstash/ratelimit'
+import { Redis } from '@upstash/redis'
 
 // ══════════════════════════════════════════════════════════════
-//  1. RATE LIMITING — Basé sur IP (en mémoire)
-//  Limite les requêtes abusives sur les endpoints sensibles
+//  1. RATE LIMITING — Upstash Redis (sliding window)
+//  Persistant et partagé entre toutes les instances serverless.
 // ══════════════════════════════════════════════════════════════
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
-
 interface RateLimitOptions {
   maxRequests: number  // nombre max de requêtes
   windowMs:    number  // fenêtre en ms
 }
 
-export function rateLimit(req: NextRequest, options: RateLimitOptions): NextResponse | null {
+const upstashConfigured =
+  !!process.env.UPSTASH_REDIS_REST_URL && !!process.env.UPSTASH_REDIS_REST_TOKEN
+
+const redis = upstashConfigured ? Redis.fromEnv() : null
+
+// Un seul Ratelimit par config (mémoïsation par "maxRequests:windowMs")
+const limiterCache = new Map<string, Ratelimit>()
+
+function getLimiter(options: RateLimitOptions): Ratelimit | null {
+  if (!redis) return null
+  const key = `${options.maxRequests}:${options.windowMs}`
+  let limiter = limiterCache.get(key)
+  if (!limiter) {
+    limiter = new Ratelimit({
+      redis,
+      limiter:   Ratelimit.slidingWindow(options.maxRequests, `${options.windowMs} ms`),
+      analytics: false,
+      prefix:    'caba:rl',
+    })
+    limiterCache.set(key, limiter)
+  }
+  return limiter
+}
+
+export async function rateLimit(
+  req: NextRequest,
+  options: RateLimitOptions,
+): Promise<NextResponse | null> {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
              || req.headers.get('x-real-ip')
              || 'unknown'
 
-  const key     = `${ip}:${req.nextUrl.pathname}`
-  const now     = Date.now()
-  const entry   = rateLimitMap.get(key)
+  const limiter = getLimiter(options)
 
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(key, { count: 1, resetAt: now + options.windowMs })
-    return null // OK
+  // Sans Redis configuré (ex: dev local sans .env complet), on ne bloque pas
+  // pour éviter de casser l'app — mais on log pour que ce ne soit pas silencieux.
+  if (!limiter) {
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('[rateLimit] Upstash non configuré — requête laissée passer en PROD')
+    }
+    return null
   }
 
-  entry.count++
-  if (entry.count > options.maxRequests) {
-    const retryAfter = Math.ceil((entry.resetAt - now) / 1000)
+  const identifier = `${ip}:${req.nextUrl.pathname}`
+  const result     = await limiter.limit(identifier)
+
+  if (!result.success) {
+    const retryAfter = Math.max(1, Math.ceil((result.reset - Date.now()) / 1000))
     return NextResponse.json(
       { error: 'Trop de tentatives. Réessayez dans quelques instants.' },
       {
         status: 429,
         headers: {
-          'Retry-After':       String(retryAfter),
-          'X-RateLimit-Limit': String(options.maxRequests),
-          'X-RateLimit-Reset': String(Math.ceil(entry.resetAt / 1000)),
+          'Retry-After':           String(retryAfter),
+          'X-RateLimit-Limit':     String(result.limit),
+          'X-RateLimit-Remaining': String(result.remaining),
+          'X-RateLimit-Reset':     String(Math.ceil(result.reset / 1000)),
         },
       }
     )
   }
 
-  return null // OK
+  return null
 }
 
 // Presets pour les endpoints sensibles

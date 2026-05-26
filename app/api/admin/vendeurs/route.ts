@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@/generated/prisma/client'
 
 export async function GET(req: NextRequest) {
   const session = await auth()
@@ -12,8 +13,8 @@ export async function GET(req: NextRequest) {
   const statut = searchParams.get('statut')
   const search = searchParams.get('search') || ''
 
-  const where: any = {}
-  if (statut) where.statut = statut
+  const where: Prisma.VendeurProfileWhereInput = {}
+  if (statut) where.statut = statut as Prisma.VendeurProfileWhereInput['statut']
 
   if (search) {
     where.OR = [

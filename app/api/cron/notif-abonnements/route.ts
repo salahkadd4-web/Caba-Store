@@ -16,9 +16,10 @@ import { sendNotifAbonnement } from '@/lib/mail'
 const SEUILS = [25, 50, 75, 90] as const
 
 export async function GET(req: NextRequest) {
-  // Sécurité Vercel Cron
+  // Sécurité Vercel Cron — refus si CRON_SECRET non défini (CWE-1188).
+  const cronSecret = process.env.CRON_SECRET
   const authHeader = req.headers.get('authorization')
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   }
 
@@ -63,7 +64,7 @@ export async function GET(req: NextRequest) {
     const joursRestants = Math.ceil((fin - now.getTime()) / (1000 * 60 * 60 * 24))
 
     // Seuils franchis mais pas encore notifiés
-    const dejaNotifies: string[] = (abo as any).notifsSent ?? []
+    const dejaNotifies: string[] = abo.notifsSent ?? []
     const aNotifier = SEUILS.filter(
       (s) => pourcent >= s && !dejaNotifies.includes(String(s))
     )

@@ -34,7 +34,6 @@ export default function InscriptionPage() {
       try {
         const { Capacitor } = await import('@capacitor/core')
         if (!Capacitor.isNativePlatform()) return
-        // @ts-ignore
         const { SocialLogin } = await import('@capgo/capacitor-social-login')
         await SocialLogin.initialize({ google: { webClientId: GOOGLE_WEB_CLIENT_ID } })
       } catch (e) {
@@ -168,7 +167,6 @@ export default function InscriptionPage() {
       const { Capacitor } = await import('@capacitor/core')
 
       if (Capacitor.isNativePlatform()) {
-        // @ts-ignore
         const { SocialLogin } = await import('@capgo/capacitor-social-login')
         const result = await SocialLogin.login({
           provider: 'google',
@@ -191,8 +189,8 @@ export default function InscriptionPage() {
       } else {
         await signIn('google', { callbackUrl })
       }
-    } catch (err: any) {
-      setError(err?.message || 'Erreur lors de la connexion Google.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur lors de la connexion Google.')
     } finally {
       setLoadingGoogle(false)
     }
@@ -211,14 +209,14 @@ export default function InscriptionPage() {
     <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col lg:flex-row transition-colors duration-300">
 
       <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-black dark:bg-gray-900 items-center justify-center p-12 border-r border-gray-800">
-        <div className="absolute z-10 [mask-image:radial-gradient(ellipse_at_center,transparent_-50%,black_10%)]">
+        <div className="absolute z-10 mask-[radial-gradient(ellipse_at_center,transparent_-50%,black_10%)]">
           <Image src="/logo_noir.png" alt="" width={750} height={750}
             className="object-contain invert opacity-30 scale-150" priority />
         </div>
         <div className="relative z-10 text-center text-white">
           <div className="w-12 h-px bg-gray-600 mx-auto my-6" />
           <p className="text-white font-light text-sm tracking-wider drop-shadow-md">
-            L'excellence à portée de main
+            L&apos;excellence à portée de main
           </p>
         </div>
       </div>
@@ -237,7 +235,7 @@ export default function InscriptionPage() {
           {etape === 1 && (
             <div className="space-y-7">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400 mb-4">Je m'inscris en tant que</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400 mb-4">Je m&apos;inscris en tant que</p>
                 <div className="flex gap-0 border border-gray-200 dark:border-gray-800">
                   {(['CLIENT', 'VENDEUR'] as const).map((r) => (
                     <button key={r} onClick={() => setRole(r)}
@@ -252,7 +250,7 @@ export default function InscriptionPage() {
                 </div>
                 {role === 'VENDEUR' && (
                   <p className="mt-3 text-xs text-gray-400 dark:text-gray-500 tracking-wide border-l-2 border-gray-300 dark:border-gray-700 pl-3">
-                    Votre compte sera bloqué jusqu'à validation par notre équipe.
+                    Votre compte sera bloqué jusqu&apos;à validation par notre équipe.
                   </p>
                 )}
               </div>

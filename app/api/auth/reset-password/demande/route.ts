@@ -7,7 +7,7 @@ import crypto from 'crypto'
 
 export async function POST(req: NextRequest) {
   // ── Rate limiting strict — 3 tentatives / heure ───────
-  const limited = rateLimit(req, rateLimits.passwordReset)
+  const limited = await rateLimit(req, rateLimits.passwordReset)
   if (limited) return limited
 
   try {

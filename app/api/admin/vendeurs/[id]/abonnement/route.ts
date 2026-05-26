@@ -14,7 +14,7 @@ const NIVEAU_TO_PRIORITE: Record<string, number> = {
 
 // GET — détail abonnement
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth()

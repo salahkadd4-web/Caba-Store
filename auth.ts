@@ -162,9 +162,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       // ── Premier appel après connexion : user est défini ──
       if (user) {
         token.id            = user.id!
-        token.role          = (user as any).role
-        token.telephone     = (user as any).telephone     ?? null
-        token.vendeurStatut = (user as any).vendeurStatut ?? null
+        token.role          = user.role
+        token.telephone     = user.telephone     ?? null
+        token.vendeurStatut = user.vendeurStatut ?? null
       }
 
       // ── Google OAuth : enrichir le token depuis la DB ──
@@ -186,10 +186,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
     async session({ session, token }) {
       if (token) {
-        session.user.id                          = token.id            as string
-        session.user.role                        = token.role          as string
-        ;(session.user as any).telephone         = token.telephone     ?? null
-        ;(session.user as any).vendeurStatut     = token.vendeurStatut ?? null
+        session.user.id            = token.id            as string
+        session.user.role          = token.role          as string
+        session.user.telephone     = token.telephone     ?? null
+        session.user.vendeurStatut = token.vendeurStatut ?? null
       }
       return session
     },

@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import PusherJS from 'pusher-js'
-import { CheckCircle2, Eye, Loader2, MapPin, Package, RefreshCw, ShoppingCart, Store, Tag, TrendingDown, Truck, User, Wrench, X, XCircle } from 'lucide-react'
+import { CheckCircle2, Eye, Loader2, MapPin, Package, RefreshCw, ShoppingCart, Store,
+   TrendingDown, Truck, User, Wrench, X, XCircle } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -90,26 +92,17 @@ export default function AdminCommandesPage() {
 
   // ── Chargement ──────────────────────────────────────────────────────────
 
-  useEffect(() => {
-    fetchVendeurs()
-    fetchCategories()
-  }, [])
-
-  useEffect(() => {
-    fetchCommandes()
-  }, [filterStatut, filterVendeur, filterCategory, adminOnly])
-
-  const fetchVendeurs = async () => {
+  const fetchVendeurs = useCallback(async () => {
     const res = await fetch('/api/admin/vendeurs?statut=APPROUVE')
     if (res.ok) setVendeurs(await res.json())
-  }
+  }, [])
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     const res = await fetch('/api/admin/categories')
     if (res.ok) setCategories(await res.json())
-  }
+  }, [])
 
-  const fetchCommandes = async () => {
+  const fetchCommandes = useCallback(async () => {
     setLoading(true)
     const params = new URLSearchParams()
     if (filterStatut !== 'TOUS') params.set('statut',     filterStatut)
@@ -121,7 +114,17 @@ export default function AdminCommandesPage() {
     const res = await fetch(`/api/admin/commandes?${params}`)
     if (res.ok) setCommandes(await res.json())
     setLoading(false)
-  }
+  }, [filterStatut, filterVendeur, filterCategory, adminOnly, search])
+
+  useEffect(() => {
+    void (async () => {
+      await Promise.all([fetchVendeurs(), fetchCategories()])
+    })()
+  }, [fetchVendeurs, fetchCategories])
+
+  useEffect(() => {
+    void (async () => { await fetchCommandes() })()
+  }, [fetchCommandes])
 
   // ── Pusher — temps réel ─────────────────────────────────────────────────
 
@@ -131,7 +134,7 @@ export default function AdminCommandesPage() {
     })
     const channel = pusher.subscribe('admin-commandes')
 
-    channel.bind('statut-change', (data: any) => {
+    channel.bind('statut-change', (data: { commandeId: string; statut: string; client: string; message: string }) => {
       setCommandes(prev =>
         prev.map(c => c.id === data.commandeId ? { ...c, statut: data.statut } : c)
       )
@@ -218,7 +221,7 @@ export default function AdminCommandesPage() {
             value={filterVendeur}
             onChange={e => { setFilterVendeur(e.target.value); setAdminOnly(false) }}
             disabled={adminOnly}
-            className="border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 min-w-[200px]"
+            className="border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 min-w-50"
           >
             <option value="">Tous les vendeurs</option>
             {vendeurs.map(v => (
@@ -231,7 +234,7 @@ export default function AdminCommandesPage() {
           <select
             value={filterCategory}
             onChange={e => setFilterCategory(e.target.value)}
-            className="border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 min-w-[180px]"
+            className="border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 min-w-45"
           >
             <option value="">Toutes les catégories</option>
             {categories.map(c => (
@@ -377,7 +380,7 @@ export default function AdminCommandesPage() {
       {/* ── DESKTOP : tableau ────────────────────────────────────────────── */}
       <div className="hidden lg:block bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[800px]">
+          <table className="w-full text-sm min-w-200">
             <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-semibold">
               <tr>
                 <th className="text-left px-4 py-4">Commande</th>
@@ -423,7 +426,7 @@ export default function AdminCommandesPage() {
                         ) : (
                           <div className="flex flex-col gap-0.5">
                             {vendeursCommande.map(v => (
-                              <span key={v!.id} className="text-xs bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full truncate max-w-[130px]"><Store className="w-4 h-4 inline mr-1" />{' '}{v!.nomBoutique || '—'}
+                              <span key={v!.id} className="text-xs bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full truncate max-w-32.5"><Store className="w-4 h-4 inline mr-1" />{' '}{v!.nomBoutique || '—'}
                               </span>
                             ))}
                           </div>
@@ -528,7 +531,7 @@ export default function AdminCommandesPage() {
                       {(() => {
                         const img = item.variant?.images?.[0] || item.product.images[0]
                         return img
-                          ? <img src={img} alt={item.product.nom} className="w-full h-full object-cover" />
+                          ? <Image src={img} alt={item.product.nom} fill sizes="48px" className="object-cover" />
                           : <div className="w-full h-full flex items-center justify-center text-lg"><Package className="w-5 h-5" /></div>
                       })()}
                       {item.variant?.couleur && (

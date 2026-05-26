@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(req: NextRequest) {
-  // Sécurité : seul Vercel Cron peut appeler cette route
+  // Sécurité : seul Vercel Cron peut appeler cette route.
+  // Si CRON_SECRET n'est pas défini, on REFUSE — sinon `Bearer undefined`
+  // matcherait `Bearer undefined` (CWE-1188).
+  const cronSecret = process.env.CRON_SECRET
   const authHeader = req.headers.get('authorization')
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   }
 

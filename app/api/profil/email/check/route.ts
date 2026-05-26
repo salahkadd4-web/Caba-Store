@@ -13,7 +13,7 @@ import { rateLimit, sanitize, isValidEmail } from '@/lib/security'
 export async function POST(req: NextRequest) {
   // Rate limiting : 20 vérifications / min par IP
   // (debounce côté client à 600ms, donc ~1 appel / frappe rapide)
-  const limited = rateLimit(req, { maxRequests: 20, windowMs: 60 * 1000 })
+  const limited = await rateLimit(req, { maxRequests: 20, windowMs: 60 * 1000 })
   if (limited) return limited
 
   try {

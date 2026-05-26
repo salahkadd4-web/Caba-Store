@@ -17,6 +17,8 @@
     "@capgo/capacitor-social-login": "^8.3.14",
     "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^7.5.0",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
     "@vercel/blob": "^2.3.3",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.9.0",

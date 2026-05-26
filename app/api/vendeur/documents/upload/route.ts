@@ -62,17 +62,18 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ filename: blob.url })
 
-  } catch (error: any) {
+  } catch (error) {
+    const err = error as { message?: string; status?: number; cause?: unknown; stack?: string }
     // Log complet dans le terminal next dev
     console.error('═══ ERREUR UPLOAD BLOB ═══')
-    console.error('message :', error?.message)
-    console.error('status  :', error?.status)
-    console.error('cause   :', error?.cause)
-    console.error('stack   :', error?.stack)
+    console.error('message :', err?.message)
+    console.error('status  :', err?.status)
+    console.error('cause   :', err?.cause)
+    console.error('stack   :', err?.stack)
     console.error('══════════════════════════')
 
     return NextResponse.json(
-      { error: error?.message ?? 'Erreur serveur' },
+      { error: err?.message ?? 'Erreur serveur' },
       { status: 500 }
     )
   }

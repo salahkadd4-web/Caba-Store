@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@/generated/prisma/client'
 
 export async function GET(req: NextRequest) {
   const session = await auth()
@@ -20,11 +21,11 @@ export async function GET(req: NextRequest) {
   const search     = searchParams.get('search') || ''
   const categoryId = searchParams.get('categoryId')
 
-  const commandeWhere: any = {
+  const commandeWhere: Prisma.OrderWhereInput = {
     items: { some: { product: { vendeurId: vendeur.id } } },
   }
 
-  if (statut) commandeWhere.statut = statut
+  if (statut) commandeWhere.statut = statut as Prisma.OrderWhereInput['statut']
 
   if (categoryId) {
     commandeWhere.items = {

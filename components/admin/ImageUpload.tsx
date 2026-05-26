@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import Image from 'next/image'
 import { FolderOpen } from 'lucide-react'
 
 interface ImageUploadProps {
@@ -55,17 +56,22 @@ export default function ImageUpload({ value, onChange, label = 'Image' }: ImageU
         className="border-2 border-dashed border-gray-300 hover:border-purple-400 rounded-xl p-4 cursor-pointer transition-colors text-center"
       >
         {preview ? (
-          <div className="relative">
-            <img
-              src={preview}
-              alt="preview"
-              className="w-full h-40 object-cover rounded-lg"
-            />
-            {uploading && (
-              <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                <p className="text-white text-sm">Upload en cours...</p>
-              </div>
-            )}
+          <div>
+            <div className="relative w-full h-40">
+              <Image
+                src={preview}
+                alt="preview"
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                unoptimized={preview.startsWith('blob:')}
+                className="object-cover rounded-lg"
+              />
+              {uploading && (
+                <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                  <p className="text-white text-sm">Upload en cours...</p>
+                </div>
+              )}
+            </div>
             <p className="text-xs text-gray-400 mt-2">Cliquez pour changer</p>
           </div>
         ) : (

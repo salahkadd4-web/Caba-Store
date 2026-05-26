@@ -105,7 +105,7 @@ export default async function VendeurAbonnementPage() {
 
       {/* Grille des plans */}
       <div>
-        <h2 className="font-semibold text-gray-800 dark:text-white mb-3">Nos plans d'abonnement</h2>
+        <h2 className="font-semibold text-gray-800 dark:text-white mb-3">Nos plans d&apos;abonnement</h2>
         <div className="grid gap-4">
           {(Object.entries(TARIFS) as [string, typeof TARIFS[keyof typeof TARIFS]][]).map(([key, t]) => {
             const isActuel = abo?.niveau === key
@@ -134,7 +134,7 @@ export default async function VendeurAbonnementPage() {
           })}
         </div>
         <p className="text-xs text-gray-400 mt-3 text-center">
-          Pour changer de plan ou renouveler, contactez l'administration.
+          Pour changer de plan ou renouveler, contactez l&apos;administration.
         </p>
       </div>
 

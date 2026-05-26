@@ -17,7 +17,7 @@ export default function CartIconButton({ produitId, stock }: { produitId: string
       const res = await fetch('/api/panier')
       const data = await res.json()
       // Le GET retourne le panier directement, pas { items: [] }
-      const item = data?.items?.find((i: any) => i.productId === produitId)
+      const item = (data?.items as { id: string; productId: string }[] | undefined)?.find((i) => i.productId === produitId)
       if (item) { setInCart(true); setCartItemId(item.id) }
       else { setInCart(false); setCartItemId(null) }
     }
@@ -49,7 +49,7 @@ export default function CartIconButton({ produitId, stock }: { produitId: string
         // Re-fetch le panier pour obtenir l'id du cartItem créé
         const res = await fetch('/api/panier')
         const data = await res.json()
-        const item = data?.items?.find((i: any) => i.productId === produitId)
+        const item = (data?.items as { id: string; productId: string }[] | undefined)?.find((i) => i.productId === produitId)
         if (item) { setInCart(true); setCartItemId(item.id) }
         window.dispatchEvent(new CustomEvent('cart-updated'))
         new BroadcastChannel('cart').postMessage('updated')

@@ -2,16 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
 
+type PrixTier = { minQte: number; maxQte?: number | null; prix: number }
+
 /** Retourne le prix unitaire en tenant compte des paliers dégressifs */
-function getPrixUnitaire(prixVariables: any, prixBase: number, quantite: number): number {
+function getPrixUnitaire(prixVariables: unknown, prixBase: number, quantite: number): number {
   if (!Array.isArray(prixVariables) || !prixVariables.length) return prixBase
-  const sorted = [...prixVariables].sort((a: any, b: any) => b.minQte - a.minQte)
+  const tiers = prixVariables as PrixTier[]
+  const sorted = [...tiers].sort((a, b) => b.minQte - a.minQte)
   for (const t of sorted) { if (quantite >= t.minQte) return t.prix }
   return prixBase
 }
 
 // GET — Récupérer les commandes de l'utilisateur
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const token = await getAuthToken()
     if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
@@ -38,11 +41,23 @@ export async function POST(req: NextRequest) {
     const token = await getAuthToken()
     if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
-    const { adresse, modePaiement, methodeExpedition, fraisLivraison } = await req.json()
+    const { adresse, modePaiement, methodeExpedition } = await req.json()
 
     if (!adresse) {
       return NextResponse.json({ error: 'Adresse de livraison requise' }, { status: 400 })
     }
+
+    // Source de vérité serveur pour les frais d'expédition. Ne JAMAIS faire
+    // confiance à un montant envoyé par le client (CWE-602 : trust boundary).
+    const FRAIS_EXPEDITION: Record<string, number> = {
+      'Livraison standard':      700,
+      'Livraison express':       1200,
+      'Retrait en point relais': 400,
+    }
+    const methodeChoisie = typeof methodeExpedition === 'string' && methodeExpedition in FRAIS_EXPEDITION
+      ? methodeExpedition
+      : 'Livraison standard'
+    const frais = FRAIS_EXPEDITION[methodeChoisie]
 
     // Récupérer le panier avec variantes et options
     const panier = await prisma.cart.findUnique({
@@ -62,32 +77,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Panier vide' }, { status: 400 })
     }
 
-    // Vérifier le stock de chaque produit
-    for (const item of panier.items) {
-      if (item.variantOption) {
-        if (item.variantOption.stock < item.quantite) {
-          return NextResponse.json(
-            { error: `Stock insuffisant pour ${item.product.nom} (${item.variantOption.valeur})` },
-            { status: 400 }
-          )
-        }
-      } else if (item.variant) {
-        if (item.variant.stock < item.quantite) {
-          return NextResponse.json(
-            { error: `Stock insuffisant pour ${item.product.nom} (${item.variant.nom})` },
-            { status: 400 }
-          )
-        }
-      } else {
-        if (item.product.stock < item.quantite) {
-          return NextResponse.json(
-            { error: `Stock insuffisant pour ${item.product.nom}` },
-            { status: 400 }
-          )
-        }
-      }
-    }
-
     // Quantité totale par produit (pour appliquer le bon palier dégressif)
     const qteParProduit = new Map<string, number>()
     for (const item of panier.items) {
@@ -99,57 +88,82 @@ export async function POST(req: NextRequest) {
       (acc, item) => acc + getPrixUnitaire(item.product.prixVariables, item.product.prix, qteParProduit.get(item.productId)!) * item.quantite,
       0
     )
-    const frais = typeof fraisLivraison === 'number' ? fraisLivraison : 700
     const total = sousTotal + frais
 
-    // Créer la commande en sauvegardant variante + option (taille/pointure)
-    const commande = await prisma.order.create({
-      data: {
-        userId:            token.id as string,
-        adresse,
-        total,
-        modePaiement:      modePaiement      || 'Paiement à la livraison',
-        methodeExpedition: methodeExpedition || 'Livraison standard',
-        fraisLivraison:    frais,
-        items: {
-          create: panier.items.map((item) => ({
-            productId:          item.productId,
-            quantite:           item.quantite,
-            prix:               getPrixUnitaire(item.product.prixVariables, item.product.prix, qteParProduit.get(item.productId)!),
-            variantId:          item.variantId          ?? null,
-            variantNom:         item.variant?.nom        ?? null,
-            variantOptionId:    item.variantOptionId    ?? null,
-            variantOptionValeur: item.variantOption?.valeur ?? null,
-          })),
-        },
-      },
-    })
+    // ── Transaction atomique : décrément conditionnel du stock + création
+    //    de la commande + vidage du panier. updateMany avec un filtre
+    //    `stock: { gte: quantite }` garantit qu'aucune survente ne peut
+    //    se produire même en cas de requêtes concurrentes (CWE-362).
+    try {
+      const commande = await prisma.$transaction(async (tx) => {
+        for (const item of panier.items) {
+          if (item.variantOptionId) {
+            const r = await tx.variantOption.updateMany({
+              where: { id: item.variantOptionId, stock: { gte: item.quantite } },
+              data:  { stock: { decrement: item.quantite } },
+            })
+            if (r.count === 0) {
+              throw new Error(`Stock insuffisant pour ${item.product.nom}${item.variantOption ? ` (${item.variantOption.valeur})` : ''}`)
+            }
+          } else if (item.variantId) {
+            const r = await tx.productVariant.updateMany({
+              where: { id: item.variantId, stock: { gte: item.quantite } },
+              data:  { stock: { decrement: item.quantite } },
+            })
+            if (r.count === 0) {
+              throw new Error(`Stock insuffisant pour ${item.product.nom}${item.variant ? ` (${item.variant.nom})` : ''}`)
+            }
+          } else {
+            const r = await tx.product.updateMany({
+              where: { id: item.productId, stock: { gte: item.quantite } },
+              data:  { stock: { decrement: item.quantite } },
+            })
+            if (r.count === 0) {
+              throw new Error(`Stock insuffisant pour ${item.product.nom}`)
+            }
+            // Désactiver le produit si stock = 0 après décrément
+            await tx.product.updateMany({
+              where: { id: item.productId, stock: 0 },
+              data:  { actif: false },
+            })
+          }
+        }
 
-    // Mettre à jour le stock (option > variante > produit)
-    for (const item of panier.items) {
-      if (item.variantOptionId) {
-        await prisma.variantOption.update({
-          where: { id: item.variantOptionId },
-          data:  { stock: { decrement: item.quantite } },
+        const created = await tx.order.create({
+          data: {
+            userId:            token.id as string,
+            adresse,
+            total,
+            modePaiement:      modePaiement      || 'Paiement à la livraison',
+            methodeExpedition: methodeChoisie,
+            fraisLivraison:    frais,
+            items: {
+              create: panier.items.map((item) => ({
+                productId:          item.productId,
+                quantite:           item.quantite,
+                prix:               getPrixUnitaire(item.product.prixVariables, item.product.prix, qteParProduit.get(item.productId)!),
+                variantId:          item.variantId          ?? null,
+                variantNom:         item.variant?.nom        ?? null,
+                variantOptionId:    item.variantOptionId    ?? null,
+                variantOptionValeur: item.variantOption?.valeur ?? null,
+              })),
+            },
+          },
         })
-      } else if (item.variantId) {
-        await prisma.productVariant.update({
-          where: { id: item.variantId },
-          data:  { stock: { decrement: item.quantite } },
-        })
-      } else {
-        const newStock = item.product.stock - item.quantite
-        await prisma.product.update({
-          where: { id: item.productId },
-          data:  { stock: newStock, actif: newStock > 0 },
-        })
+
+        await tx.cartItem.deleteMany({ where: { cartId: panier.id } })
+
+        return created
+      })
+
+      return NextResponse.json({ message: 'Commande créée avec succès', commandeId: commande.id }, { status: 201 })
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Erreur serveur'
+      if (message.startsWith('Stock insuffisant')) {
+        return NextResponse.json({ error: message }, { status: 400 })
       }
+      throw e
     }
-
-    // Vider le panier
-    await prisma.cartItem.deleteMany({ where: { cartId: panier.id } })
-
-    return NextResponse.json({ message: 'Commande créée avec succès', commandeId: commande.id }, { status: 201 })
   } catch {
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }

@@ -11,7 +11,7 @@ export default function MobilePageWrapper({ children }: { children: React.ReactN
   const isAuthPage = pathname?.startsWith('/connexion') || pathname?.startsWith('/inscription')
 
   return (
-    <div className={isMobile && !isHomePage && !isAuthPage ? 'pt-[57px]' : ''}>
+    <div className={isMobile && !isHomePage && !isAuthPage ? 'pt-14.25' : ''}>
       {children}
     </div>
   )

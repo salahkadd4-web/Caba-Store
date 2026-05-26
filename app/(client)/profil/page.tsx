@@ -71,7 +71,7 @@ function ConfirmPasswordBlock({ value, onChange, inputClass, labelClass }: {
 
 /** Bloc confirmation par OTP pour comptes Google (SANS mot de passe) */
 function ConfirmOtpBlock({
-  otpValue, onOtpChange, onSendCode, sending, codeSent, inputClass, labelClass, otpClass,
+  otpValue, onOtpChange, onSendCode, sending, codeSent, labelClass, otpClass,
 }: {
   otpValue: string
   onOtpChange: (v: string) => void
@@ -370,7 +370,7 @@ export default function ProfilPage() {
         </div>
 
         <div className="flex items-center gap-4 mb-8 bg-gray-50 dark:bg-gray-900 rounded-2xl p-4">
-          <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-gray-900 dark:bg-white flex items-center justify-center flex-shrink-0">
+          <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-gray-900 dark:bg-white flex items-center justify-center shrink-0">
             <span className="text-white dark:text-gray-900 text-xl md:text-2xl font-semibold">
               {profil.prenom?.charAt(0)?.toUpperCase() || '?'}
             </span>
@@ -604,7 +604,7 @@ export default function ProfilPage() {
               const labels   = ['Demande', 'Vérif.', 'Confirmer']
               return (
                 <div key={e} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                  <div className="flex flex-col items-center gap-1 shrink-0">
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${isDone ? 'bg-green-600 dark:bg-green-500 text-white' : isActive ? 'bg-black dark:bg-white text-white dark:text-black' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'}`}>
                       {isDone ? <Check className="w-4 h-4" /> : i + 1}
                     </div>

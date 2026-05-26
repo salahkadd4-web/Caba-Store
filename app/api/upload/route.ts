@@ -8,7 +8,7 @@ const ALLOWED_TYPES    = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
 export async function POST(req: NextRequest) {
   // Rate limiting — 20 uploads/heure
-  const limited = rateLimit(req, rateLimits.upload)
+  const limited = await rateLimit(req, rateLimits.upload)
   if (limited) return limited
 
   try {

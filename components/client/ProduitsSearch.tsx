@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import FavoriIconButton from '@/components/client/FavoriIconButton'
 import CartIconButton from '@/components/client/CartIconButton'
 import { Banknote, Package } from 'lucide-react'
@@ -194,7 +195,7 @@ export default function ProduitsSearch({
               >
                 <div className="relative h-48 bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
                   {produit.images[0] ? (
-                    <img src={produit.images[0]} alt={produit.nom} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <Image src={produit.images[0]} alt={produit.nom} fill sizes="(min-width: 768px) 25vw, 50vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
                   ) : (
                     <Package className="w-14 h-14" />
                   )}

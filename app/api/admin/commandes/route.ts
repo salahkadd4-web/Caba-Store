@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
+import { Prisma } from '@/generated/prisma/client'
 
-async function checkAdmin(req: NextRequest) {
+async function checkAdmin() {
   const token = await getAuthToken()
   return token?.role === 'ADMIN' ? token : null
 }
 
 export async function GET(req: NextRequest) {
   try {
-    const token = await checkAdmin(req)
+    const token = await checkAdmin()
     if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
     const { searchParams } = new URL(req.url)
@@ -19,7 +20,7 @@ export async function GET(req: NextRequest) {
     const search    = searchParams.get('search') || '' // ← NOUVEAU filtre recherche
 
     // Construction dynamique du WHERE
-    const where: any = {}
+    const where: Prisma.OrderWhereInput = {}
 
     // Filtre par vendeur spécifique
     if (vendeurId) {
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest) {
 
     // Filtre par statut
     if (statut) {
-      where.statut = statut
+      where.statut = statut as Prisma.OrderWhereInput['statut']
     }
 
     // Filtre par recherche (nom client ou ID)

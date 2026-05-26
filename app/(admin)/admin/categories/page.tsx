@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import ImageUpload from '@/components/admin/ImageUpload'
 import { CheckCircle2, Pencil, Store, Tag, Trash2, XCircle } from 'lucide-react'
 
@@ -130,7 +131,7 @@ export default function AdminCategoriesPage() {
     <div>
       {/* Toast */}
       {toast && (
-        <div className="fixed top-4 right-4 z-[100] bg-gray-900 text-white text-sm px-4 py-3 rounded-xl shadow-lg">
+        <div className="fixed top-4 right-4 z-100 bg-gray-900 text-white text-sm px-4 py-3 rounded-xl shadow-lg">
           {toast}
         </div>
       )}
@@ -169,9 +170,9 @@ export default function AdminCategoriesPage() {
                 className="bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 rounded-xl p-4 flex items-center gap-4"
               >
                 {/* Image / icône */}
-                <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
+                <div className="relative w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
                   {cat.image
-                    ? <img src={cat.image} alt={cat.nom} className="w-full h-full object-cover" />
+                    ? <Image src={cat.image} alt={cat.nom} fill sizes="48px" className="object-cover" />
                     : <span className="text-xl"><Tag className="w-4 h-4" /></span>
                   }
                 </div>
@@ -230,9 +231,9 @@ export default function AdminCategoriesPage() {
             <div key={cat.id} className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm p-5 flex gap-4 items-center border border-gray-100 dark:border-gray-800">
 
               {/* Image */}
-              <div className="w-14 h-14 bg-purple-100 dark:bg-purple-950 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
+              <div className="relative w-14 h-14 bg-purple-100 dark:bg-purple-950 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
                 {cat.image
-                  ? <img src={cat.image} alt={cat.nom} className="w-full h-full object-cover" />
+                  ? <Image src={cat.image} alt={cat.nom} fill sizes="56px" className="object-cover" />
                   : <span className="text-2xl"><Tag className="w-4 h-4" /></span>
                 }
               </div>

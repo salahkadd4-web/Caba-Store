@@ -53,14 +53,18 @@ export default function SearchBar({ onClose }: { onClose?: () => void }) {
     return () => clearTimeout(timer)
   }, [query])
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const submitSearch = () => {
     if (query.trim()) {
       router.push(`/produits?recherche=${encodeURIComponent(query.trim())}`)
       setQuery('')
       setResults(null)
       onClose?.()
     }
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    submitSearch()
   }
 
   const hasResults = results && (results.categories.length > 0 || results.produits.length > 0)
@@ -109,9 +113,9 @@ export default function SearchBar({ onClose }: { onClose?: () => void }) {
                   onClick={() => { setResults(null); setQuery(''); onClose?.() }}
                   className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden flex items-center justify-center shrink-0">
+                  <div className="relative w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden flex items-center justify-center shrink-0">
                     {cat.image ? (
-                      <img src={cat.image} alt={cat.nom} className="w-full h-full object-cover" />
+                      <Image src={cat.image} alt={cat.nom} fill sizes="32px" className="object-cover" />
                     ) : (
                       <span className="text-sm"><Tag className="w-4 h-4" /></span>
                     )}
@@ -135,9 +139,9 @@ export default function SearchBar({ onClose }: { onClose?: () => void }) {
                   onClick={() => { setResults(null); setQuery(''); onClose?.() }}
                   className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
                 >
-                  <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 overflow-hidden shrink-0">
+                  <div className="relative w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 overflow-hidden shrink-0">
                     {prod.images[0] ? (
-                      <img src={prod.images[0]} alt={prod.nom} className="w-full h-full object-cover" />
+                      <Image src={prod.images[0]} alt={prod.nom} fill sizes="40px" className="object-cover" />
                     ) : (
                       <span className="text-lg flex items-center justify-center h-full"><Package className="w-5 h-5" /></span>
                     )}
@@ -157,10 +161,10 @@ export default function SearchBar({ onClose }: { onClose?: () => void }) {
           {/* Voir tous les résultats */}
           <div className="border-t border-gray-100 dark:border-gray-800 p-3">
             <button
-              onClick={handleSubmit as any}
+              onClick={submitSearch}
               className="w-full text-center text-xs text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white uppercase tracking-widest py-1 transition"
             >
-              Voir tous les résultats pour "{query}"
+              Voir tous les résultats pour &quot;{query}&quot;
             </button>
           </div>
         </div>
@@ -169,7 +173,7 @@ export default function SearchBar({ onClose }: { onClose?: () => void }) {
       {/* Aucun résultat */}
       {results && !hasResults && query.length >= 2 && !loading && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl z-50 p-6 text-center">
-          <p className="text-sm text-gray-500">Aucun résultat pour "<strong>{query}</strong>"</p>
+          <p className="text-sm text-gray-500">Aucun résultat pour &quot;<strong>{query}</strong>&quot;</p>
         </div>
       )}
     </div>

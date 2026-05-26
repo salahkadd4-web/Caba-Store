@@ -67,8 +67,8 @@ export default function VendeurDocumentsClient({ vendeur }: { vendeur: VendeurPr
         )
       )
       setSuccess('Document soumis avec succès. En attente de validation.')
-    } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue')
     } finally {
       setUploading(null)
     }

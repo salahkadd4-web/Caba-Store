@@ -1,5 +1,6 @@
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
+import Image from 'next/image'
 import { prisma } from '@/lib/prisma'
 import BoutonInitProfilAdmin from '@/components/Boutoninitprofiladmin' 
 import {
@@ -175,15 +176,17 @@ async function getStats() {
 }
 
 // ── Composant tableau générique ────────────────────────────────────────────────
-function StatTable({
+type StatRow = { id: string; nom?: string; images?: string[] }
+
+function StatTable<T extends StatRow>({
   title, icon, rows, getValue, getLabel, getSubLabel,
 }: {
   title: string
   icon: React.ElementType
-  rows: any[]
-  getValue: (r: any) => string
-  getLabel: (r: any) => string
-  getSubLabel?: (r: any) => string
+  rows: T[]
+  getValue: (r: T) => string
+  getLabel: (r: T) => string
+  getSubLabel?: (r: T) => string
 }) {
   return (
     <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
@@ -203,7 +206,7 @@ function StatTable({
                 i === 0 ? 'text-yellow-400' : i === 1 ? 'text-gray-400' : i === 2 ? 'text-amber-600' : 'text-gray-300 dark:text-gray-600'
               }`}>{i + 1}</span>
               {r.images?.[0] && (
-                <img src={r.images[0]} alt={r.nom} className="w-8 h-8 rounded-lg object-cover shrink-0" />
+                <Image src={r.images[0]} alt={r.nom ?? ''} width={32} height={32} className="w-8 h-8 rounded-lg object-cover shrink-0" />
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{getLabel(r)}</p>
@@ -257,7 +260,7 @@ export default async function AdminStatsPage() {
 
       {/* ── Section Priorités Admin ───────────────────────────────────────────── */}
       <h2 className="text-base font-bold text-gray-700 dark:text-gray-200 mb-3 flex items-center gap-2">
-        <ShieldCheck className="w-4 h-4 text-purple-600" /> Priorités d'affichage vendeurs
+        <ShieldCheck className="w-4 h-4 text-purple-600" /> Priorités d&apos;affichage vendeurs
       </h2>
 
       <div className="mb-8">

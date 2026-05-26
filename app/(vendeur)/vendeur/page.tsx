@@ -2,6 +2,7 @@ import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowUpRight, Store } from 'lucide-react'
 
 export default async function VendeurDashboard() {
@@ -144,7 +145,7 @@ export default async function VendeurDashboard() {
                   {i + 1}
                 </span>
                 {p.images[0] && (
-                  <img src={p.images[0]} alt={p.nom} className="w-8 h-8 rounded-lg object-cover shrink-0" />
+                  <Image src={p.images[0]} alt={p.nom} width={32} height={32} className="w-8 h-8 rounded-lg object-cover shrink-0" />
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-medium text-gray-800 dark:text-gray-100 truncate">{p.nom}</p>

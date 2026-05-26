@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
 import { AlertTriangle, Camera, Check, CheckCircle2, CreditCard, Loader2, Package, PartyPopper, Pin, RefreshCw, Truck, Wrench, X, XCircle, Zap } from 'lucide-react'
 
@@ -261,10 +262,9 @@ function CommandesContent() {
                       <div className="space-y-3">
                         {commande.items.map(item => (
                           <div key={item.id} className="flex items-start gap-3">
-                            <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden shrink-0">
+                            <div className="relative w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden shrink-0">
                               {item.product.images[0]
-                                // eslint-disable-next-line @next/next/no-img-element
-                                ? <img src={item.product.images[0]} alt={item.product.nom} className="w-full h-full object-cover" />
+                                ? <Image src={item.product.images[0]} alt={item.product.nom} fill sizes="40px" className="object-cover" />
                                 : <div className="w-full h-full flex items-center justify-center"><Package className="w-5 h-5" /></div>
                               }
                             </div>
@@ -348,8 +348,7 @@ function CommandesContent() {
                   {scanImages.length > 0 ? (
                     <div className="grid grid-cols-3 gap-2">
                       {scanImages.map((img, i) => (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img key={i} src={img} alt="" className="w-full h-16 object-cover rounded-lg" />
+                        <Image key={i} src={img} alt="" width={200} height={64} unoptimized className="w-full h-16 object-cover rounded-lg" />
                       ))}
                     </div>
                   ) : (

@@ -9,7 +9,7 @@ async function getVendeur() {
   return v?.statut === 'APPROUVE' ? v : null
 }
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const vendeur = await getVendeur()
   if (!vendeur) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
   const { id } = await params
@@ -60,8 +60,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             nom: v.nom, couleur: v.couleur || null,
             stock: parseInt(v.stock) || 0, images: v.images || [],
             options: v.options?.length > 0 ? {
-              create: v.options.map((o: any) => ({
-                valeur: o.valeur, stock: parseInt(o.stock) || 0,
+              create: v.options.map((o: { valeur: string; stock: number | string }) => ({
+                valeur: o.valeur, stock: parseInt(String(o.stock)) || 0,
               })),
             } : undefined,
           },

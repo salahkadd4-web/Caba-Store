@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useIsMobile } from '@/app/hooks/useIsMobile'
+import Image from 'next/image'
 import {
   ShoppingCart, Check, X, TrendingDown,
   Package, ChevronRight, Minus, Plus,
@@ -225,7 +226,7 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
         {/* Galerie compacte 4:3 */}
         <div className="relative bg-gray-100 dark:bg-gray-800 rounded-2xl overflow-hidden mb-3" style={{ aspectRatio: '4/3' }}>
           {images[imageIdx]
-            ? <img key={`${images[imageIdx]}-${imageIdx}`} src={images[imageIdx]} alt={produit.nom} className="w-full h-full object-cover" />
+            ? <Image key={`${images[imageIdx]}-${imageIdx}`} src={images[imageIdx]} alt={produit.nom} fill priority sizes="100vw" className="object-cover" />
             : <Package className="w-20 h-20 text-gray-300 dark:text-gray-600 absolute inset-0 m-auto" />
           }
           {previewVariant && (
@@ -242,7 +243,7 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
             {images.map((img, i) => (
               <button key={i} onClick={() => setImageIdx(i)}
                 className={`w-14 h-14 rounded-xl overflow-hidden border-2 shrink-0 transition ${i === imageIdx ? 'border-blue-500 shadow-md' : 'border-gray-200 dark:border-gray-700 opacity-60'}`}>
-                <img src={img} alt="" className="w-full h-full object-cover" />
+                <Image src={img} alt="" width={56} height={56} className="w-full h-full object-cover" />
               </button>
             ))}
           </div>
@@ -274,7 +275,7 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
 
         {/* Paliers dégressifs */}
         {hasTiers && (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/30 border border-blue-100 dark:border-blue-900 rounded-xl p-3 mb-4">
+          <div className="bg-linear-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/30 border border-blue-100 dark:border-blue-900 rounded-xl p-3 mb-4">
             <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-2 flex items-center gap-1">
               <TrendingDown className="w-3 h-3" /> Prix dégressifs
             </p>
@@ -366,7 +367,7 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
                             <button
                               onClick={() => !outOfStock && qt === 0 && upsertLigne(activeVariant.id, activeVariant.nom, activeVariant.couleur, option.stock, 1, option.id, option.valeur, activeVariant.images[0] ?? produit.images[0])}
                               disabled={outOfStock}
-                              className={`min-w-[2.75rem] px-2 h-10 flex items-center justify-center font-semibold text-sm ${outOfStock ? 'cursor-not-allowed line-through text-gray-400' : qt > 0 ? 'cursor-default text-blue-700 dark:text-blue-300' : 'cursor-pointer text-gray-700 dark:text-gray-200'}`}
+                              className={`min-w-11 px-2 h-10 flex items-center justify-center font-semibold text-sm ${outOfStock ? 'cursor-not-allowed line-through text-gray-400' : qt > 0 ? 'cursor-default text-blue-700 dark:text-blue-300' : 'cursor-pointer text-gray-700 dark:text-gray-200'}`}
                             >
                               {option.valeur}
                             </button>
@@ -446,7 +447,7 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
                   {lignes.map(ligne => (
                     <div key={ligne.key} className="flex items-center gap-3 px-4 py-2.5">
                       <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 overflow-hidden shrink-0 flex items-center justify-center">
-                        {ligne.image ? <img src={ligne.image} alt="" className="w-full h-full object-cover" /> : <Package className="w-3.5 h-3.5 text-gray-400" />}
+                        {ligne.image ? <Image src={ligne.image} alt="" width={32} height={32} className="w-full h-full object-cover" /> : <Package className="w-3.5 h-3.5 text-gray-400" />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
@@ -509,9 +510,9 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
 
       {/* GALERIE */}
       <div>
-        <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl aspect-square max-h-[440px] flex items-center justify-center overflow-hidden relative">
+        <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl aspect-square max-h-110 flex items-center justify-center overflow-hidden relative">
           {images[imageIdx]
-            ? <img key={`${images[imageIdx]}-${imageIdx}`} src={images[imageIdx]} alt={produit.nom} className="w-full h-full object-cover transition-opacity duration-300" />
+            ? <Image key={`${images[imageIdx]}-${imageIdx}`} src={images[imageIdx]} alt={produit.nom} fill priority sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover transition-opacity duration-300" />
             : <Package className="w-24 h-24 text-gray-300 dark:text-gray-600" />
           }
           {previewVariant && (
@@ -526,7 +527,7 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
             {images.map((img, i) => (
               <button key={i} onClick={() => setImageIdx(i)}
                 className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition shrink-0 ${i === imageIdx ? 'border-blue-500 shadow-md' : 'border-gray-200 dark:border-gray-700 opacity-60 hover:opacity-100'}`}>
-                <img src={img} alt="" className="w-full h-full object-cover" />
+                <Image src={img} alt="" width={64} height={64} className="w-full h-full object-cover" />
               </button>
             ))}
           </div>
@@ -560,7 +561,7 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
 
         {/* Paliers */}
         {hasTiers && (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/30 border border-blue-100 dark:border-blue-900 rounded-xl p-3">
+          <div className="bg-linear-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/30 border border-blue-100 dark:border-blue-900 rounded-xl p-3">
             <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-2 flex items-center gap-1">
               <TrendingDown className="w-3 h-3" /> Prix dégressifs
             </p>
@@ -655,7 +656,7 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
                             <button
                               onClick={() => !outOfStock && qt === 0 && upsertLigne(activeVariant.id, activeVariant.nom, activeVariant.couleur, option.stock, 1, option.id, option.valeur, activeVariant.images[0] ?? produit.images[0])}
                               disabled={outOfStock}
-                              className={`min-w-[2.5rem] px-2 h-9 flex items-center justify-center font-semibold transition-all ${outOfStock ? 'cursor-not-allowed line-through text-gray-400' : qt > 0 ? 'cursor-default text-blue-700 dark:text-blue-300' : 'cursor-pointer text-gray-700 dark:text-gray-200'}`}
+                              className={`min-w-10 px-2 h-9 flex items-center justify-center font-semibold transition-all ${outOfStock ? 'cursor-not-allowed line-through text-gray-400' : qt > 0 ? 'cursor-default text-blue-700 dark:text-blue-300' : 'cursor-pointer text-gray-700 dark:text-gray-200'}`}
                             >
                               {option.valeur}
                             </button>
@@ -709,7 +710,7 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
                   {lignes.map(ligne => (
                     <div key={ligne.key} className="flex items-center gap-3 px-4 py-2.5 group">
                       <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-800 overflow-hidden shrink-0 flex items-center justify-center">
-                        {ligne.image ? <img src={ligne.image} alt="" className="w-full h-full object-cover" /> : <Package className="w-4 h-4 text-gray-400" />}
+                        {ligne.image ? <Image src={ligne.image} alt="" width={36} height={36} className="w-full h-full object-cover" /> : <Package className="w-4 h-4 text-gray-400" />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">

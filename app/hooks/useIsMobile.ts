@@ -8,7 +8,7 @@ export function useIsMobile() {
   useEffect(() => {
     const check = () => {
       // Détecte Capacitor (app native) ou petite fenêtre
-      const isCapacitor = !!(window as any).Capacitor?.isNativePlatform?.()
+      const isCapacitor = !!(window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.()
       const isSmallScreen = window.innerWidth < 768
       setIsMobile(isCapacitor || isSmallScreen)
     }

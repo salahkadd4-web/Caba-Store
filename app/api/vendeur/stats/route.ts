@@ -26,7 +26,6 @@ export async function GET() {
     commandesLivrees,
     caData,
     top5Produits,
-    commandesParMois,
   ] = await Promise.all([
     prisma.product.count({ where: { vendeurId: vid } }),
     prisma.product.count({ where: { vendeurId: vid, actif: true } }),

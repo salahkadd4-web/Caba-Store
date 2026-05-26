@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { CheckCircle2, Loader2, MapPin, Package, Phone, RefreshCw, Search, Tag, TrendingDown, Truck, User, Wrench, X, XCircle } from 'lucide-react'
+import Image from 'next/image'
+import { CheckCircle2, Loader2, MapPin, Package, Phone, RefreshCw, Search, TrendingDown, Truck, User, Wrench, X, XCircle } from 'lucide-react'
 
 interface OrderItem {
   id: string; quantite: number; prix: number
@@ -62,7 +63,7 @@ export default function VendeurCommandesPage() {
     if (abortRef.current) abortRef.current.abort()
     abortRef.current = new AbortController()
 
-    isDebounce ? setSearching(true) : setLoading(true)
+    if (isDebounce) setSearching(true); else setLoading(true)
     try {
       const params = new URLSearchParams()
       if (statut)          params.set('statut',     statut)
@@ -73,21 +74,26 @@ export default function VendeurCommandesPage() {
         signal: abortRef.current.signal,
       })
       if (res.ok) setCommandes(await res.json())
-    } catch (e: any) {
-      if (e.name !== 'AbortError') console.error(e)
+    } catch (e) {
+      if (e instanceof Error && e.name !== 'AbortError') console.error(e)
     } finally {
       setLoading(false)
       setSearching(false)
     }
   }, [statut, debouncedSearch, filterCategory])
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     const res = await fetch('/api/vendeur/categories')
     if (res.ok) { const d = await res.json(); setCategories(d.approuvees || []) }
-  }
+  }, [])
 
-  useEffect(() => { fetchCategories() }, [])
-  useEffect(() => { fetchData(!!debouncedSearch) }, [fetchData])
+  useEffect(() => {
+    void (async () => { await fetchCategories() })()
+  }, [fetchCategories])
+
+  useEffect(() => {
+    void (async () => { await fetchData(!!debouncedSearch) })()
+  }, [fetchData, debouncedSearch])
 
   const handleStatutChange = async (commandeId: string, newStatut: string) => {
     setUpdatingId(commandeId)
@@ -309,7 +315,7 @@ export default function VendeurCommandesPage() {
                     <div key={item.id} className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 rounded-xl p-2">
                       <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 relative bg-gray-200 dark:bg-gray-700">
                         {img
-                          ? <img src={img} alt={item.product.nom} className="w-full h-full object-cover" />
+                          ? <Image src={img} alt={item.product.nom} fill sizes="48px" className="object-cover" />
                           : <div className="w-full h-full flex items-center justify-center text-xl"><Package className="w-8 h-8" /></div>
                         }
                         {item.variant?.couleur && (

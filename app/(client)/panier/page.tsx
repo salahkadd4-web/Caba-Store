@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   ShoppingCart, X, Minus, Plus, TrendingDown,
   Ruler, Package, ArrowLeft,
@@ -172,9 +173,9 @@ function ProductEditor({
 
       {/* Image + swatches couleur */}
       <div className="flex gap-3">
-        <div className="w-20 h-20 rounded-xl bg-gray-100 dark:bg-gray-800 overflow-hidden shrink-0 flex items-center justify-center">
+        <div className="relative w-20 h-20 rounded-xl bg-gray-100 dark:bg-gray-800 overflow-hidden shrink-0 flex items-center justify-center">
           {imgPreview
-            ? <img src={imgPreview} alt="" className="w-full h-full object-cover" />
+            ? <Image src={imgPreview} alt="" fill sizes="80px" className="object-cover" />
             : <Package className="w-8 h-8 text-gray-300 dark:text-gray-600" />
           }
         </div>
@@ -250,7 +251,7 @@ function ProductEditor({
                       <button type="button"
                         onClick={() => !outStock && qt === 0 && handleChange(activeVariant.id, opt.id, 1)}
                         disabled={outStock || (qt > 0)}
-                        className={`min-w-[2.5rem] px-3 h-9 flex items-center justify-center font-semibold transition-all ${
+                        className={`min-w-10 px-3 h-9 flex items-center justify-center font-semibold transition-all ${
                           outStock ? 'cursor-not-allowed line-through text-gray-400' : qt > 0 ? 'cursor-default text-blue-700 dark:text-blue-300' : 'cursor-pointer text-gray-700 dark:text-gray-200'
                         }`}>
                         {opt.valeur}
@@ -375,7 +376,7 @@ function ProductCard({
       <div className="flex gap-3 p-4">
         <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-xl overflow-hidden shrink-0 flex items-center justify-center relative">
           {mainImg
-            ? <img src={mainImg} alt={product.nom} className="w-full h-full object-cover" />
+            ? <Image src={mainImg} alt={product.nom} fill sizes="80px" className="object-cover" />
             : <Package className="w-8 h-8 text-gray-300 dark:text-gray-600" />
           }
           {items.filter(i => i.variant?.couleur).slice(0, 3).map((i, idx) => (

@@ -36,8 +36,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
               nom: v.nom, couleur: v.couleur || null,
               stock: parseInt(v.stock) || 0, images: v.images || [],
               options: v.options?.length > 0 ? {
-                create: v.options.map((o: any) => ({
-                  valeur: o.valeur, stock: parseInt(o.stock) || 0,
+                create: v.options.map((o: { valeur: string; stock: number | string }) => ({
+                  valeur: o.valeur, stock: parseInt(String(o.stock)) || 0,
                 })),
               } : undefined,
             },

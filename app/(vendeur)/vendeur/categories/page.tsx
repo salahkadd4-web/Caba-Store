@@ -48,8 +48,8 @@ export default function VendeurCategoriesPage() {
       setNom(''); setDescription('')
       setShowForm(false)
       fetchData()
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erreur')
     } finally {
       setSaving(false)
     }
@@ -109,7 +109,7 @@ export default function VendeurCategoriesPage() {
           <p className="p-4 text-xs text-gray-400 text-center">Chargement...</p>
         ) : mesCats.length === 0 ? (
           <p className="p-8 text-xs text-gray-400 text-center">
-            Vous n'avez pas encore proposé de catégorie.
+            Vous n&apos;avez pas encore proposé de catégorie.
           </p>
         ) : (
           <div className="divide-y divide-gray-50 dark:divide-gray-800">
@@ -124,7 +124,7 @@ export default function VendeurCategoriesPage() {
                     </p>
                     {c.statut === 'REFUSEE' && (
                       <p className="text-xs text-red-500 dark:text-red-400 mt-1">
-                        Cette catégorie a été refusée par l'admin.
+                        Cette catégorie a été refusée par l&apos;admin.
                       </p>
                     )}
                   </div>
@@ -154,7 +154,7 @@ export default function VendeurCategoriesPage() {
                 <div className="p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 rounded-xl text-sm">{error}</div>
               )}
               <div className="p-3 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 rounded-xl text-xs">
-                ℹ️ La catégorie sera ajoutée seulement après approbation par l'administrateur.
+                ℹ️ La catégorie sera ajoutée seulement après approbation par l&apos;administrateur.
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Nom de la catégorie *</label>

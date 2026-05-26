@@ -1,21 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
+import { Prisma } from '@/generated/prisma/client'
 
-async function checkAdmin(req: NextRequest) {
+async function checkAdmin() {
   const token = await getAuthToken()
   return token?.role === 'ADMIN' ? token : null
 }
 
 export async function GET(req: NextRequest) {
   try {
-    const token = await checkAdmin(req)
+    const token = await checkAdmin()
     if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
     const { searchParams } = new URL(req.url)
     const search = searchParams.get('search') || ''
 
-    const where: any = { role: 'CLIENT' }
+    const where: Prisma.UserWhereInput = { role: 'CLIENT' }
     if (search) {
       where.OR = [
         { nom:       { contains: search, mode: 'insensitive' } },

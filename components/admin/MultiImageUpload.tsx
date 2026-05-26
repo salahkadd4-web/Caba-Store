@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import Image from 'next/image'
 import { FolderOpen, X } from 'lucide-react'
 
 interface MultiImageUploadProps {
@@ -58,11 +59,15 @@ export default function MultiImageUpload({ values, onChange, label = 'Images' }:
         <div className="grid grid-cols-3 gap-2 mb-3">
           {values.map((url, index) => (
             <div key={index} className="relative group">
-              <img
-                src={url}
-                alt={`image ${index + 1}`}
-                className="w-full h-24 object-cover rounded-lg border"
-              />
+              <div className="relative w-full h-24">
+                <Image
+                  src={url}
+                  alt={`image ${index + 1}`}
+                  fill
+                  sizes="(max-width: 768px) 33vw, 200px"
+                  className="object-cover rounded-lg border"
+                />
+              </div>
               <button
                 type="button"
                 onClick={() => removeImage(index)}

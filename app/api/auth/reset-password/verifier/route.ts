@@ -5,7 +5,7 @@ import { rateLimit, rateLimits, sanitize } from '@/lib/security'
 
 export async function POST(req: NextRequest) {
   // Rate limiting strict : 5 tentatives / 10 min
-  const limited = rateLimit(req, rateLimits.otp)
+  const limited = await rateLimit(req, rateLimits.otp)
   if (limited) return limited
 
   try {

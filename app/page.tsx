@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { prisma } from '@/lib/prisma'
 import FavoriIconButton from '@/components/client/FavoriIconButton'
 import CartIconButton from '@/components/client/CartIconButton'
@@ -18,7 +19,7 @@ export default async function HomePage() {
         <SuitcaseAnimationBg />
       
         {/* ── Fond gradient (gardé, il se superpose à l'animation) ── */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black via-gray-900 to-black opacity-40" />
+        <div className="absolute inset-0 bg-linear-to-b from-black via-gray-900 to-black opacity-40" />
       
         {/* ── Contenu identique à avant — z-10 pour passer au-dessus ── */}
         <div className="relative z-10 w-full max-w-5xl mx-auto flex flex-col items-center text-center">
@@ -54,13 +55,15 @@ export default async function HomePage() {
       {/* ── Catégories ───────────────────────────────────── */}
       <section className="max-w-7xl mx-auto px-6 py-24">
         <div className="text-center mb-16">
-          <img
+          <Image
             src="/logo_noir.png"
             alt="CabaStore Logo"
+            width={120}
+            height={80}
             className="h-20 w-auto object-contain mx-auto mb-4 dark:invert"
           />
           <p className="text-gray-400 dark:text-gray-500 uppercase tracking-[0.4em] text-xs mb-4">Parcourir</p>
-          <h2 className="text-4xl font-extralight tracking-[0.1em] text-black dark:text-white">Catégories</h2>
+          <h2 className="text-4xl font-extralight tracking-widest text-black dark:text-white">Catégories</h2>
           <div className="w-12 h-px bg-black dark:bg-white mx-auto mt-6" />
         </div>
         <CategoriesSection />
@@ -69,20 +72,22 @@ export default async function HomePage() {
       {/* ── Bannière ─────────────────────────────────────── */}
       <div className="bg-black dark:bg-gray-900 py-16 px-6 text-center border-y border-gray-800">
         <p className="text-gray-500 uppercase tracking-[0.5em] text-xs mb-4">Notre Promesse</p>
-        <h2 className="text-3xl md:text-5xl font-extralight text-white tracking-wider">L'Excellence, Toujours</h2>
+        <h2 className="text-3xl md:text-5xl font-extralight text-white tracking-wider">L&apos;Excellence, Toujours</h2>
       </div>
 
       {/* ── Produits récents ─────────────────────────────── */}
       <section className="bg-gray-50 dark:bg-gray-900 py-24 px-6 transition-colors duration-300">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <img
+            <Image
               src="/logo_noir.png"
               alt="CabaStore Logo"
+              width={120}
+              height={80}
               className="h-20 w-auto object-contain mx-auto mb-4 dark:invert"
             />
             <p className="text-gray-400 dark:text-gray-500 uppercase tracking-[0.4em] text-xs mb-4">Nouveautés</p>
-            <h2 className="text-4xl font-extralight tracking-[0.1em] text-black dark:text-white">Dernières Arrivées</h2>
+            <h2 className="text-4xl font-extralight tracking-widest text-black dark:text-white">Dernières Arrivées</h2>
             <div className="w-12 h-px bg-black dark:bg-white mx-auto mt-6" />
           </div>
           <ProduitsSection />
@@ -103,7 +108,7 @@ export default async function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
             <div>
               <h3 className="text-lg font-extralight tracking-[0.5em] uppercase mb-4">CabaStore</h3>
-              <p className="text-gray-500 text-sm font-light leading-relaxed">L'excellence à portée de main.</p>
+              <p className="text-gray-500 text-sm font-light leading-relaxed">L&apos;excellence à portée de main.</p>
             </div>
             <div>
               <h4 className="text-xs uppercase tracking-[0.3em] text-gray-400 mb-4">Navigation</h4>
@@ -179,7 +184,7 @@ async function CategoriesSection() {
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 {cat.image ? (
-                  <img src={cat.image} alt={cat.nom} className="w-8 h-8 rounded-full object-cover" />
+                  <Image src={cat.image} alt={cat.nom} width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
                     <Tag className="w-4 h-4 text-gray-400" />
@@ -213,10 +218,12 @@ async function CategoriesSection() {
                     {/* Image */}
                     <div className="relative h-40 bg-gray-100 dark:bg-gray-700 overflow-hidden">
                       {produit.images[0] ? (
-                        <img
+                        <Image
                           src={produit.images[0]}
                           alt={produit.nom}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          fill
+                          sizes="160px"
+                          className="object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
@@ -332,10 +339,12 @@ async function ProduitsSection() {
             {/* Image */}
             <div className="relative h-48 bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
               {produit.images[0] ? (
-                <img
+                <Image
                   src={produit.images[0]}
                   alt={produit.nom}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  fill
+                  sizes="(min-width: 768px) 25vw, 50vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
                 />
               ) : (
                 <Package className="w-14 h-14" />

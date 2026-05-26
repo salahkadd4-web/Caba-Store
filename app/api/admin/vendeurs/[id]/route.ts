@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 
 // GET /api/admin/vendeurs/[id] — détail d'un vendeur
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth()

@@ -15,7 +15,7 @@ export default function FavoriIconButton({ produitId }: { produitId: string }) {
     const check = async () => {
       const res = await fetch('/api/favoris')
       const data = await res.json()
-      setIsFavori(!!data.find((f: any) => f.productId === produitId))
+      setIsFavori(!!(data as { productId: string }[]).find((f) => f.productId === produitId))
     }
     check()
   }, [session, produitId])

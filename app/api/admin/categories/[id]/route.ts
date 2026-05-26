@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
 
-async function checkAdmin(req: NextRequest) {
+async function checkAdmin() {
   const token = await getAuthToken()
   return token?.role === 'ADMIN' ? token : null
 }
@@ -13,7 +13,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const token = await checkAdmin(req)
+    const token = await checkAdmin()
     if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
     const { id } = await params
@@ -50,7 +50,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const token = await checkAdmin(req)
+    const token = await checkAdmin()
     if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
     const { id } = await params
@@ -71,11 +71,11 @@ export async function PUT(
 
 // DELETE — Supprimer une catégorie
 export async function DELETE(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const token = await checkAdmin(req)
+    const token = await checkAdmin()
     if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
     const { id } = await params

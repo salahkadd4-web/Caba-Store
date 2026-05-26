@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import MultiImageUpload from '@/components/admin/MultiImageUpload'
 import {
-  Plus, Pencil, Trash2, Eye, EyeOff, TrendingDown, Palette,
-  Package, Store, ShoppingBag, Check, X, AlertTriangle,
-  ClipboardList, Ruler, ChevronDown, ChevronUp,
+  Plus, Pencil, Eye, EyeOff, TrendingDown, Palette,
+  Package, X, AlertTriangle,
+  ClipboardList, Ruler,
 } from 'lucide-react'
 
 type Category = { id: string; nom: string }
@@ -13,12 +14,15 @@ type VendeurOption = { id: string; nomBoutique: string | null; user: { nom: stri
 type VariantOption = { valeur: string; stock: string }
 type Variant = { id?: string; nom: string; couleur: string; stock: string; images: string[]; options: VariantOption[] }
 type PrixTier = { minQte: string; maxQte: string; prix: string }
+type PrixTierData = { minQte: number; maxQte: number | null; prix: number }
+type VariantOptionData = { valeur: string; stock: number }
 type Product = {
   id: string; nom: string; description: string | null
   prix: number; stock: number; actif: boolean
   images: string[]; categoryId: string
-  prixVariables: any
-  variants: { id: string; nom: string; couleur: string | null; stock: number; images: string[] }[]
+  typeOption?: string | null
+  prixVariables: PrixTierData[] | null
+  variants: { id: string; nom: string; couleur: string | null; stock: number; images: string[]; options?: VariantOptionData[] }[]
   category: Category
   vendeur?: { id: string; nomBoutique: string | null } | null
 }
@@ -51,12 +55,12 @@ export default function AdminProduitsPage() {
   const [adminOnly,      setAdminOnly]       = useState(false)
   const [search,         setSearch]          = useState('')
 
-  const fetchVendeurs = async () => {
+  const fetchVendeurs = useCallback(async () => {
     const res = await fetch('/api/admin/vendeurs?statut=APPROUVE')
     if (res.ok) setVendeurs(await res.json())
-  }
+  }, [])
 
-  const fetchData = async (vendeurId = filterVendeur, isAdminOnly = adminOnly) => {
+  const fetchData = useCallback(async (vendeurId = filterVendeur, isAdminOnly = adminOnly) => {
     setLoading(true)
     const params = new URLSearchParams()
     if (vendeurId)   params.set('vendeurId', vendeurId)
@@ -68,10 +72,10 @@ export default function AdminProduitsPage() {
     setProduits(await produitsRes.json())
     setCategories(await catsRes.json())
     setLoading(false)
-  }
+  }, [filterVendeur, adminOnly])
 
-  useEffect(() => { fetchVendeurs(); fetchData() }, [])
-  useEffect(() => { fetchData(filterVendeur, adminOnly) }, [filterVendeur, adminOnly])
+  useEffect(() => { fetchVendeurs() }, [fetchVendeurs])
+  useEffect(() => { fetchData(filterVendeur, adminOnly) }, [fetchData, filterVendeur, adminOnly])
 
   const filtered = produits.filter(p => {
     const matchActif    = showInactifs ? !p.actif : p.actif
@@ -92,16 +96,16 @@ export default function AdminProduitsPage() {
   const openEdit = (p: Product) => {
     setEditProduit(p)
     setForm({ nom: p.nom, description: p.description || '', prix: p.prix.toString(),
-      stock: p.stock.toString(), images: p.images.join(', '), categoryId: p.categoryId, typeOption: (p as any).typeOption || '' })
+      stock: p.stock.toString(), images: p.images.join(', '), categoryId: p.categoryId, typeOption: p.typeOption || '' })
     setPrixTiers(
       Array.isArray(p.prixVariables)
-        ? p.prixVariables.map((t: any) => ({ minQte: String(t.minQte), maxQte: String(t.maxQte ?? ''), prix: String(t.prix) }))
+        ? p.prixVariables.map((t) => ({ minQte: String(t.minQte), maxQte: String(t.maxQte ?? ''), prix: String(t.prix) }))
         : []
     )
     setVariants(
       p.variants.map(v => ({
         id: v.id, nom: v.nom, couleur: v.couleur || '', stock: String(v.stock), images: v.images,
-        options: (v as any).options?.map((o: any) => ({ valeur: o.valeur, stock: String(o.stock) })) ?? [],
+        options: v.options?.map((o) => ({ valeur: o.valeur, stock: String(o.stock) })) ?? [],
       }))
     )
     setActiveTab('infos'); setError(''); setShowModal(true)
@@ -189,12 +193,12 @@ export default function AdminProduitsPage() {
           <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher par nom..."
             className="flex-1 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
           <select value={filterVendeur} onChange={e => { setFilterVendeur(e.target.value); setAdminOnly(false) }} disabled={adminOnly}
-            className="border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 min-w-[200px] disabled:opacity-40">
+            className="border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 min-w-50 disabled:opacity-40">
             <option value="">Tous les vendeurs</option>
             {vendeurs.map(v => <option key={v.id} value={v.id}>{v.nomBoutique || `${v.user.prenom} ${v.user.nom}`}</option>)}
           </select>
           <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
-            className="border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 min-w-[180px]">
+            className="border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 min-w-45">
             <option value="">Toutes les catégories</option>
             {categories.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
           </select>
@@ -228,8 +232,8 @@ export default function AdminProduitsPage() {
               <tr key={produit.id} className={`hover:bg-gray-50 dark:hover:bg-gray-800 transition ${!produit.actif ? 'opacity-60' : ''}`}>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden shrink-0">
-                      {produit.images[0] ? <img src={produit.images[0]} alt={produit.nom} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Package className="w-5 h-5 text-gray-400" /></div>}
+                    <div className="relative w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden shrink-0">
+                      {produit.images[0] ? <Image src={produit.images[0]} alt={produit.nom} fill sizes="40px" className="object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Package className="w-5 h-5 text-gray-400" /></div>}
                     </div>
                     <div>
                       <p className="font-medium text-gray-800 dark:text-gray-100">{produit.nom}</p>
@@ -291,8 +295,8 @@ export default function AdminProduitsPage() {
         {filtered.map(produit => (
           <div key={produit.id} className={`bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 ${!produit.actif ? 'opacity-60' : ''}`}>
             <div className="flex items-start gap-3 mb-3">
-              <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden shrink-0">
-                {produit.images[0] ? <img src={produit.images[0]} alt={produit.nom} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Package className="w-5 h-5 text-gray-400" /></div>}
+              <div className="relative w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden shrink-0">
+                {produit.images[0] ? <Image src={produit.images[0]} alt={produit.nom} fill sizes="48px" className="object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Package className="w-5 h-5 text-gray-400" /></div>}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-gray-800 dark:text-gray-100 text-sm truncate">{produit.nom}</p>
@@ -398,7 +402,7 @@ export default function AdminProduitsPage() {
                     </div>
                     {prixTiers.length === 0 ? (
                       <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
-                        Aucun palier — cliquez "Ajouter un palier" pour activer les prix dégressifs
+                        Aucun palier — cliquez &quot;Ajouter un palier&quot; pour activer les prix dégressifs
                       </p>
                     ) : (
                       <div className="space-y-2">
@@ -419,7 +423,7 @@ export default function AdminProduitsPage() {
                             </button>
                           </div>
                         ))}
-                        <p className="text-xs text-gray-400 mt-1">Laissez "Qté max" vide pour "et plus" (ex: 10+ unités)</p>
+                        <p className="text-xs text-gray-400 mt-1">Laissez &quot;Qté max&quot; vide pour &quot;et plus&quot; (ex: 10+ unités)</p>
                       </div>
                     )}
                   </div>
@@ -431,13 +435,13 @@ export default function AdminProduitsPage() {
                 <>
                   {/* Type d'option */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
-                      <Ruler className="w-4 h-4" />Type d'option des variantes
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 items-center gap-1.5">
+                      <Ruler className="w-4 h-4" />Type d&apos;option des variantes
                     </label>
                     <input type="text" value={form.typeOption} onChange={e => setForm({...form, typeOption: e.target.value})}
                       placeholder="ex: Taille, Pointure, Volume, Contenance..."
                       className="w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
-                    <p className="text-xs text-gray-400 mt-1">Laissez vide si les variantes n'ont pas d'options (ex: couleurs simples sans taille)</p>
+                    <p className="text-xs text-gray-400 mt-1">Laissez vide si les variantes n&apos;ont pas d&apos;options (ex: couleurs simples sans taille)</p>
                   </div>
 
                   <div className="flex items-center justify-between mb-1">
@@ -453,7 +457,7 @@ export default function AdminProduitsPage() {
 
                   {variants.length === 0 ? (
                     <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
-                      Aucune variante — ce produit n'a pas de couleurs ou parfums
+                      Aucune variante — ce produit n&apos;a pas de couleurs ou parfums
                     </p>
                   ) : (
                     <div className="space-y-3">
@@ -513,7 +517,7 @@ export default function AdminProduitsPage() {
                                 </button>
                               </div>
                               {v.options.length === 0 ? (
-                                <p className="text-xs text-gray-400 italic">Aucune option — cliquez "Ajouter"</p>
+                                <p className="text-xs text-gray-400 italic">Aucune option — cliquez &quot;Ajouter&quot;</p>
                               ) : (
                                 <div className="flex flex-wrap gap-2">
                                   {v.options.map((opt, oi) => (

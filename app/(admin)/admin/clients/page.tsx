@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import Image from 'next/image'
 import { Calendar, Eye, Heart, Mail, Phone, Search, Trash2, User, X } from 'lucide-react'
 
 type Client = {
@@ -12,7 +13,7 @@ type Client = {
   avatar:    string | null
   createdAt: string
   _count: { orders: number; favorites: number }
-  orders?:   any[]
+  orders?:   unknown[]
 }
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -45,8 +46,8 @@ export default function AdminClientsPage() {
       if (debouncedSearch) params.set('search', debouncedSearch)
       const res = await fetch(`/api/admin/clients?${params}`, { signal: abortRef.current.signal })
       if (res.ok) setClients(await res.json())
-    } catch (e: any) {
-      if (e.name !== 'AbortError') console.error(e)
+    } catch (e) {
+      if (e instanceof Error && e.name !== 'AbortError') console.error(e)
     } finally {
       setLoading(false)
       setSearching(false)
@@ -144,9 +145,9 @@ export default function AdminClientsPage() {
                   {/* Identité */}
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 bg-purple-100 dark:bg-purple-950 rounded-full flex items-center justify-center shrink-0 overflow-hidden">
+                      <div className="relative w-9 h-9 bg-purple-100 dark:bg-purple-950 rounded-full flex items-center justify-center shrink-0 overflow-hidden">
                         {client.avatar
-                          ? <img src={client.avatar} alt="" className="w-full h-full rounded-full object-cover" />
+                          ? <Image src={client.avatar} alt="" fill sizes="36px" className="rounded-full object-cover" />
                           : <span className="text-purple-600 dark:text-purple-400 font-bold text-sm">{client.prenom[0]}{client.nom[0]}</span>
                         }
                       </div>
@@ -216,9 +217,9 @@ export default function AdminClientsPage() {
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-800 shrink-0">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-purple-100 dark:bg-purple-950 rounded-full flex items-center justify-center overflow-hidden shrink-0">
+                <div className="relative w-14 h-14 bg-purple-100 dark:bg-purple-950 rounded-full flex items-center justify-center overflow-hidden shrink-0">
                   {selectedClient.avatar
-                    ? <img src={selectedClient.avatar} alt="" className="w-full h-full rounded-full object-cover" />
+                    ? <Image src={selectedClient.avatar} alt="" fill sizes="56px" className="rounded-full object-cover" />
                     : <span className="text-purple-600 dark:text-purple-400 font-bold text-xl">{selectedClient.prenom[0]}{selectedClient.nom[0]}</span>
                   }
                 </div>

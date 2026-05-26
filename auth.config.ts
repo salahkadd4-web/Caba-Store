@@ -37,9 +37,9 @@ export const authConfig = {
     // Ici on expose juste les champs dans la session
     async session({ session, token }) {
       if (token) {
-        session.user.id   = token.id   as string
-        session.user.role = token.role as string
-        ;(session.user as any).telephone = token.telephone ?? null
+        session.user.id        = token.id   as string
+        session.user.role      = token.role as string
+        session.user.telephone = token.telephone ?? null
       }
       return session
     },

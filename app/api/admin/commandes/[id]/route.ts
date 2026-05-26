@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
 import { registerProductReference } from '@/lib/scanApi'
 
-async function checkAdmin(req: NextRequest) {
+async function checkAdmin() {
   const token = await getAuthToken()
   return token?.role === 'ADMIN' ? token : null
 }
@@ -18,7 +18,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const token = await checkAdmin(req)
+    const token = await checkAdmin()
     if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
     const { id } = await params
@@ -111,11 +111,12 @@ export async function PATCH(
               const refResult = await registerProductReference(id, item.product.id, imageB64)
               if (refResult) console.log(`✅ Référence enregistrée — commande ${id.slice(-6)} — ${item.product.nom}`)
             }
-          } catch (refError: any) {
-            if (refError?.cause?.code === 'UND_ERR_CONNECT_TIMEOUT') {
+          } catch (refError) {
+            const err = refError as { cause?: { code?: string }; message?: string }
+            if (err?.cause?.code === 'UND_ERR_CONNECT_TIMEOUT') {
               console.warn(`⚠️ Timeout Cloudinary — référence non enregistrée pour commande ${id.slice(-6)}`)
             } else {
-              console.warn('Référence ML non enregistrée:', refError?.message || refError)
+              console.warn('Référence ML non enregistrée:', err?.message || refError)
             }
           }
         })

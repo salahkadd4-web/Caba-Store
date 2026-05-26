@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
-import { sendOTP, verifyOTP, validatePhone } from '@/lib/twilio'
+import { sendOTP, verifyOTP } from '@/lib/twilio'
 import { sendConfirmationEmail } from '@/lib/mail'
 import crypto from 'crypto'
 import {
@@ -13,7 +13,7 @@ const IS_DEV = process.env.NODE_ENV === 'development'
 const DEV_OTP_CODE = '000000'
 
 export async function POST(req: NextRequest) {
-  const limited = rateLimit(req, rateLimits.auth)
+  const limited = await rateLimit(req, rateLimits.auth)
   if (limited) return limited
 
   try {
@@ -147,7 +147,7 @@ export async function POST(req: NextRequest) {
 
     // ── Étape 2 : Vérification OTP + création compte ────
     if (etape === 2) {
-      const otpLimited = rateLimit(req, rateLimits.otp)
+      const otpLimited = await rateLimit(req, rateLimits.otp)
       if (otpLimited) return otpLimited
 
       const identifiant = email || telephone

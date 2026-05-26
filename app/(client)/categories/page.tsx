@@ -1,5 +1,6 @@
 // app/(client)/categories/page.tsx
 import Link from 'next/link'
+import Image from 'next/image'
 import { prisma } from '@/lib/prisma'
 import { Banknote, Package, Tag } from 'lucide-react'
 
@@ -60,9 +61,11 @@ export default async function CategoriesPage() {
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-3">
                     {cat.image ? (
-                      <img
+                      <Image
                         src={cat.image}
                         alt={cat.nom}
+                        width={32}
+                        height={32}
                         className="w-8 h-8 rounded-full object-cover"
                       />
                     ) : (
@@ -104,10 +107,12 @@ export default async function CategoriesPage() {
                         {/* Image */}
                         <div className="relative h-40 bg-gray-100 dark:bg-gray-700 overflow-hidden">
                           {produit.images[0] ? (
-                            <img
+                            <Image
                               src={produit.images[0]}
                               alt={produit.nom}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              fill
+                              sizes="160px"
+                              className="object-cover group-hover:scale-105 transition-transform duration-500"
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">

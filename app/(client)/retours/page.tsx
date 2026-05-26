@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   Banknote, Check, CheckCircle2, Loader2, Package,
   RefreshCw, Wrench, XCircle, AlertCircle, Info,
@@ -363,10 +364,9 @@ function RetourContent() {
                   />
 
                   {/* Image produit */}
-                  <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-xl overflow-hidden shrink-0 flex items-center justify-center">
+                  <div className="relative w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-xl overflow-hidden shrink-0 flex items-center justify-center">
                     {image
-                      // eslint-disable-next-line @next/next/no-img-element
-                      ? <img src={image} alt={item.product.nom} className="w-full h-full object-cover" />
+                      ? <Image src={image} alt={item.product.nom} fill sizes="48px" className="object-cover" />
                       : <Package className="w-5 h-5 text-gray-300 dark:text-gray-600" />
                     }
                   </div>
@@ -506,10 +506,9 @@ function RetourContent() {
               <p className="text-sm font-bold text-gray-700 dark:text-gray-200">Article à retourner</p>
             </div>
             <div className="flex items-center gap-3 px-5 py-4">
-              <div className="w-14 h-14 bg-gray-100 dark:bg-gray-800 rounded-xl overflow-hidden shrink-0 flex items-center justify-center">
+              <div className="relative w-14 h-14 bg-gray-100 dark:bg-gray-800 rounded-xl overflow-hidden shrink-0 flex items-center justify-center">
                 {selectedItem.product.images?.[0]
-                  // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={selectedItem.product.images[0]} alt="" className="w-full h-full object-cover" />
+                  ? <Image src={selectedItem.product.images[0]} alt="" fill sizes="56px" className="object-cover" />
                   : <Package className="w-6 h-6 text-gray-400" />
                 }
               </div>

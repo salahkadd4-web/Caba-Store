@@ -120,15 +120,15 @@ export default function AdminVendeursPage() {
   const fetchVendeurs = useCallback(async () => {
     if (abortRef.current) abortRef.current.abort()
     abortRef.current = new AbortController()
-    debouncedSearch ? setSearching(true) : setLoading(true)
+    if (debouncedSearch) setSearching(true); else setLoading(true)
     try {
       const params = new URLSearchParams()
       if (filterStatut)    params.set('statut', filterStatut)
       if (debouncedSearch) params.set('search', debouncedSearch)
       const res = await fetch(`/api/admin/vendeurs?${params}`, { signal: abortRef.current.signal })
       if (res.ok) setVendeurs(await res.json())
-    } catch (e: any) {
-      if (e.name !== 'AbortError') console.error(e)
+    } catch (e) {
+      if (e instanceof Error && e.name !== 'AbortError') console.error(e)
     } finally {
       setLoading(false)
       setSearching(false)
@@ -241,7 +241,7 @@ export default function AdminVendeursPage() {
     <div>
       {/* Toast */}
       {toastMsg && (
-        <div className="fixed top-4 right-4 z-[100] bg-gray-900 text-white text-sm px-4 py-3 rounded-xl shadow-lg">
+        <div className="fixed top-4 right-4 z-100 bg-gray-900 text-white text-sm px-4 py-3 rounded-xl shadow-lg">
           {toastMsg}
         </div>
       )}
@@ -431,7 +431,7 @@ export default function AdminVendeursPage() {
                       ['Téléphone',  selected.user.telephone || '—'],
                       ['Inscription', new Date(selected.createdAt).toLocaleDateString('fr-DZ')],
                       ['Produits',   String(selected._count?.products ?? 0)],
-                      ['Commandes',  String((selected as any).totalCommandes ?? 0)],
+                      ['Commandes',  String(selected.totalCommandes ?? 0)],
                     ].map(([k, v]) => (
                       <div key={k} className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
                         <p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">{k}</p>
@@ -442,8 +442,8 @@ export default function AdminVendeursPage() {
 
                   {/* CA */}
                   <div className="bg-gray-900 dark:bg-gray-800 text-white rounded-xl p-3">
-                    <p className="text-xs text-gray-400 mb-0.5">Chiffre d'affaires</p>
-                    <p className="text-xl font-bold">{(selected as any).chiffreAffaire?.toLocaleString('fr-DZ') ?? 0} DA</p>
+                    <p className="text-xs text-gray-400 mb-0.5">Chiffre d&apos;affaires</p>
+                    <p className="text-xl font-bold">{selected.chiffreAffaire?.toLocaleString('fr-DZ') ?? 0} DA</p>
                   </div>
 
                   {/* Note interne */}
@@ -701,7 +701,7 @@ export default function AdminVendeursPage() {
 
       {/* ── Modal action document ─────────────────────────────────────────────── */}
       {docAction && (
-        <div className="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/70 z-60 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md p-5">
             <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 mb-3">
               {docAction.action === 'accepter'
@@ -733,7 +733,7 @@ export default function AdminVendeursPage() {
 
       {/* ── Modal demande de pièces ───────────────────────────────────────────── */}
       {showDocModal && selected && (
-        <div className="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/70 z-60 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white dark:bg-gray-900 flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
               <h3 className="text-base font-bold text-gray-800 dark:text-gray-100">
@@ -745,7 +745,7 @@ export default function AdminVendeursPage() {
             </div>
             <div className="p-5 space-y-4">
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Sélectionnez les documents à demander. Le compte sera bloqué jusqu'à validation.
+                Sélectionnez les documents à demander. Le compte sera bloqué jusqu&apos;à validation.
               </p>
               <div className="space-y-2">
                 {DOC_TYPES.map((doc) => {

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Heart, Package, XCircle } from 'lucide-react'
@@ -59,9 +60,9 @@ export default function FavorisPage() {
             <div key={favori.id}
               className="product-card bg-white dark:bg-gray-900 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-800">
               <Link href={`/produits/${favori.product.id}`}>
-                <div className="h-48 bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
+                <div className="relative h-48 bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
                   {favori.product.images[0] ? (
-                    <img src={favori.product.images[0]} alt={favori.product.nom} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                    <Image src={favori.product.images[0]} alt={favori.product.nom} fill sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw" className="object-cover hover:scale-105 transition-transform duration-500" />
                   ) : (
                     <Package className="w-14 h-14" />
                   )}

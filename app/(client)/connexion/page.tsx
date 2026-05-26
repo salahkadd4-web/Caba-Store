@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 'use client'
 
 import { useState, Suspense, useEffect } from 'react'
@@ -12,9 +13,9 @@ const GOOGLE_WEB_CLIENT_ID = '502936788244-mn58pnn6u9v5ekp3o14ord4778gp7ki3.apps
 const IS_DEV = process.env.NODE_ENV !== 'production'
 
 const DEV_ACCOUNTS = [
-  { role: 'admin',   label: 'Admin',   identifiant: 'cabastoredz31@gmail.com',  motDePasse: 'Salah@2000'   },
-  { role: 'vendeur', label: 'Vendeur', identifiant: 'vendeur.test@caba.dz',     motDePasse: 'Vendeur@2000' },
-  { role: 'client',  label: 'Client',  identifiant: 'client.test@caba.dz',      motDePasse: 'Client@2000'  },
+  { role: 'admin',   label: 'Admin'   },
+  { role: 'vendeur', label: 'Vendeur' },
+  { role: 'client',  label: 'Client'  },
 ] as const
 
 function GuestLink() {
@@ -39,7 +40,7 @@ function GuestLink() {
         href="/"
         className="inline-flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors tracking-wide underline underline-offset-4"
       >
-        Parcourir en tant qu'invité
+        Parcourir en tant qu&apos;invité
       </Link>
     </div>
   )
@@ -62,7 +63,6 @@ function ConnexionContent() {
       try {
         const { Capacitor } = await import('@capacitor/core')
         if (!Capacitor.isNativePlatform()) return
-        // @ts-ignore
         const { SocialLogin } = await import('@capgo/capacitor-social-login')
         await SocialLogin.initialize({ google: { webClientId: GOOGLE_WEB_CLIENT_ID } })
       } catch (e) {
@@ -134,25 +134,25 @@ function ConnexionContent() {
     setError('')
     setLoading(true)
     try {
-      const result = await signIn('credentials', {
-        identifiant: acc.identifiant,
-        motDePasse:  acc.motDePasse,
-        redirect:    false,
+      const res  = await fetch('/api/auth/dev-login', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ role: acc.role }),
       })
-      if (result?.error) {
-        setError(`[DEV] Connexion ${acc.label} échouée : ${result.error}`)
+      const data = await res.json().catch(() => ({}))
+
+      if (!res.ok || !data.ok) {
+        setError(`[DEV] Connexion ${acc.label} indisponible.`)
         return
       }
-      if (result?.ok) {
-        const res     = await fetch('/api/auth/session')
-        const session = await res.json()
-        if (session?.user?.role === 'ADMIN')        router.push('/admin')
-        else if (session?.user?.role === 'VENDEUR') router.push('/vendeur')
-        else                                         router.push('/')
-        router.refresh()
-      }
-    } catch (e: any) {
-      setError(`[DEV] ${e?.message ?? 'Erreur'}`)
+
+      if (data.role === 'ADMIN')        router.push('/admin')
+      else if (data.role === 'VENDEUR') router.push('/vendeur')
+      else                               router.push('/')
+      router.refresh()
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Erreur'
+      setError(`[DEV] ${message}`)
     } finally {
       setLoading(false)
     }
@@ -215,8 +215,15 @@ function ConnexionContent() {
       } else {
         await signIn('google', { callbackUrl: '/' })
       }
-    } catch (err: any) {
-      setError(err?.message || err?.code || JSON.stringify(err))
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message)
+      } else if (typeof err === 'object' && err !== null) {
+        const errorObj = err as { message?: string; code?: string }
+        setError(errorObj.message || errorObj.code || JSON.stringify(err))
+      } else {
+        setError(String(err))
+      }
     } finally {
       setLoadingGoogle(false)
     }
@@ -235,14 +242,14 @@ function ConnexionContent() {
     <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col lg:flex-row transition-colors duration-300">
 
       <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-black dark:bg-gray-900 items-center justify-center p-12 border-r border-gray-800">
-        <div className="absolute z-10 [mask-image:radial-gradient(ellipse_at_center,transparent_-50%,black_10%)]">
+        <div className="absolute z-10 mask-[radial-gradient(ellipse_at_center,transparent_-50%,black_10%)]">
           <Image src="/logo_noir.png" alt="" width={750} height={750}
             className="object-contain invert opacity-30 scale-150" priority />
         </div>
         <div className="relative z-10 text-center text-white">
           <div className="w-12 h-px bg-gray-600 mx-auto my-6" />
           <p className="text-white font-light text-sm tracking-wider drop-shadow-md">
-            L'excellence à portée de main
+            L&apos;excellence à portée de main
           </p>
         </div>
       </div>
@@ -366,7 +373,7 @@ function ConnexionContent() {
             Pas encore de compte ?{' '}
             <Link href="/inscription"
               className="text-black dark:text-white hover:text-gray-600 dark:hover:text-gray-300 underline underline-offset-4 transition-colors">
-              S'inscrire
+              S&apos;inscrire
             </Link>
           </p>
 

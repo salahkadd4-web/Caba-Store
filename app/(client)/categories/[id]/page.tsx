@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import FavoriIconButton from '@/components/client/FavoriIconButton'
@@ -64,9 +65,9 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
 
       {/* Header catégorie */}
       <div className="flex items-center gap-4 mb-8">
-        <div className="w-16 h-16 bg-blue-100 dark:bg-blue-950 rounded-full flex items-center justify-center overflow-hidden">
+        <div className="relative w-16 h-16 bg-blue-100 dark:bg-blue-950 rounded-full flex items-center justify-center overflow-hidden">
           {categorie.image ? (
-            <img src={categorie.image} alt={categorie.nom} className="w-full h-full object-cover rounded-full" />
+            <Image src={categorie.image} alt={categorie.nom} fill sizes="64px" className="object-cover rounded-full" />
           ) : (
             <span className="text-3xl"><Tag className="w-4 h-4" /></span>
           )}
@@ -107,10 +108,12 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
                 {/* Image */}
                 <div className="relative h-48 bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
                   {produit.images[0] ? (
-                    <img
+                    <Image
                       src={produit.images[0]}
                       alt={produit.nom}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      fill
+                      sizes="(max-width: 768px) 50vw, 33vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
                     <Package className="w-14 h-14" />

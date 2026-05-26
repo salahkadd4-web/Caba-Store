@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { rateLimit, sanitize, isValidEmail, isValidPhone } from '@/lib/security'
 
 export async function POST(req: NextRequest) {
-  const limited = rateLimit(req, { maxRequests: 10, windowMs: 60 * 1000 })
+  const limited = await rateLimit(req, { maxRequests: 10, windowMs: 60 * 1000 })
   if (limited) return limited
 
   try {

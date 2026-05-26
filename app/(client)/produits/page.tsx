@@ -1,6 +1,18 @@
 import { prisma } from '@/lib/prisma'
 import ProduitsSearch from '@/components/client/ProduitsSearch'
 
+type PrixTier = { minQte: number; maxQte: number | null; prix: number }
+type ProduitSearch = {
+  id: string
+  nom: string
+  images: string[]
+  prix: number
+  stock: number
+  prixVariables?: PrixTier[] | null
+  variants?: { id: string; nom: string; couleur: string | null }[]
+  category: { nom: string }
+}
+
 export default async function ProduitsPage({
   searchParams,
 }: {
@@ -48,7 +60,7 @@ export default async function ProduitsPage({
       </div>
       <ProduitsSearch
         categories={categories}
-        initialProduits={produits as any}
+        initialProduits={produits as unknown as ProduitSearch[]}
         initialRecherche={recherche}
         initialCategorie={categorie}
       />

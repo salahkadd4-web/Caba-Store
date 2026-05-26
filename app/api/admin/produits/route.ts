@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
+import { Prisma } from '@/generated/prisma/client'
+
+type VariantInput = {
+  nom: string
+  couleur?: string | null
+  stock: number | string
+  images?: string[]
+  options?: { valeur: string; stock: number | string }[]
+}
 
 async function checkAdmin() {
   const token = await getAuthToken()
@@ -13,7 +22,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const vendeurId = searchParams.get('vendeurId')
     const adminOnly = searchParams.get('adminOnly') === 'true'
-    const where: any = {}
+    const where: Prisma.ProductWhereInput = {}
     if (vendeurId)  where.vendeurId = vendeurId
     if (adminOnly)  where.vendeurId = null
     const produits = await prisma.product.findMany({
@@ -49,12 +58,12 @@ export async function POST(req: NextRequest) {
         typeOption: typeOption || null,
         prixVariables: prixVariables?.length > 0 ? prixVariables : undefined,
         variants: variants?.length > 0 ? {
-          create: variants.map((v: any) => ({
+          create: (variants as VariantInput[]).map((v) => ({
             nom: v.nom, couleur: v.couleur || null,
-            stock: parseInt(v.stock) || 0, images: v.images || [],
-            options: v.options?.length > 0 ? {
-              create: v.options.map((o: any) => ({
-                valeur: o.valeur, stock: parseInt(o.stock) || 0,
+            stock: parseInt(String(v.stock)) || 0, images: v.images || [],
+            options: v.options && v.options.length > 0 ? {
+              create: v.options.map((o) => ({
+                valeur: o.valeur, stock: parseInt(String(o.stock)) || 0,
               })),
             } : undefined,
           })),

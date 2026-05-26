@@ -163,7 +163,7 @@ export default function Header() {
                 title="Mon panier"
               >
                 <ShoppingCart className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-blue-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-md animate-bounce-once">
+                <span className="absolute -top-1 -right-1 min-w-4.5 h-4.5 bg-blue-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-md animate-bounce-once">
                   {cartCount > 99 ? '99+' : cartCount}
                 </span>
               </Link>
@@ -223,7 +223,7 @@ export default function Header() {
   // ── Header Web — fixed + hide on scroll ───────────────────────────────────
   return (
     <>
-      <div className="h-[65px]" />
+      <div className="h-16.25" />
 
       <header className={`
         bg-white dark:bg-gray-900 fixed top-0 left-0 right-0 z-50
@@ -274,7 +274,7 @@ export default function Header() {
                 title="Mon panier"
               >
                 <ShoppingCart className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-blue-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-md">
+                <span className="absolute -top-1 -right-1 min-w-4.5 h-4.5 bg-blue-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-md">
                   {cartCount > 99 ? '99+' : cartCount}
                 </span>
               </Link>
@@ -289,7 +289,7 @@ export default function Header() {
                       {session.user?.name?.charAt(0)?.toUpperCase() || '?'}
                     </span>
                   </div>
-                  <span className="text-xs text-gray-700 dark:text-gray-300 font-medium hidden sm:block max-w-[80px] truncate">
+                  <span className="text-xs text-gray-700 dark:text-gray-300 font-medium hidden sm:block max-w-20 truncate">
                     {session.user?.name?.split(' ')[0]}
                   </span>
                   <span className="text-gray-500 dark:text-gray-400"><ChevronDown open={userMenuOpen} /></span>

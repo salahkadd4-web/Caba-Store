@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import Image from 'next/image'
 import {
   Plus, Pencil, Trash2, TrendingDown, Palette, Package,
   Eye, EyeOff, X, Ruler, AlertCircle, ClipboardList, Heart,
@@ -13,9 +14,10 @@ interface Variant {
   stock: string; images: string[]; options: VariantOption[]
 }
 interface PrixTier { minQte: string; maxQte: string; prix: string }
+interface PrixTierData { minQte: number; maxQte: number | null; prix: number }
 interface Product {
   id: string; nom: string; description: string | null; prix: number
-  stock: number; images: string[]; actif: boolean; prixVariables: any
+  stock: number; images: string[]; actif: boolean; prixVariables: PrixTierData[] | null
   typeOption?: string | null
   variants: { id: string; nom: string; couleur: string | null; stock: number; images: string[]; options?: { valeur: string; stock: number }[] }[]
   category: { id: string; nom: string }
@@ -49,7 +51,7 @@ export default function VendeurProduitsPage() {
   const fileRef    = useRef<HTMLInputElement>(null)
   const varFileRef = useRef<HTMLInputElement>(null)
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     const [pRes, cRes] = await Promise.all([
       fetch(`/api/vendeur/produits${filterActif !== 'all' ? `?actif=${filterActif}` : ''}`),
@@ -58,9 +60,11 @@ export default function VendeurProduitsPage() {
     if (pRes.ok) setProduits(await pRes.json())
     if (cRes.ok) { const d = await cRes.json(); setCategories(d.approuvees || []) }
     setLoading(false)
-  }
+  }, [filterActif])
 
-  useEffect(() => { fetchData() }, [filterActif])
+  useEffect(() => {
+    void (async () => { await fetchData() })()
+  }, [fetchData])
 
   const openAdd = () => {
     setEditing(null); setForm(emptyForm)
@@ -77,7 +81,7 @@ export default function VendeurProduitsPage() {
     })
     setPrixTiers(
       Array.isArray(p.prixVariables)
-        ? p.prixVariables.map((t: any) => ({ minQte: String(t.minQte), maxQte: String(t.maxQte ?? ''), prix: String(t.prix) }))
+        ? p.prixVariables.map((t) => ({ minQte: String(t.minQte), maxQte: String(t.maxQte ?? ''), prix: String(t.prix) }))
         : []
     )
     setVariants(
@@ -143,7 +147,7 @@ export default function VendeurProduitsPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erreur')
       setShowForm(false); fetchData()
-    } catch (e: any) { setError(e.message) }
+    } catch (e) { setError(e instanceof Error ? e.message : 'Erreur') }
     finally { setSaving(false) }
   }
 
@@ -206,7 +210,7 @@ export default function VendeurProduitsPage() {
             }`}>
               {/* ── ERREUR 1 CORRIGÉE : JSX valide ── */}
               {p.images[0]
-                ? <img src={p.images[0]} alt={p.nom} className="w-full h-36 object-cover" />
+                ? <div className="relative w-full h-36"><Image src={p.images[0]} alt={p.nom} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover" /></div>
                 : (
                   <div className="w-full h-36 bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
                     <Package className="w-8 h-8 text-gray-400" />
@@ -390,7 +394,7 @@ export default function VendeurProduitsPage() {
                     <div className="flex flex-wrap gap-2">
                       {form.images.map((img, idx) => (
                         <div key={idx} className="relative group">
-                          <img src={img} alt="" className="w-16 h-16 object-cover rounded-xl" />
+                          <Image src={img} alt="" width={64} height={64} className="w-16 h-16 object-cover rounded-xl" />
                           <button onClick={() => setForm(f => ({ ...f, images: f.images.filter((_, i) => i !== idx) }))}
                             className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                             <X className="w-2.5 h-2.5" />
@@ -429,14 +433,14 @@ export default function VendeurProduitsPage() {
                     <input type="number" step="0.01" value={form.prix} onChange={e => setForm(f => ({ ...f, prix: e.target.value }))} min="0"
                       className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-400"
                       placeholder="Prix pour 1 unité" />
-                    <p className="text-xs text-gray-400 mt-1">Affiché par défaut — barré quand un palier s'applique</p>
+                    <p className="text-xs text-gray-400 mt-1">Affiché par défaut — barré quand un palier s&apos;applique</p>
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <div>
                         <p className="text-xs font-medium text-gray-600 dark:text-gray-300">Prix dégressifs par quantité</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">Le prix de base sera barré quand un palier s'applique</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">Le prix de base sera barré quand un palier s&apos;applique</p>
                       </div>
                       <button type="button" onClick={() => setPrixTiers(t => [...t, emptyTier()])}
                         className="text-xs bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-lg hover:bg-emerald-200 transition flex items-center gap-1">
@@ -490,7 +494,7 @@ export default function VendeurProduitsPage() {
                             </div>
                           </div>
                         )}
-                        <p className="text-[10px] text-gray-400">Laissez "Qté max" vide pour "et plus" (ex : 10+)</p>
+                        <p className="text-[10px] text-gray-400">Laissez &quot;Qté max&quot; vide pour &quot;et plus&quot; (ex : 10+)</p>
                       </div>
                     )}
                   </div>
@@ -502,15 +506,15 @@ export default function VendeurProduitsPage() {
                 <>
                   {/* Type d'option */}
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1 flex items-center gap-1">
-                      <Ruler className="w-3.5 h-3.5" /> Type d'option
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1 items-center gap-1">
+                      <Ruler className="w-3.5 h-3.5" /> Type d&apos;option
                     </label>
                     <input type="text" value={form.typeOption}
                       onChange={e => setForm(f => ({ ...f, typeOption: e.target.value }))}
                       placeholder="ex : Taille, Pointure, Volume, Contenance..."
                       className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
                     <p className="text-[10px] text-gray-400 mt-1">
-                      Laissez vide si vos variantes n'ont pas de sous-options
+                      Laissez vide si vos variantes n&apos;ont pas de sous-options
                     </p>
                   </div>
 
@@ -584,7 +588,7 @@ export default function VendeurProduitsPage() {
                             <div className="flex flex-wrap gap-2">
                               {v.images.map((img, imgIdx) => (
                                 <div key={imgIdx} className="relative group">
-                                  <img src={img} alt="" className="w-12 h-12 object-cover rounded-lg" />
+                                  <Image src={img} alt="" width={48} height={48} className="w-12 h-12 object-cover rounded-lg" />
                                   <button
                                     onClick={() => setVariants(vs => vs.map((x, j) => j === i
                                       ? { ...x, images: x.images.filter((_, k) => k !== imgIdx) } : x))}

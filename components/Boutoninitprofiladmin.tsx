@@ -52,8 +52,8 @@ export default function BoutonInitProfilAdmin() {
       if (!res.ok) throw new Error(data.error)
       showToast(data.message, 'ok')
       setInfo({ existe: false })
-    } catch (e: any) {
-      showToast(e.message, 'err')
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Erreur', 'err')
     } finally {
       setLoading(false)
     }
@@ -79,8 +79,8 @@ export default function BoutonInitProfilAdmin() {
       <div className="flex items-start gap-2 text-xs text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 rounded-lg p-3">
         <Info className="w-4 h-4 shrink-0 mt-0.5" />
         <p>
-          Les produits ajoutés par l'admin ont <strong>automatiquement la priorité 0</strong> (premier dans
-          l'affichage), car ils n'ont pas de profil vendeur associé. Aucune action n'est nécessaire.
+          Les produits ajoutés par l&apos;admin ont <strong>automatiquement la priorité 0</strong> (premier dans
+          l&apos;affichage), car ils n&apos;ont pas de profil vendeur associé. Aucune action n&apos;est nécessaire.
         </p>
       </div>
 

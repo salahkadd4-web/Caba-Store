@@ -2,24 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
 import bcrypt from 'bcryptjs'
-import { verifyAndConsumeProfileOtp } from '@/app/api/profil/otp/route'
+import { verifyAndConsumeProfileOtp } from '@/lib/profileOtp'
 
-// ── Helpers encodage/décodage wilaya + adresse dans un seul champ ──────────
-const SEP = '|||'
-
-function encodeWilayaAdresse(wilaya: string, adresse: string): string {
-  if (!adresse.trim()) return wilaya
-  return `${wilaya}${SEP}${adresse}`
-}
-
-function decodeWilayaAdresse(value: string | null): { wilaya: string; adresse: string } {
-  if (!value) return { wilaya: '', adresse: '' }
-  const idx = value.indexOf(SEP)
-  if (idx === -1) return { wilaya: value, adresse: '' }
-  return { wilaya: value.slice(0, idx), adresse: value.slice(idx + SEP.length) }
-}
-
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const token = await getAuthToken()
     if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
@@ -28,17 +13,16 @@ export async function GET(req: NextRequest) {
       where: { id: token.id as string },
       select: {
         nom: true, prenom: true, email: true,
-        telephone: true, age: true, genre: true, wilaya: true,
+        telephone: true, age: true, genre: true,
+        wilaya: true, adresse: true,
         motDePasse: true, // nécessaire pour hasPassword
       },
     })
 
     if (!user) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
 
-    const { wilaya, adresse } = decodeWilayaAdresse(user.wilaya)
     const { motDePasse, ...rest } = user // ne pas exposer le hash
-
-    return NextResponse.json({ ...rest, wilaya, adresse, hasPassword: !!motDePasse })
+    return NextResponse.json({ ...rest, hasPassword: !!motDePasse })
   } catch {
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
@@ -101,27 +85,16 @@ export async function PATCH(req: NextRequest) {
       if (existing) return NextResponse.json({ error: 'Ce numéro est déjà utilisé' }, { status: 400 })
     }
 
-    let wilayaEncoded: string | undefined = undefined
-    if (wilaya !== undefined || adresse !== undefined) {
-      const current = await prisma.user.findUnique({
-        where: { id: token.id as string },
-        select: { wilaya: true },
-      })
-      const { wilaya: currentWilaya, adresse: currentAdresse } = decodeWilayaAdresse(current?.wilaya ?? null)
-      const newWilaya  = wilaya  !== undefined ? (wilaya  || '') : currentWilaya
-      const newAdresse = adresse !== undefined ? (adresse || '') : currentAdresse
-      wilayaEncoded = encodeWilayaAdresse(newWilaya, newAdresse) || null as any
-    }
-
     const updated = await prisma.user.update({
       where: { id: token.id as string },
       data: {
-        ...(nom           !== undefined && { nom }),
-        ...(prenom        !== undefined && { prenom }),
-        ...(telephone     !== undefined && { telephone: telephone || null }),
-        ...(age           !== undefined && { age: age || null }),
-        ...(genre         !== undefined && { genre: genre || null }),
-        ...(wilayaEncoded !== undefined && { wilaya: wilayaEncoded || null }),
+        ...(nom       !== undefined && { nom }),
+        ...(prenom    !== undefined && { prenom }),
+        ...(telephone !== undefined && { telephone: telephone || null }),
+        ...(age       !== undefined && { age: age || null }),
+        ...(genre     !== undefined && { genre: genre || null }),
+        ...(wilaya    !== undefined && { wilaya: wilaya || null }),
+        ...(adresse   !== undefined && { adresse: adresse || null }),
       },
     })
 

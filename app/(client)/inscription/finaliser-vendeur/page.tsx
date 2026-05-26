@@ -155,7 +155,7 @@ function FinaliserVendeurContent() {
 
       {/* ── Panneau gauche ───────────────────────────────────────────────── */}
       <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-black dark:bg-gray-900 items-center justify-center p-12 border-r border-gray-800">
-        <div className="absolute z-10 [mask-image:radial-gradient(ellipse_at_center,transparent_-50%,black_10%)]">
+        <div className="absolute z-10 mask-[radial-gradient(ellipse_at_center,transparent_-50%,black_10%)]">
           <Image
             src="/logo_noir.png"
             alt=""
@@ -204,7 +204,7 @@ function FinaliserVendeurContent() {
           {session?.user && (
             <div className="flex items-center gap-3 mb-8 p-3 border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
               {session.user.image ? (
-                <img src={session.user.image} alt=""
+                <Image src={session.user.image} alt="" width={32} height={32}
                   className="w-8 h-8 rounded-full object-cover" />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs text-gray-500 uppercase font-medium">
@@ -220,11 +220,11 @@ function FinaliserVendeurContent() {
                 </p>
               </div>
               {/* Badge téléphone déjà vérifié (mode skipPhone) */}
-              {skipPhone && (session.user as any).telephone && (
+              {skipPhone && session.user.telephone && (
                 <div className="ml-auto flex items-center gap-1 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 px-2 py-1 rounded shrink-0">
                   <Check className="w-3 h-3 text-green-600 dark:text-green-400" />
                   <span className="text-[10px] text-green-700 dark:text-green-400 font-medium">
-                    {(session.user as any).telephone}
+                    {session.user.telephone}
                   </span>
                 </div>
               )}

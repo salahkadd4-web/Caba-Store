@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import FavoriButton from '@/components/client/FavoriButton'
@@ -62,9 +63,9 @@ export default async function ProduitDetailPage({
           prix: produit.prix,
           stock: produit.stock,
           images: produit.images,
-          prixVariables: produit.prixVariables as any,
-          typeOption: (produit as any).typeOption ?? null,
-          variants: produit.variants as any,
+          prixVariables: produit.prixVariables as unknown as { minQte: number; maxQte: number | null; prix: number }[] | null,
+          typeOption: produit.typeOption ?? null,
+          variants: produit.variants,
         }}
       />
 
@@ -127,10 +128,12 @@ async function ProduitsSimilaires({ categoryId, produitId }: { categoryId: strin
             {/* Image */}
             <div className="relative h-44 bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
               {produit.images[0] ? (
-                <img
+                <Image
                   src={produit.images[0]}
                   alt={produit.nom}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  fill
+                  sizes="(min-width: 768px) 25vw, 50vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
                 />
               ) : (
                 <span className="text-3xl">📦</span>

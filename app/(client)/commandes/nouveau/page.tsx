@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   Check, CheckCircle2, ClipboardList, CreditCard, MapPin,
   Package, ShoppingBag, ShoppingCart, Smartphone, Truck,
@@ -373,7 +374,7 @@ export default function NouvelleCommandePage() {
                 return (
                   <div key={item.id} className="flex gap-2.5 items-start">
                     <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden shrink-0">
-                      {img ? <img src={img} alt={item.product.nom} className="w-full h-full object-cover" />
+                      {img ? <Image src={img} alt={item.product.nom} width={40} height={40} className="w-full h-full object-cover" />
                            : <div className="w-full h-full flex items-center justify-center"><Package className="w-4 h-4 text-gray-400" /></div>}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -444,7 +445,7 @@ export default function NouvelleCommandePage() {
       {/* ══ MODAL CONFIRMATION ══ */}
       {showModal && (
         <div
-          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 px-4"
+          className="fixed inset-0 z-60 flex items-end sm:items-center justify-center bg-black/50 px-4"
           onClick={e => { if (e.target === e.currentTarget) setShowModal(false) }}
         >
           {/*

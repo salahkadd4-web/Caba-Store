@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Mode        = 'intro' | 'scroll'
@@ -216,13 +217,15 @@ export default function SuitcaseAnimationBg() {
             pointerEvents: 'none',
           }} />
         )}
-        <img
+        <Image
           src="/image_debut.png"
           alt=""
+          width={1200}
+          height={1200}
+          priority
           style={{
-            width: '60%', maxHeight: '70%',
+            width: '60%', maxHeight: '70%', height: 'auto',
             objectFit: 'contain',
-            // Float seulement en mode intro
             animation: mode === 'intro' && introPhase === 'closed' ? 'bg-float 5s ease-in-out infinite' : 'none',
             filter: showShimmer
               ? 'drop-shadow(0 0 16px rgba(212,175,55,0.28)) drop-shadow(0 16px 32px rgba(0,0,0,0.7))'
@@ -243,11 +246,13 @@ export default function SuitcaseAnimationBg() {
           ? 'opacity 0.8s ease, transform 1s cubic-bezier(0.34,1.3,0.64,1)'
           : 'none',
       }}>
-        <img
+        <Image
           src="/image_fin.png"
           alt=""
+          width={1200}
+          height={1200}
           style={{
-            width: '92%', maxHeight: '92%',
+            width: '92%', maxHeight: '92%', height: 'auto',
             objectFit: 'contain',
             animation: (mode === 'intro' && introPhase === 'open') || (mode === 'scroll' && scrollProgress < 0.1)
               ? 'bg-float 6s ease-in-out infinite'

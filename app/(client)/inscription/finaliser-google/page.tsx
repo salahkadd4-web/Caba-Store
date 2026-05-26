@@ -129,7 +129,7 @@ function FinaliserGoogleContent() {
 
       {/* ── Panneau gauche (desktop) ─────────────────────────────────────── */}
       <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-black dark:bg-gray-900 items-center justify-center p-12 border-r border-gray-800">
-        <div className="absolute z-10 [mask-image:radial-gradient(ellipse_at_center,transparent_-50%,black_10%)]">
+        <div className="absolute z-10 mask-[radial-gradient(ellipse_at_center,transparent_-50%,black_10%)]">
           <Image src="/logo_noir.png" alt="" width={750} height={750}
             className="object-contain invert opacity-30 scale-150" priority />
         </div>

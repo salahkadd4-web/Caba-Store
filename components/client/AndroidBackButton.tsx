@@ -7,7 +7,7 @@ export default function AndroidBackButton() {
   const router = useRouter()
 
   useEffect(() => {
-    let App: any = null
+    let App: typeof import('@capacitor/app').App | null = null
 
     const init = async () => {
       try {
@@ -18,10 +18,10 @@ export default function AndroidBackButton() {
           if (canGoBack) {
             router.back()
           } else {
-            App.exitApp()
+            App?.exitApp()
           }
         })
-      } catch (e) {
+      } catch {
         // Pas sur mobile, on ignore
       }
     }

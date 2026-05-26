@@ -2,10 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
 import { sendIdentityOtpEmail } from '@/lib/mail'
+import { profileOtpKey } from '@/lib/profileOtp'
 import crypto from 'crypto'
-
-// Identifiant de stockage OTP profil
-const otpKey = (userId: string) => `otp_profil_${userId}`
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,11 +35,11 @@ export async function POST(req: NextRequest) {
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
 
       // Supprimer tout OTP précédent
-      await prisma.otpToken.deleteMany({ where: { identifiant: otpKey(user.id) } })
+      await prisma.otpToken.deleteMany({ where: { identifiant: profileOtpKey(user.id) } })
 
       // Stocker le nouveau
       await prisma.otpToken.create({
-        data: { identifiant: otpKey(user.id), token: code, data: '{}', expiresAt },
+        data: { identifiant: profileOtpKey(user.id), token: code, data: '{}', expiresAt },
       })
 
       await sendIdentityOtpEmail(user.email, code, user.prenom ?? 'Utilisateur')
@@ -54,17 +52,4 @@ export async function POST(req: NextRequest) {
     console.error('Erreur OTP profil:', err)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
-
-/**
- * Utilitaire : vérifie et consomme un OTP profil.
- * Appelé depuis d'autres routes (PATCH profil, POST password…).
- */
-export async function verifyAndConsumeProfileOtp(userId: string, otp: string): Promise<boolean> {
-  const record = await prisma.otpToken.findFirst({
-    where: { identifiant: otpKey(userId), expiresAt: { gt: new Date() } },
-  })
-  if (!record || record.token !== otp) return false
-  await prisma.otpToken.delete({ where: { id: record.id } })
-  return true
 }

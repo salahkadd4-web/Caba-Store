@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
 import bcrypt from 'bcryptjs'
-import { verifyAndConsumeProfileOtp } from '@/app/api/profil/otp/route'
+import { verifyAndConsumeProfileOtp } from '@/lib/profileOtp'
 
 const rules = [
   (p: string) => p.length >= 8,
