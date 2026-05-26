@@ -118,14 +118,15 @@ function RetourContent() {
 
   /* Étape 2 */
   const [reason,       setReason]       = useState('')
-  const [resolution,   setResolution]   = useState<'REFUND' | 'EXCHANGE' | 'REPAIR'>('REFUND')
+  const [resolution,   setResolution]   = useState<'REFUND' | 'EXCHANGE' | 'REPAIR' | ''>('')
   const [description,  setDescription]  = useState('')
 
   /* Envoi */
   const [submitting, setSubmitting] = useState(false)
   const [result,     setResult]     = useState<{
-    success?: boolean; message?: string; claimId?: string
-    processingDays?: number; error?: string
+    success?: boolean; claimId?: string
+    status?: 'PENDING' | 'APPROVED' | 'REJECTED'
+    error?: string
   } | null>(null)
 
   useEffect(() => {
@@ -157,7 +158,7 @@ function RetourContent() {
   }
 
   const handleSubmit = async () => {
-    if (!selectedOrder || !selectedItem || !reason) return
+    if (!selectedOrder || !selectedItem || !reason || !resolution) return
     setSubmitting(true)
     const { productName, description: desc } = buildApiPayload()
     try {
@@ -165,11 +166,12 @@ function RetourContent() {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          orderId:           selectedOrder.id,
+          orderId:     selectedOrder.id,
+          orderItemId: selectedItem.id,
           productName,
           reason,
-          desiredResolution: resolution,
-          description:       desc,
+          resolution,
+          description: desc,
         }),
       })
       const data = await res.json()
@@ -185,25 +187,26 @@ function RetourContent() {
   const canNext = [
     !!selectedOrder,
     !!selectedItemId,
-    !!reason,
+    !!reason && !!resolution,
   ][step] ?? true
 
   const next = () => setStep(s => Math.min(s + 1, 3))
   const prev = () => setStep(s => Math.max(s - 1, 0))
 
   /* ── États terminaux ── */
-  if (result?.success) return (
+  if (result?.success) {
+    const statusLabel =
+      result.status === 'APPROVED' ? { text: 'Approuvée', color: 'text-green-600 dark:text-green-400' } :
+      result.status === 'REJECTED' ? { text: 'Refusée',   color: 'text-red-600 dark:text-red-400' } :
+                                     { text: 'En attente de traitement', color: 'text-amber-600 dark:text-amber-400' }
+    return (
     <div className="max-w-lg mx-auto px-4 py-16 text-center">
       <div className="bg-green-50 dark:bg-green-950 rounded-2xl p-8 border border-green-200 dark:border-green-800">
         <CheckCircle2 className="w-14 h-14 text-green-500 mx-auto mb-3" />
         <h2 className="text-xl font-bold text-green-800 dark:text-green-300 mb-2">Demande enregistrée</h2>
-        <p className="text-sm text-green-700 dark:text-green-400 mb-4">{result.message}</p>
         <div className="bg-white dark:bg-gray-900 rounded-xl p-3 mb-4 border border-green-100 dark:border-green-900 space-y-1">
           <p className="text-xs text-gray-500">Statut</p>
-          <p className="font-bold text-amber-600 dark:text-amber-400">En attente de traitement</p>
-          {result.processingDays && (
-            <p className="text-xs text-gray-400">Délai estimé : {result.processingDays} jours ouvrés</p>
-          )}
+          <p className={`font-bold ${statusLabel.color}`}>{statusLabel.text}</p>
           {result.claimId && (
             <p className="text-xs font-mono text-gray-400">Réf. {result.claimId}</p>
           )}
@@ -214,7 +217,7 @@ function RetourContent() {
         </Link>
       </div>
     </div>
-  )
+  )}
 
   if (result?.error) return (
     <div className="max-w-lg mx-auto px-4 py-16 text-center">
@@ -286,7 +289,8 @@ function RetourContent() {
                     setSelectedOrder(c)
                     setSelectedItemId(null)
                     setReason('')
-                    setResolution('REFUND')
+                    setResolution('')
+                    setDescription('')
                   }}
                   className="accent-indigo-600 shrink-0" />
                 <div className="flex-1 min-w-0">
@@ -361,6 +365,7 @@ function RetourContent() {
                   {/* Image produit */}
                   <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-xl overflow-hidden shrink-0 flex items-center justify-center">
                     {image
+                      // eslint-disable-next-line @next/next/no-img-element
                       ? <img src={image} alt={item.product.nom} className="w-full h-full object-cover" />
                       : <Package className="w-5 h-5 text-gray-300 dark:text-gray-600" />
                     }
@@ -503,6 +508,7 @@ function RetourContent() {
             <div className="flex items-center gap-3 px-5 py-4">
               <div className="w-14 h-14 bg-gray-100 dark:bg-gray-800 rounded-xl overflow-hidden shrink-0 flex items-center justify-center">
                 {selectedItem.product.images?.[0]
+                  // eslint-disable-next-line @next/next/no-img-element
                   ? <img src={selectedItem.product.images[0]} alt="" className="w-full h-full object-cover" />
                   : <Package className="w-6 h-6 text-gray-400" />
                 }

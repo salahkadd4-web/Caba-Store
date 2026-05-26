@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
-  AlertTriangle, Ban, Banknote, CheckCircle2, ClipboardList,
-  CreditCard, KeyRound, Loader2, Package, Paperclip, Phone,
+  Ban, Banknote, CheckCircle2, ClipboardList,
+  CreditCard, Loader2, Package, Paperclip, Phone,
   Play, Search, ShoppingCart, X, XCircle,
 } from 'lucide-react'
 
@@ -19,8 +19,6 @@ interface Vendeur {
   user: { nom: string; prenom: string; email: string | null; telephone: string | null }
   documents: Doc[]
   _count: { products: number; categories: number }
-  flowmerceApiKey: string | null
-  flowmerceShopId: string | null
 }
 interface Paiement {
   id: string; montant: number; methode: string
@@ -92,9 +90,6 @@ export default function AdminVendeursPage() {
   const [newDocs,      setNewDocs]      = useState<{ type: string; label: string; description: string }[]>([])
   const [docAction,    setDocAction]    = useState<{ docId: string; action: 'accepter' | 'refuser'; note: string } | null>(null)
   const [toastMsg,     setToastMsg]     = useState<string | null>(null)
-  const [flowmerceKey,    setFlowmerceKey]    = useState('')
-  const [flowmerceShopId, setFlowmerceShopId] = useState('')
-  const [savingKey,       setSavingKey]       = useState(false)
 
   // ── Onglets du panel ────────────────────────────────────────────────────────
   const [onglet, setOnglet] = useState<'infos' | 'abonnement'>('infos')
@@ -148,8 +143,6 @@ export default function AdminVendeursPage() {
     if (res.ok) {
       const data = await res.json()
       setSelected(data)
-      setFlowmerceKey(data.flowmerceApiKey ?? '')
-      setFlowmerceShopId(data.flowmerceShopId ?? '')
       setOnglet('infos')
       setAbonnement(null)
     }
@@ -217,28 +210,6 @@ export default function AdminVendeursPage() {
     }
     setDocAction(null)
     setSaving(false)
-  }
-
-  const saveFlowmerceKey = async () => {
-    if (!selected) return
-    setSavingKey(true)
-    const res = await fetch(`/api/admin/vendeurs/${selected.id}`, {
-      method:  'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
-        action:          'set_flowmerce_key',
-        flowmerceApiKey: flowmerceKey.trim(),
-        flowmerceShopId: flowmerceShopId.trim(),
-      }),
-    })
-    const data = await res.json()
-    showToast(res.ok ? 'Identifiants Flowmerce enregistrés' : (data.error || 'Erreur'))
-    if (res.ok) setSelected(prev => prev ? {
-      ...prev,
-      flowmerceApiKey: flowmerceKey.trim() || null,
-      flowmerceShopId: flowmerceShopId.trim() || null,
-    } : prev)
-    setSavingKey(false)
   }
 
   // ── Confirmer paiement abonnement ────────────────────────────────────────────
@@ -534,54 +505,6 @@ export default function AdminVendeursPage() {
                       className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none"
                       placeholder="Motif, commentaire..." />
                   </div>
-
-                  {/* Clé Flowmerce */}
-                  {selected.statut === 'APPROUVE' && (
-                    <div className="bg-indigo-50 dark:bg-indigo-950 border border-indigo-100 dark:border-indigo-900 rounded-xl p-4 space-y-3">
-                      <div>
-                        <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-0.5">
-                          <KeyRound className="w-4 h-4 inline mr-1" />Clé API Flowmerce
-                        </p>
-                        <p className="text-xs text-indigo-500 dark:text-indigo-400">
-                          Permet d'activer la gestion des retours pour ce vendeur.
-                        </p>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <input
-                          type="text"
-                          value={flowmerceKey}
-                          onChange={e => setFlowmerceKey(e.target.value)}
-                          placeholder="flk_xxxxxxxxxxxx (clé API)"
-                          className="text-sm border border-indigo-200 dark:border-indigo-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                        />
-                        <input
-                          type="text"
-                          value={flowmerceShopId}
-                          onChange={e => setFlowmerceShopId(e.target.value)}
-                          placeholder="shop_xxxxxxxxxxxx (Shop ID)"
-                          className="text-sm border border-indigo-200 dark:border-indigo-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                        />
-                        <button onClick={saveFlowmerceKey} disabled={savingKey}
-                          className="self-end bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
-                          {savingKey ? '...' : 'Sauver'}
-                        </button>
-                      </div>
-                      {selected.flowmerceApiKey && selected.flowmerceShopId ? (
-                        <p className="text-xs text-indigo-400 dark:text-indigo-500">
-                          ✅ Identifiants actifs : clé <span className="font-mono">{selected.flowmerceApiKey.slice(0, 8)}…</span> · shop <span className="font-mono">{selected.flowmerceShopId.slice(0, 10)}…</span>
-                        </p>
-                      ) : (
-                        <p className="text-xs text-orange-500">
-                          <AlertTriangle className="w-4 h-4 inline mr-1" />
-                          {!selected.flowmerceApiKey && !selected.flowmerceShopId
-                            ? 'Aucun identifiant — les retours sont désactivés'
-                            : !selected.flowmerceApiKey
-                              ? 'Clé API manquante — les retours sont désactivés'
-                              : 'Shop ID manquant — les retours sont désactivés'}
-                        </p>
-                      )}
-                    </div>
-                  )}
 
                   {/* Boutons d'action */}
                   <div className="grid grid-cols-2 gap-3">

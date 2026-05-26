@@ -5,7 +5,7 @@ import { auth }     from '@/auth'
 import { redirect } from 'next/navigation'
 import Link         from 'next/link'
 
-const FLOWMERCE_URL = (process.env.FLOWMERCE_URL || 'http://localhost:3000').replace(/\/$/, '')
+const FLOWMERCE_URL = (process.env.FLOWMERCE_API_URL || 'https://flowmerce.app').replace(/\/$/, '')
 
 export default async function AdminRetoursPage() {
   const session = await auth()

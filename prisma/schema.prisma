@@ -39,8 +39,6 @@ model VendeurProfile {
   adminNote       String?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
-  flowmerceApiKey String?
-  flowmerceShopId String?
   categories      Category[]
   products        Product[]
   documents       VendeurDocument[]
@@ -206,6 +204,25 @@ model Order {
   approbationsVendeurs  Json?
   user                 User        @relation(fields: [userId], references: [id])
   items                OrderItem[]
+  returnRequest        ReturnRequest?
+}
+
+model ReturnRequest {
+  id                String              @id @default(cuid())
+  orderId           String              @unique
+  flowmerceClaimId  String?
+  status            ReturnRequestStatus @default(PENDING)
+  reason            String
+  description       String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  order             Order               @relation(fields: [orderId], references: [id])
+}
+
+enum ReturnRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 model OrderItem {

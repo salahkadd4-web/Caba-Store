@@ -9,6 +9,14 @@ import { Check } from 'lucide-react'
 
 const GOOGLE_WEB_CLIENT_ID = '502936788244-mn58pnn6u9v5ekp3o14ord4778gp7ki3.apps.googleusercontent.com'
 
+const IS_DEV = process.env.NODE_ENV !== 'production'
+
+const DEV_ACCOUNTS = [
+  { role: 'admin',   label: 'Admin',   identifiant: 'cabastoredz31@gmail.com',  motDePasse: 'Salah@2000'   },
+  { role: 'vendeur', label: 'Vendeur', identifiant: 'vendeur.test@caba.dz',     motDePasse: 'Vendeur@2000' },
+  { role: 'client',  label: 'Client',  identifiant: 'client.test@caba.dz',      motDePasse: 'Client@2000'  },
+] as const
+
 function GuestLink() {
   const [isNative, setIsNative] = useState(false)
 
@@ -101,6 +109,34 @@ function ConnexionContent() {
       }
     } catch {
       setError('Erreur serveur, veuillez réessayer.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const quickLogin = async (acc: typeof DEV_ACCOUNTS[number]) => {
+    setError('')
+    setLoading(true)
+    try {
+      const result = await signIn('credentials', {
+        identifiant: acc.identifiant,
+        motDePasse:  acc.motDePasse,
+        redirect:    false,
+      })
+      if (result?.error) {
+        setError(`[DEV] Connexion ${acc.label} échouée : ${result.error}`)
+        return
+      }
+      if (result?.ok) {
+        const res     = await fetch('/api/auth/session')
+        const session = await res.json()
+        if (session?.user?.role === 'ADMIN')        router.push('/admin')
+        else if (session?.user?.role === 'VENDEUR') router.push('/vendeur')
+        else                                         router.push('/')
+        router.refresh()
+      }
+    } catch (e: any) {
+      setError(`[DEV] ${e?.message ?? 'Erreur'}`)
     } finally {
       setLoading(false)
     }
@@ -243,6 +279,27 @@ function ConnexionContent() {
           {error && (
             <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 text-xs px-4 py-3 mb-6 tracking-wide">
               {error}
+            </div>
+          )}
+
+          {IS_DEV && (
+            <div className="border border-dashed border-amber-400 dark:border-amber-600 bg-amber-50 dark:bg-amber-950/40 p-3 mb-6">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-amber-700 dark:text-amber-400 mb-2 text-center">
+                Dev — Connexion rapide
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {DEV_ACCOUNTS.map((acc) => (
+                  <button
+                    key={acc.role}
+                    type="button"
+                    onClick={() => quickLogin(acc)}
+                    disabled={loading || loadingGoogle}
+                    className="text-xs uppercase tracking-wider py-2 border border-amber-300 dark:border-amber-700 bg-white dark:bg-gray-900 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors disabled:opacity-50"
+                  >
+                    {acc.label}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 

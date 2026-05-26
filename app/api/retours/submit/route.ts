@@ -1,293 +1,273 @@
 // app/api/retours/submit/route.ts — CabaStore
 //
-// Flux complet :
-//   1. Vérifie auth + commande LIVREE
-//   2. Résout la clé API Flowmerce (vendeur ou fallback admin)
-//   3. Appelle POST /api/claims/external → crée le claim (statut EN_ATTENTE, sans décision ML)
+// Proxy serveur vers Flowmerce — POST /api/claims/external.
+// La FLOWMERCE_API_KEY ne quitte jamais le serveur.
 //
-// Variables .env requises :
-//   FLOWMERCE_URL=http://localhost:3000
-//   FLOWMERCE_API_KEY=flk_xxxx   ← clé admin CabaStore (fallback pour produits sans vendeur)
+// Etapes :
+//   1. Auth NextAuth (refus si non connecte)
+//   2. Charger la commande + verifier ownership (sinon 404)
+//   3. Persister ReturnRequest PENDING en local (lock applicatif via unique orderId)
+//   4. Mapper local -> snake_case Flowmerce
+//   5. POST vers FLOWMERCE_API_URL/api/claims/external (Bearer + Idempotency-Key)
+//   6. Update ReturnRequest avec flowmerceClaimId / rollback si echec
+//   7. Retourner uniquement { success, status, claimId }
 
+import 'server-only'
 import { NextRequest, NextResponse } from 'next/server'
-import { auth }   from '@/auth'
-import { prisma } from '@/lib/prisma'
+import { auth }       from '@/auth'
+import { prisma }     from '@/lib/prisma'
+import { mapReason }  from '@/lib/flowmerce'
 
-const FLOWMERCE_URL     = (process.env.FLOWMERCE_URL     || '').replace(/\/$/, '')
-const FLOWMERCE_API_KEY = process.env.FLOWMERCE_API_KEY  || ''   // clé admin — fallback
-const FLOWMERCE_SHOP_ID = process.env.FLOWMERCE_SHOP_ID  || ''   // shop_id admin — fallback
+const FLOWMERCE_API_URL = (process.env.FLOWMERCE_API_URL || '').replace(/\/$/, '')
+const FLOWMERCE_API_KEY = process.env.FLOWMERCE_API_KEY  || ''
+const FLOWMERCE_SHOP_ID = process.env.FLOWMERCE_SHOP_ID  || 'cabastore'
 
-// ── Raisons FR → codes Flowmerce ──────────────────────────────────────────
-const REASON_MAP: Record<string, string> = {
-  'Produit défectueux':          'DEFECTIVE',
-  'Produit endommagé livraison': 'DEFECTIVE',
-  'Panne après utilisation':     'DEFECTIVE',
-  'Produit contrefait':          'DESCRIPTION',
-  'Mauvaise taille':             'WRONG_ITEM',
-  'Ne correspond pas':           'WRONG_ITEM',
-  'Erreur de commande vendeur':  'WRONG_ITEM',
-  'Pièces manquantes':           'WRONG_ITEM',
-  "Changement d'avis":           'CHANGE_MIND',
-  'Allergie/Réaction':           'CHANGE_MIND',
+// Diagnostic au boot du module — visible une seule fois dans les logs serveur.
+console.log('[flowmerce] boot', {
+  url:       FLOWMERCE_API_URL || '(vide)',
+  keyLength: FLOWMERCE_API_KEY.length,
+  keyPrefix: FLOWMERCE_API_KEY.slice(0, 4) || '(vide)',
+})
+
+const GENDER_MAP: Record<string, 'Male' | 'Female'> = {
+  HOMME: 'Male', FEMME: 'Female', MALE: 'Male', FEMALE: 'Female', M: 'Male', F: 'Female',
 }
 
-// ── Catégories CabaStore → catégories Flowmerce ───────────────────────────
-const CATEGORY_MAP: Record<string, string> = {
-  'Électronique':   'Electronics',
-  'Électroménager': 'Appliances',
-  'Vêtements':      'Clothing',
-  'Chaussures':     'Shoes',
-  'Beauté':         'Beauty',
-  'Livres':         'Books',
-  'Jouets':         'Toys',
-  'Sport':          'Sports',
-  'Maison':         'Home',
-  'Alimentation':   'Food',
-}
-
-// ── Méthodes paiement/livraison → libellés Flowmerce ─────────────────────
-const PAYMENT_MAP: Record<string, string> = {
-  'CARTE':         'Credit Card',
-  'ESPECES':       'Cash on Delivery',
-  'VIREMENT':      'Bank Transfer',
-  'CIB':           'Credit Card',
-  'EDAHABIA':      'Credit Card',
-}
-
-const SHIPPING_MAP: Record<string, string> = {
-  'DOMICILE':    'Home Delivery',
-  'BUREAU':      'Office Delivery',
-  'POINT_RELAY': 'Relay Point',
-  'EXPRESS':     'Express',
-}
-
-// ── Genre interne → libellé ML Flowmerce ─────────────────────────────────
-const GENDER_MAP: Record<string, 'Male' | 'Female' | 'Unknown'> = {
-  'HOMME':  'Male',
-  'FEMME':  'Female',
-  'MALE':   'Male',
-  'FEMALE': 'Female',
-  'M':      'Male',
-  'F':      'Female',
-}
-
-const SHOP_RETURN_WINDOW_DAYS = 30
-
-// ─────────────────────────────────────────────────────────────────────────────
+// Code d'erreur Prisma pour unique constraint violation.
+const PRISMA_UNIQUE_VIOLATION = 'P2002'
 
 export async function POST(req: NextRequest) {
-  if (!FLOWMERCE_URL) {
-    return NextResponse.json({ error: 'Service retours non configuré (FLOWMERCE_URL manquant)' }, { status: 503 })
+  if (!FLOWMERCE_API_URL || !FLOWMERCE_API_KEY) {
+    console.error('[flowmerce] 503 — env manquante', {
+      hasUrl: !!FLOWMERCE_API_URL,
+      hasKey: !!FLOWMERCE_API_KEY,
+    })
+    return NextResponse.json(
+      { error: 'Service retours non configuré' },
+      { status: 503 }
+    )
   }
 
-  // ── 1. Auth ──────────────────────────────────────────────────────────────
+  // ── 1. Auth ────────────────────────────────────────────────────────────────
   const session = await auth()
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Non connecté' }, { status: 401 })
   }
 
-  const user = await prisma.user.findUnique({
-    where:  { id: session.user.id },
-    select: {
-      id: true, nom: true, prenom: true,
-      email: true, telephone: true,
-      age: true, genre: true, wilaya: true,
-    },
-  })
-  if (!user) return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 })
-
-  // ── 2. Parse body ────────────────────────────────────────────────────────
+  // ── 2. Parse body ──────────────────────────────────────────────────────────
   let body: Record<string, unknown>
   try { body = await req.json() }
   catch { return NextResponse.json({ error: 'Corps JSON invalide' }, { status: 400 }) }
 
-  const orderId           = String(body.orderId           ?? '').trim()
-  const productName       = String(body.productName       ?? '').trim()
-  const reason            = String(body.reason            ?? '').trim()
-  const desiredResolution = String(body.desiredResolution ?? '').trim().toUpperCase()
-  const description       = String(body.description       ?? '').trim()
+  const orderId     = String(body.orderId     ?? '').trim()
+  const orderItemId = String(body.orderItemId ?? '').trim()
+  const productName = String(body.productName ?? '').trim()
+  const reasonFr    = String(body.reason      ?? '').trim()
+  const resolution  = String(body.resolution  ?? '').trim().toUpperCase()
+  const description = String(body.description ?? '').trim()
 
-  if (!orderId || !productName || !reason || !desiredResolution) {
-    return NextResponse.json({ error: 'Champs obligatoires manquants' }, { status: 400 })
+  // orderItemId est le moyen fiable (UUID). productName reste accepte en fallback
+  // historique mais peut etre ambigu si plusieurs articles ont le meme nom.
+  if (!orderId || (!orderItemId && !productName) || !reasonFr || description.length < 10) {
+    return NextResponse.json({ error: 'Champs obligatoires manquants ou invalides' }, { status: 400 })
   }
 
-  // ── 3. Vérifier la commande ──────────────────────────────────────────────
-  const order = await prisma.order.findFirst({
-    where: { id: orderId, userId: user.id, statut: 'LIVREE' },
-    include: {
-      items: {
-        include: {
-          product: {
-            select: {
-              nom:      true,
-              prix:     true,
-              stock:    true,
-              category: { select: { nom: true } },
-              vendeur: {
-                select: { flowmerceApiKey: true, flowmerceShopId: true, nomBoutique: true },
-              },
-            },
+  // Flowmerce exige desired_resolution. On valide cote serveur pour eviter un aller-retour.
+  if (resolution !== 'REFUND' && resolution !== 'EXCHANGE' && resolution !== 'REPAIR') {
+    return NextResponse.json(
+      { error: 'Champ requis manquant : desired_resolution' },
+      { status: 400 }
+    )
+  }
+
+  // ── 3. Charger user + commande + verifier ownership ───────────────────────
+  const [user, order] = await Promise.all([
+    prisma.user.findUnique({
+      where:  { id: session.user.id },
+      select: { id: true, nom: true, prenom: true, email: true, telephone: true, age: true, genre: true, wilaya: true, adresse: true },
+    }),
+    prisma.order.findFirst({
+      where: { id: orderId, userId: session.user.id, statut: 'LIVREE' },
+      include: {
+        items: {
+          include: {
+            product: { select: { nom: true, category: { select: { nom: true } } } },
           },
         },
       },
-    },
-  })
+    }),
+  ])
 
+  if (!user) return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 })
   if (!order) {
+    // 404 plutot que 403 pour ne pas leak l'existence de commandes d'autres users.
     return NextResponse.json(
-      { error: 'Commande introuvable, non livrée ou ne vous appartient pas' },
+      { error: 'Commande introuvable ou non éligible au retour' },
       { status: 404 }
     )
   }
 
-  // Bloquer si un retour a déjà été demandé pour cette commande
-  if (order.retourDemande) {
-    return NextResponse.json(
-      { error: 'Une demande de retour a déjà été soumise pour cette commande.' },
-      { status: 409 }
-    )
+  // Selection de l'item : priorite a orderItemId (sans ambiguite).
+  const item = orderItemId
+    ? order.items.find(i => i.id === orderItemId)
+    : order.items.find(i => i.product.nom === productName) ?? order.items[0]
+
+  if (!item) {
+    return NextResponse.json({ error: 'Article introuvable dans la commande' }, { status: 400 })
   }
 
-  type OrderItemWithProduct = typeof order.items[number]
-  const item: OrderItemWithProduct | undefined =
-    order.items.find((i: OrderItemWithProduct) => i.product.nom === productName) ?? order.items[0]
+  const resolvedProductName = item.product.nom
+  const reasonCode          = mapReason(reasonFr)
 
-  // ── 4. Résoudre les identifiants Flowmerce ──────────────────────────────
-  // Priorité : identifiants du vendeur → fallback identifiants admin (produits sans vendeur)
-  const flowmerceApiKey = item?.product?.vendeur?.flowmerceApiKey || FLOWMERCE_API_KEY
-  const flowmerceShopId = item?.product?.vendeur?.flowmerceShopId || FLOWMERCE_SHOP_ID
-
-  if (!flowmerceApiKey) {
-    return NextResponse.json(
-      { error: 'Retour indisponible — clé Flowmerce non configurée. Contactez l\'administrateur.' },
-      { status: 503 }
-    )
-  }
-  if (!flowmerceShopId) {
-    return NextResponse.json(
-      { error: 'Retour indisponible — Shop ID Flowmerce non configuré. Contactez l\'administrateur.' },
-      { status: 503 }
-    )
-  }
-
-  const shopName = item?.product?.vendeur?.nomBoutique ?? 'CabaStore'
-
-  // ── 5. Calculer les jours depuis la commande ─────────────────────────────
-  const daysToReturn = Math.max(
-    0,
-    Math.floor((Date.now() - new Date(order.createdAt).getTime()) / 86_400_000)
-  )
-
-  // ── 6. Construire ml_payload (tous les champs OBLIGATOIRES côté ML) ─────
-  const reasonCode      = REASON_MAP[reason] ?? 'CHANGE_MIND'
-  const productCategory = CATEGORY_MAP[item?.product?.category?.nom ?? ''] ?? 'Other'
-  const paymentMethod   = PAYMENT_MAP[order.modePaiement ?? '']      ?? 'Cash on Delivery'
-  const shippingMethod  = SHIPPING_MAP[order.methodeExpedition ?? ''] ?? 'Home Delivery'
-
-  const customerGender: 'Male' | 'Female' | 'Unknown' =
-    GENDER_MAP[String(user.genre ?? '').toUpperCase()] ?? 'Unknown'
-
-  const productPriceDa = Math.max(1, Math.round(item?.prix ?? 1))
-  const orderTotalDa   = Math.max(1, Math.round(order.total ?? 1))
-  const shippingCostDa = Math.max(0, Math.round(order.fraisLivraison ?? 0))
-  const orderQuantity  = Math.max(1, item?.quantite ?? 1)
-  const withinPolicy   = daysToReturn <= SHOP_RETURN_WINDOW_DAYS ? 1 : 0
-
-  const mlPayload = {
-    Customer_Gender:         customerGender,
-    Customer_Age:            user.age ?? 0,
-    Customer_Wilaya:         user.wilaya || 'Unknown',
-    Customer_Past_Returns:   0,
-    Shop_Name:               shopName,
-    Product_Category:        productCategory,
-    Product_Price_DA:        productPriceDa,
-    Order_Quantity:          orderQuantity,
-    Total_Amount_DA:         orderTotalDa,
-    Payment_Method:          paymentMethod,
-    Shipping_Method:         shippingMethod,
-    Shipping_Cost_DA:        shippingCostDa,
-    Return_Reason:           reasonCode,
-    Days_to_Return:          daysToReturn,
-    Shop_Return_Window_Days: SHOP_RETURN_WINDOW_DAYS,
-    Within_Return_Policy:    withinPolicy,
-    Fraud_Score:             0,
-    Customer_Satisfaction:   3,
-    Is_Suspicious:           0,
+  // ── 4. Persist AVANT fetch — la contrainte unique sur orderId agit
+  //      comme un lock applicatif. Si deux requetes concurrentes arrivent,
+  //      seule la premiere cree la ligne ; la seconde recoit P2002 -> 409.
+  let returnRequest
+  try {
+    returnRequest = await prisma.returnRequest.create({
+      data: {
+        orderId,
+        flowmerceClaimId: null,
+        status:           'PENDING',
+        reason:           reasonCode,
+        description,
+      },
+    })
+  } catch (err) {
+    const code = (err as { code?: string })?.code
+    if (code === PRISMA_UNIQUE_VIOLATION) {
+      return NextResponse.json(
+        { error: 'Une demande de retour existe déjà pour cette commande.' },
+        { status: 409 }
+      )
+    }
+    throw err
   }
 
-  // ── 7. Appel Flowmerce : POST /api/claims/create ────────────────────────
-  const claimPayload = {
-    customer_name:      `${user.nom} ${user.prenom}`,
-    customer_email:     user.email ?? '',
-    customer_phone:     user.telephone ?? '',
-    product_name:       productName,
-    product_price:      item?.prix ?? 0,
-    product_category:   productCategory,
-    order_id:           orderId,
-    order_date:         order.createdAt.toISOString().split('T')[0],
-    order_total:        order.total,
+  // ── 5. Mapper -> snake_case Flowmerce ─────────────────────────────────────
+  const customerGender = GENDER_MAP[String(user.genre ?? '').toUpperCase()]
+
+  const flowmercePayload: Record<string, unknown> = {
+    shop_id:         FLOWMERCE_SHOP_ID,
+    order_id:        orderId,
+    customer_name:   `${user.prenom} ${user.nom}`.trim(),
+    customer_email:  user.email ?? '',
+    product_name:       resolvedProductName,
     reason:             reasonCode,
-    description:        description || `${reason} — CabaStore`,
-    desired_resolution: desiredResolution,
-    shop_name:          shopName,
-    payment_method:     paymentMethod,
-    shipping_method:    shippingMethod,
-    shipping_cost:      order.fraisLivraison ?? 0,
-    external_return_id: `cabastore-${orderId}`,
+    desired_resolution: resolution,
+    description,
     external_source:    'CabaStore',
-    shop_id:            flowmerceShopId,
-    ml_payload:         mlPayload,
+
+    ...(user.telephone && { customer_phone: user.telephone }),
+    ...(user.age != null && { customer_age: user.age }),
+    ...(customerGender && { customer_gender: customerGender }),
+    ...(user.wilaya && { customer_wilaya: user.wilaya }),
+    ...(item.product.category?.nom && { product_category: item.product.category.nom }),
+    product_price:    item.prix,
+    product_quantity: item.quantite,
+    order_total:      order.total,
+    payment_method:   order.modePaiement,
+    shipping_method:  order.methodeExpedition,
+    shipping_cost:    order.fraisLivraison,
+    order_date:       order.createdAt.toISOString(),
+    order_address:    order.adresse,
   }
 
+  // ── 6. POST Flowmerce avec Idempotency-Key ────────────────────────────────
   let flowmerceRes: Response
   try {
-    flowmerceRes = await fetch(`${FLOWMERCE_URL}/api/claims/create`, {
-      method:  'POST',
+    flowmerceRes = await fetch(`${FLOWMERCE_API_URL}/api/claims/create`, {
+      method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'x-api-key':    flowmerceApiKey,
+        'Content-Type':    'application/json',
+        'x-api-key':       FLOWMERCE_API_KEY,
+        'Idempotency-Key': returnRequest.id,
       },
-      body:    JSON.stringify(claimPayload),
-      signal:  AbortSignal.timeout(10_000),
+      body: JSON.stringify(flowmercePayload),
+      signal: AbortSignal.timeout(10_000),
     })
   } catch {
+    // Reseau / timeout : rollback du ReturnRequest pour permettre un retry.
+    await rollback(returnRequest.id)
     return NextResponse.json({ error: 'Service Flowmerce indisponible' }, { status: 503 })
   }
 
   const data = await flowmerceRes.json().catch(() => ({})) as {
-    claim?:          { id: string; status: string }
-    policy_applied?: { processing_days?: number }
-    error?:          string
-    code?:           string
+    success?:  boolean
+    claim_id?: string
+    status?:   string
+    error?:    string
   }
 
-  if (flowmerceRes.status === 409) {
+  // ── 7. Mapping erreurs Flowmerce (avec rollback systematique sur echec) ──
+  if (!flowmerceRes.ok || !data.claim_id) {
+    await rollback(returnRequest.id)
+
+    if (flowmerceRes.status === 409) {
+      return NextResponse.json(
+        { error: 'Une demande de retour existe déjà pour cette commande.' },
+        { status: 409 }
+      )
+    }
+    if (flowmerceRes.status === 401) {
+      console.error('[flowmerce] 401 — verifier FLOWMERCE_API_KEY')
+      return NextResponse.json({ error: 'Service retours indisponible' }, { status: 503 })
+    }
+    if (flowmerceRes.status === 422) {
+      return NextResponse.json(
+        { error: data.error ?? 'Retour refusé : hors politique de retour' },
+        { status: 422 }
+      )
+    }
+    if (flowmerceRes.status === 429) {
+      return NextResponse.json({ error: 'Trop de demandes, réessayez plus tard' }, { status: 429 })
+    }
     return NextResponse.json(
-      { error: 'Une demande de retour existe déjà pour cette commande.' },
-      { status: 409 }
+      { error: data.error ?? 'Erreur lors de la création du retour' },
+      { status: flowmerceRes.status >= 500 ? 503 : 400 }
     )
   }
 
-  if (!flowmerceRes.ok) {
-    return NextResponse.json(
-      { error: data.error ?? 'Erreur Flowmerce' },
-      { status: flowmerceRes.status }
-    )
-  }
+  // ── 8. Succes — UPDATE avec flowmerceClaimId + marquer la commande ───────
+  const claimId = data.claim_id
+  const status  = data.status?.toUpperCase()
+  const localStatus =
+    status === 'APPROVED' ? 'APPROVED' :
+    status === 'REJECTED' ? 'REJECTED' : 'PENDING'
 
-  // ── Marquer la commande comme "retour déjà demandé" ─────────────────────
-  await prisma.order.update({
-    where: { id: orderId },
-    data:  { retourDemande: true },
-  }).catch(() => null) // non bloquant
+  try {
+    await prisma.$transaction([
+      prisma.returnRequest.update({
+        where: { id: returnRequest.id },
+        data:  { flowmerceClaimId: claimId, status: localStatus },
+      }),
+      prisma.order.update({
+        where: { id: orderId },
+        data:  { retourDemande: true },
+      }),
+    ])
+  } catch (err) {
+    // Le claim existe deja chez Flowmerce. On ne ment pas au client : succes.
+    // Le webhook /api/retours/webhook reconciliera l'etat plus tard.
+    console.error('[flowmerce] persist post-succes KO', {
+      claimId,
+      returnRequestId: returnRequest.id,
+      err,
+    })
+  }
 
   return NextResponse.json(
-    {
-      success:        true,
-      claimId:        data.claim?.id,
-      processingDays: data.policy_applied?.processing_days ?? 5,
-      message:       'Votre demande de retour a été enregistrée. Vous recevrez une décision sous peu.',
-    },
+    { success: true, status: localStatus, claimId },
     { status: 201 }
   )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function rollback(returnRequestId: string): Promise<void> {
+  try {
+    await prisma.returnRequest.delete({ where: { id: returnRequestId } })
+  } catch (err) {
+    console.error('[flowmerce] rollback ReturnRequest KO', { returnRequestId, err })
+  }
 }
