@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 import { authConfig } from './auth.config'
 
-const isProd  = process.env.NODE_ENV === 'production'
+const isProd   = process.env.NODE_ENV === 'production'
 const PROD_URL = process.env.NEXTAUTH_URL || 'https://caba-store.vercel.app'
 
 // ── Normalisation de l'identifiant (cohérent avec l'inscription) ──────────────
@@ -30,7 +30,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         motDePasse:  { label: 'Mot de passe',        type: 'password' },
       },
       async authorize(credentials) {
-        console.log('[authorize] identifiant reçu:', credentials?.identifiant)
+        // ── Validation des champs ──
         if (!credentials?.identifiant || !credentials?.motDePasse) return null
 
         const identifiant = normalizeIdentifiant(credentials.identifiant as string)
@@ -39,6 +39,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!identifiant) return null
 
         try {
+          // ── Recherche de l'utilisateur en DB ──
           const user = await prisma.user.findFirst({
             where: {
               OR: [
@@ -49,12 +50,26 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             include: { vendeurProfile: true },
           })
 
-          if (!user)             return null
-          if (!user.motDePasse)  return null  // compte Google
+          if (!user) {
+            console.log('[authorize:credentials] Utilisateur introuvable :', identifiant)
+            return null
+          }
 
+          // ── Compte Google sans mot de passe ──
+          // La page détecte ce cas via /api/auth/verifier-identifiant
+          if (!user.motDePasse) {
+            console.log('[authorize:credentials] Compte Google (pas de motDePasse) :', identifiant)
+            return null
+          }
+
+          // ── Vérification du mot de passe ──
           const passwordMatch = await bcrypt.compare(motDePasse, user.motDePasse)
-          if (!passwordMatch)    return null
+          if (!passwordMatch) {
+            console.log('[authorize:credentials] Mot de passe incorrect pour :', identifiant)
+            return null
+          }
 
+          // ── Succès ──
           return {
             id:            user.id,
             name:          `${user.prenom} ${user.nom}`,
@@ -63,9 +78,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             telephone:     user.telephone     ?? null,
             vendeurStatut: user.vendeurProfile?.statut ?? null,
           }
+
         } catch (error) {
-          // 🔴 Sans ce catch, toute erreur Prisma/bcrypt devient silencieusement "CredentialsSignin"
-          console.error('[authorize] Erreur inattendue :', error)
+          // Sans ce catch, toute erreur Prisma/bcrypt devient silencieusement
+          // "CredentialsSignin" et affiche "Identifiant ou mot de passe incorrect."
+          // → Le log ici permet de voir le vrai problème dans les logs serveur.
+          console.error('[authorize:credentials] Erreur inattendue :', error)
           return null
         }
       },
@@ -81,19 +99,29 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.userId) return null
 
-        const user = await prisma.user.findUnique({
-          where: { id: credentials.userId as string },
-          include: { vendeurProfile: true },
-        })
-        if (!user) return null
+        try {
+          const user = await prisma.user.findUnique({
+            where: { id: credentials.userId as string },
+            include: { vendeurProfile: true },
+          })
 
-        return {
-          id:            user.id,
-          name:          `${user.prenom} ${user.nom}`,
-          email:         user.email,
-          role:          user.role,
-          telephone:     user.telephone ?? null,
-          vendeurStatut: user.vendeurProfile?.statut ?? null,
+          if (!user) {
+            console.log('[authorize:google-native] Utilisateur introuvable, id :', credentials.userId)
+            return null
+          }
+
+          return {
+            id:            user.id,
+            name:          `${user.prenom} ${user.nom}`,
+            email:         user.email,
+            role:          user.role,
+            telephone:     user.telephone     ?? null,
+            vendeurStatut: user.vendeurProfile?.statut ?? null,
+          }
+
+        } catch (error) {
+          console.error('[authorize:google-native] Erreur inattendue :', error)
+          return null
         }
       },
     }),
@@ -149,7 +177,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return `${base}/inscription/finaliser-google?token=${tempToken}`
 
         } catch (err) {
-          console.error('Erreur OAuth signIn:', err)
+          console.error('[signIn:google] Erreur OAuth :', err)
           return false
         }
       }
@@ -167,15 +195,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       // ── Google OAuth : enrichir le token depuis la DB ──
       if (account?.provider === 'google' && token.email) {
-        const dbUser = await prisma.user.findFirst({
-          where: { email: token.email },
-          include: { vendeurProfile: true },
-        })
-        if (dbUser) {
-          token.id            = dbUser.id
-          token.role          = dbUser.role
-          token.telephone     = dbUser.telephone ?? null
-          token.vendeurStatut = dbUser.vendeurProfile?.statut ?? null
+        try {
+          const dbUser = await prisma.user.findFirst({
+            where: { email: token.email },
+            include: { vendeurProfile: true },
+          })
+          if (dbUser) {
+            token.id            = dbUser.id
+            token.role          = dbUser.role
+            token.telephone     = dbUser.telephone ?? null
+            token.vendeurStatut = dbUser.vendeurProfile?.statut ?? null
+          }
+        } catch (err) {
+          console.error('[jwt:google] Erreur enrichissement token :', err)
         }
       }
 

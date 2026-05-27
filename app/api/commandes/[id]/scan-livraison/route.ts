@@ -11,6 +11,8 @@ const pusher = new Pusher({
   useTLS:  true,
 })
 
+// POST /api/commandes/[id]/scan-livraison
+// Confirme simplement la réception de la commande (scan supprimé).
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -20,12 +22,6 @@ export async function POST(
     const token = await getAuthToken()
     if (!token) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
-
-    const { imagesB64 } = await req.json()
-
-    if (!imagesB64 || !Array.isArray(imagesB64) || imagesB64.length === 0) {
-      return NextResponse.json({ error: 'Au moins une image requise' }, { status: 400 })
     }
 
     const commande = await prisma.order.findFirst({
@@ -38,28 +34,23 @@ export async function POST(
 
     await prisma.order.update({
       where: { id },
-      data: {
-        statut:      'LIVREE',
-        scan2Result: 'CONFIRME',
-        scan2Done:   true,
-      },
+      data:  { statut: 'LIVREE' },
     })
 
     await pusher.trigger('admin-commandes', 'statut-change', {
       commandeId: id,
       statut:     'LIVREE',
       client:     `${commande.user.prenom} ${commande.user.nom}`,
-      message:    '📦 Client a confirmé la réception par scan',
+      message:    '📦 Client a confirmé la réception',
       updatedAt:  new Date().toISOString(),
     })
 
     return NextResponse.json({
-      decision:           'CONFIRME',
       delivery_confirmed: true,
       message:            'Réception confirmée ✅',
     })
   } catch (error) {
-    console.error('Erreur scan livraison:', error)
+    console.error('Erreur confirmation livraison:', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
