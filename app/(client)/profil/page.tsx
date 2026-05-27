@@ -29,8 +29,8 @@ function PasswordStrength({ password }: { password: string }) {
         const ok = rule.test(password)
         return (
           <div key={rule.id} className="flex items-center gap-2">
-            <span className={`text-xs transition-colors ${ok ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-600'}`}>{ok ? <Check className="w-4 h-4" /> : '○'}</span>
-            <span className={`text-xs transition-colors ${ok ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>{rule.label}</span>
+            <span className={`text-xs transition-colors ${ok ? 'text-green-700 dark:text-green-400' : 'text-stone-400 dark:text-stone-600'}`}>{ok ? <Check className="w-4 h-4" /> : '○'}</span>
+            <span className={`text-xs transition-colors ${ok ? 'text-green-700 dark:text-green-400' : 'text-stone-400 dark:text-stone-500'}`}>{rule.label}</span>
           </div>
         )
       })}
@@ -40,10 +40,10 @@ function PasswordStrength({ password }: { password: string }) {
 
 function InfoRow({ label, value }: { label: string; value?: string }) {
   return (
-    <div className="flex items-start justify-between py-3.5 border-b border-gray-100 dark:border-gray-800 gap-4">
-      <span className="text-xs uppercase tracking-[0.15em] text-gray-400 dark:text-gray-500 shrink-0">{label}</span>
-      <span className="text-sm text-gray-800 dark:text-gray-100 text-right break-all">
-        {value || <span className="text-gray-300 dark:text-gray-600 italic">Non renseigné</span>}
+    <div className="flex items-start justify-between py-3.5 border-b border-stone-100 dark:border-stone-800 gap-4">
+      <span className="text-xs uppercase tracking-[0.15em] text-stone-400 dark:text-stone-500 shrink-0">{label}</span>
+      <span className="text-sm text-stone-800 dark:text-stone-100 text-right break-all">
+        {value || <span className="text-stone-300 dark:text-stone-600 italic">Non renseigné</span>}
       </span>
     </div>
   )
@@ -54,7 +54,7 @@ function ConfirmPasswordBlock({ value, onChange, inputClass, labelClass }: {
   value: string; onChange: (v: string) => void; inputClass: string; labelClass: string
 }) {
   return (
-    <div className="border-t border-gray-200 dark:border-gray-800 pt-5 space-y-4">
+    <div className="border-t border-stone-200 dark:border-stone-800 pt-5 space-y-4">
       <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3">
         <p className="text-xs text-amber-700 dark:text-amber-400">
           <Lock className="w-4 h-4 inline mr-1" />Entrez votre mot de passe actuel pour confirmer les modifications
@@ -83,9 +83,9 @@ function ConfirmOtpBlock({
   otpClass: string
 }) {
   return (
-    <div className="border-t border-gray-200 dark:border-gray-800 pt-5 space-y-4">
-      <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-3">
-        <p className="text-xs text-blue-700 dark:text-blue-300">
+    <div className="border-t border-stone-200 dark:border-stone-800 pt-5 space-y-4">
+      <div className="bg-orange-50 dark:bg-stone-900 border border-orange-200 dark:border-stone-700 rounded-xl px-4 py-3">
+        <p className="text-xs text-orange-700 dark:text-orange-400">
           <Mail className="w-4 h-4 inline mr-1" />
           Votre compte Google ne possède pas de mot de passe.
           Un code de confirmation sera envoyé à votre email.
@@ -96,7 +96,7 @@ function ConfirmOtpBlock({
           type="button"
           onClick={onSendCode}
           disabled={sending}
-          className="w-full border border-gray-300 dark:border-gray-600 hover:border-black dark:hover:border-white text-gray-700 dark:text-gray-300 text-xs uppercase tracking-[0.2em] py-3 transition-colors disabled:opacity-50"
+          className="w-full border border-stone-300 dark:border-stone-600 hover:border-orange-700 dark:hover:border-orange-500 text-stone-700 dark:text-stone-300 hover:text-orange-700 dark:hover:text-orange-500 text-xs uppercase tracking-[0.2em] py-3 transition-colors disabled:opacity-50"
         >
           {sending ? 'Envoi...' : 'Envoyer un code par email'}
         </button>
@@ -118,7 +118,7 @@ function ConfirmOtpBlock({
             type="button"
             onClick={onSendCode}
             disabled={sending}
-            className="mt-2 text-xs text-gray-400 dark:text-gray-500 hover:text-black dark:hover:text-white transition-colors underline underline-offset-2"
+            className="mt-2 text-xs text-stone-400 dark:text-stone-500 hover:text-orange-700 dark:hover:text-orange-500 transition-colors underline underline-offset-2"
           >
             {sending ? 'Renvoi...' : 'Renvoyer le code'}
           </button>
@@ -342,21 +342,24 @@ export default function ProfilPage() {
   }
 
   // ── Styles ────────────────────────────────────────────────────────────────
-  const inputClass = "w-full border-b border-gray-300 dark:border-gray-600 focus:border-black dark:focus:border-white outline-none py-3 text-sm text-gray-800 dark:text-gray-100 bg-transparent transition-colors"
-  const labelClass = "block text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400 mb-2"
-  const otpClass   = "w-full border-b border-gray-300 dark:border-gray-600 focus:border-black dark:focus:border-white outline-none py-3 text-xl text-center tracking-[0.4em] text-gray-800 dark:text-gray-100 bg-transparent transition-colors"
-  const tabClass   = (s: Section) => `flex-1 py-2.5 text-xs uppercase tracking-[0.15em] border-b-2 transition-colors text-center ${section === s ? 'border-black dark:border-white text-black dark:text-white' : 'border-transparent text-gray-400 dark:text-gray-500'}`
-  const btnCancel  = "flex-1 border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white text-xs uppercase tracking-[0.2em] py-3.5 transition-colors rounded-none"
-  const btnSubmit  = "flex-1 bg-black dark:bg-white hover:bg-gray-900 dark:hover:bg-gray-100 text-white dark:text-black text-xs uppercase tracking-[0.2em] py-3.5 transition-colors disabled:opacity-50 rounded-none"
+  const inputClass = "w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-3 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors"
+  const labelClass = "block text-xs uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400 mb-2"
+  const otpClass   = "w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-3 text-xl text-center tracking-[0.4em] text-stone-800 dark:text-stone-100 bg-transparent transition-colors"
+  const tabClass   = (s: Section) => `flex-1 py-2.5 text-xs uppercase tracking-[0.15em] border-b-2 transition-colors text-center ${section === s ? 'border-orange-700 dark:border-orange-500 text-orange-700 dark:text-orange-500' : 'border-transparent text-stone-400 dark:text-stone-500'}`
+  const btnCancel  = "flex-1 border border-stone-300 dark:border-stone-600 text-stone-500 dark:text-stone-400 hover:border-stone-700 dark:hover:border-stone-300 hover:text-stone-800 dark:hover:text-stone-100 text-xs uppercase tracking-[0.2em] py-3.5 transition-colors rounded-none"
+  const btnSubmit  = "flex-1 bg-orange-700 dark:bg-orange-600 hover:bg-orange-800 dark:hover:bg-orange-700 text-white text-xs uppercase tracking-[0.2em] py-3.5 transition-colors disabled:opacity-50 rounded-none"
 
   const emailInputBorder =
     emailStatus === 'available' ? 'border-green-500 dark:border-green-400' :
     emailStatus === 'taken'     ? 'border-red-500 dark:border-red-400'     :
     emailStatus === 'same'      ? 'border-red-500 dark:border-red-400'     :
-    'border-gray-300 dark:border-gray-600'
+    'border-stone-300 dark:border-stone-600'
 
   if (loading) return (
-    <div className="max-w-2xl mx-auto px-4 py-12 text-center text-gray-500 dark:text-gray-400">Chargement...</div>
+    <div className="max-w-2xl mx-auto px-4 py-12 text-center">
+      <div className="w-8 h-8 border-2 border-stone-200 dark:border-stone-700 border-t-orange-700 rounded-full animate-spin mx-auto mb-3" />
+      <p className="text-stone-500 dark:text-stone-400 text-sm">Chargement...</p>
+    </div>
   )
 
   /* ── VUE PROFIL ─────────────────────────────────────────────────────────── */
@@ -364,22 +367,22 @@ export default function ProfilPage() {
     return (
       <div className="max-w-2xl mx-auto px-4 py-6 md:py-12">
         <div className="mb-6 md:mb-8">
-          <p className="text-gray-400 dark:text-gray-500 uppercase tracking-[0.3em] text-xs mb-2">Compte</p>
-          <h1 className="text-2xl md:text-3xl font-extralight text-black dark:text-white tracking-wide">Mon Profil</h1>
-          <div className="w-8 h-px bg-black dark:bg-white mt-3 md:mt-4" />
+          <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500 mb-2">Compte</p>
+          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">Mon Profil</h1>
+          <div className="w-8 h-px bg-orange-700 dark:bg-orange-500 mt-3 md:mt-4" />
         </div>
 
-        <div className="flex items-center gap-4 mb-8 bg-gray-50 dark:bg-gray-900 rounded-2xl p-4">
-          <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-gray-900 dark:bg-white flex items-center justify-center shrink-0">
-            <span className="text-white dark:text-gray-900 text-xl md:text-2xl font-semibold">
+        <div className="flex items-center gap-4 mb-8 bg-stone-100 dark:bg-stone-900 rounded-2xl p-4">
+          <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-orange-700 dark:bg-orange-600 flex items-center justify-center shrink-0">
+            <span className="text-white text-xl md:text-2xl font-semibold">
               {profil.prenom?.charAt(0)?.toUpperCase() || '?'}
             </span>
           </div>
           <div className="min-w-0">
-            <p className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-100 truncate">{profil.prenom} {profil.nom}</p>
-            <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 truncate">{session?.user?.email}</p>
+            <p className="text-base md:text-lg font-semibold text-stone-800 dark:text-stone-100 truncate">{profil.prenom} {profil.nom}</p>
+            <p className="text-xs md:text-sm text-stone-500 dark:text-stone-400 truncate">{session?.user?.email}</p>
             {hasPassword === false && (
-              <span className="inline-flex items-center gap-1 mt-1 text-[10px] uppercase tracking-wide bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 mt-1 text-[10px] uppercase tracking-wide bg-orange-100 dark:bg-stone-800 text-orange-700 dark:text-orange-400 px-2 py-0.5 rounded-full">
                 <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
                 Connexion Google
               </span>
@@ -387,7 +390,7 @@ export default function ProfilPage() {
           </div>
         </div>
 
-        <div className="mb-8 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 px-4 divide-y divide-gray-100 dark:divide-gray-800">
+        <div className="mb-8 bg-white dark:bg-stone-900 rounded-2xl border border-stone-100 dark:border-stone-800 px-4 divide-y divide-stone-100 dark:divide-stone-800">
           <InfoRow label="Nom"       value={profil.nom} />
           <InfoRow label="Prénom"    value={profil.prenom} />
           <InfoRow label="Âge"       value={profil.age} />
@@ -398,7 +401,7 @@ export default function ProfilPage() {
         </div>
 
         <button onClick={goToEdit}
-          className="w-full bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-black text-xs uppercase tracking-[0.3em] py-4 transition-colors">
+          className="w-full bg-orange-700 hover:bg-orange-800 text-white text-xs uppercase tracking-[0.3em] py-4 transition-colors rounded-xl">
           Modifier mes informations
         </button>
       </div>
@@ -410,18 +413,18 @@ export default function ProfilPage() {
     <div className="max-w-2xl mx-auto px-4 py-6 md:py-12">
       <div className="mb-6 md:mb-8">
         <button onClick={goBack}
-          className="flex items-center gap-2 text-gray-400 dark:text-gray-500 hover:text-black dark:hover:text-white text-xs uppercase tracking-[0.2em] transition-colors mb-5">
+          className="flex items-center gap-2 text-stone-400 dark:text-stone-500 hover:text-orange-700 dark:hover:text-orange-500 text-xs uppercase tracking-[0.2em] transition-colors mb-5">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
           Retour
         </button>
-        <p className="text-gray-400 dark:text-gray-500 uppercase tracking-[0.3em] text-xs mb-2">Compte</p>
-        <h1 className="text-2xl md:text-3xl font-extralight text-black dark:text-white tracking-wide">Modifier</h1>
-        <div className="w-8 h-px bg-black dark:bg-white mt-3 md:mt-4" />
+        <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500 mb-2">Compte</p>
+        <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">Modifier</h1>
+        <div className="w-8 h-px bg-orange-700 dark:bg-orange-500 mt-3 md:mt-4" />
       </div>
 
-      <div className="flex border-b border-gray-200 dark:border-gray-800 mb-6 md:mb-8">
+      <div className="flex border-b border-stone-200 dark:border-stone-800 mb-6 md:mb-8">
         <button onClick={() => { setSection('infos');    clearMessages() }} className={tabClass('infos')}>
           <span className="sm:hidden">Infos</span><span className="hidden sm:inline">Informations</span>
         </button>
@@ -456,7 +459,7 @@ export default function ProfilPage() {
             <div>
               <label className={labelClass}>Genre</label>
               <select value={profil.genre} onChange={e => setProfil({...profil, genre: e.target.value})}
-                className="w-full border-b border-gray-300 dark:border-gray-600 focus:border-black dark:focus:border-white outline-none py-3 text-sm text-gray-800 dark:text-gray-100 bg-transparent transition-colors">
+                className="w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-3 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors">
                 <option value="">Non précisé</option>
                 <option value="HOMME">Homme</option>
                 <option value="FEMME">Femme</option>
@@ -471,7 +474,7 @@ export default function ProfilPage() {
           <div>
             <label className={labelClass}>Wilaya</label>
             <select value={profil.wilaya} onChange={e => setProfil({...profil, wilaya: e.target.value})}
-              className="w-full border-b border-gray-300 dark:border-gray-600 focus:border-black dark:focus:border-white outline-none py-3 text-sm text-gray-800 dark:text-gray-100 bg-transparent transition-colors">
+              className="w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-3 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors">
               <option value="">Sélectionner une wilaya</option>
               {WILAYAS.map(w => <option key={w} value={w}>{w}</option>)}
             </select>
@@ -479,16 +482,16 @@ export default function ProfilPage() {
           <div>
             <label className={labelClass}>
               Adresse de livraison par défaut
-              <span className="ml-1 text-gray-400 normal-case tracking-normal">(optionnel)</span>
+              <span className="ml-1 text-stone-400 normal-case tracking-normal">(optionnel)</span>
             </label>
             <textarea
               value={profil.adresse}
               onChange={e => setProfil({...profil, adresse: e.target.value})}
               rows={2}
               placeholder="Numéro, rue, cité, commune…"
-              className="w-full border-b border-gray-300 dark:border-gray-600 focus:border-black dark:focus:border-white outline-none py-3 text-sm text-gray-800 dark:text-gray-100 bg-transparent transition-colors resize-none"
+              className="w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-3 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors resize-none"
             />
-            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">
+            <p className="text-[10px] text-stone-400 dark:text-stone-500 mt-1">
               Sera pré-remplie automatiquement lors de la commande
             </p>
           </div>
@@ -531,8 +534,8 @@ export default function ProfilPage() {
         <form onSubmit={handleChangePassword} className="space-y-5">
           {/* Bannière pour comptes Google */}
           {!hasPassword && (
-            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-3">
-              <p className="text-xs text-blue-700 dark:text-blue-300">
+            <div className="bg-orange-50 dark:bg-stone-900 border border-orange-200 dark:border-stone-700 rounded-xl px-4 py-3">
+              <p className="text-xs text-orange-700 dark:text-orange-400">
                 <Mail className="w-4 h-4 inline mr-1" />
                 Votre compte Google n&apos;a pas encore de mot de passe.
                 Vous pouvez en créer un pour vous connecter également par email.
@@ -550,12 +553,12 @@ export default function ProfilPage() {
             <input type="password" value={pwd.confirmer} onChange={e => setPwd({...pwd, confirmer: e.target.value})}
               required className={inputClass} placeholder="Répétez le mot de passe" />
             {pwd.confirmer && pwd.nouveau !== pwd.confirmer && <p className="text-xs text-red-500 dark:text-red-400 mt-1">Les mots de passe ne correspondent pas</p>}
-            {pwd.confirmer && pwd.nouveau === pwd.confirmer  && <p className="text-xs text-green-600 dark:text-green-400 mt-1"><Check className="w-4 h-4 inline mr-1" />Les mots de passe correspondent</p>}
+            {pwd.confirmer && pwd.nouveau === pwd.confirmer  && <p className="text-xs text-green-700 dark:text-green-400 mt-1"><Check className="w-4 h-4 inline mr-1" />Les mots de passe correspondent</p>}
           </div>
 
           {/* Confirmation : mot de passe actuel OU OTP */}
           {hasPassword ? (
-            <div className="border-t border-gray-200 dark:border-gray-800 pt-5 space-y-4">
+            <div className="border-t border-stone-200 dark:border-stone-800 pt-5 space-y-4">
               <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3">
                 <p className="text-xs text-amber-700 dark:text-amber-400"><Lock className="w-4 h-4 inline mr-1" />Entrez votre mot de passe actuel pour confirmer les modifications</p>
               </div>
@@ -605,12 +608,12 @@ export default function ProfilPage() {
               return (
                 <div key={e} className="flex items-center flex-1">
                   <div className="flex flex-col items-center gap-1 shrink-0">
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${isDone ? 'bg-green-600 dark:bg-green-500 text-white' : isActive ? 'bg-black dark:bg-white text-white dark:text-black' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'}`}>
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${isDone ? 'bg-green-700 dark:bg-green-600 text-white' : isActive ? 'bg-orange-700 dark:bg-orange-600 text-white' : 'bg-stone-100 dark:bg-stone-800 text-stone-400 dark:text-stone-500'}`}>
                       {isDone ? <Check className="w-4 h-4" /> : i + 1}
                     </div>
-                    <span className={`text-[10px] tracking-wide leading-none text-center ${isActive ? 'text-black dark:text-white font-medium' : 'text-gray-400 dark:text-gray-500'}`}>{labels[i]}</span>
+                    <span className={`text-[10px] tracking-wide leading-none text-center ${isActive ? 'text-orange-700 dark:text-orange-500 font-medium' : 'text-stone-400 dark:text-stone-500'}`}>{labels[i]}</span>
                   </div>
-                  {i < 2 && <div className={`h-px flex-1 mx-1 mb-4 ${isDone ? 'bg-green-400 dark:bg-green-600' : 'bg-gray-200 dark:bg-gray-700'}`} />}
+                  {i < 2 && <div className={`h-px flex-1 mx-1 mb-4 ${isDone ? 'bg-green-400 dark:bg-green-600' : 'bg-stone-200 dark:bg-stone-700'}`} />}
                 </div>
               )
             })}
@@ -618,23 +621,23 @@ export default function ProfilPage() {
 
           {emailForm.etape === 'form' && (
             <form onSubmit={handleRequestEmailChange} className="space-y-5">
-              <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 text-xs text-gray-500 dark:text-gray-400">
-                Email actuel : <span className="font-semibold text-gray-800 dark:text-gray-100 break-all">{session?.user?.email}</span>
+              <div className="bg-stone-50 dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-4 text-xs text-stone-500 dark:text-stone-400">
+                Email actuel : <span className="font-semibold text-stone-800 dark:text-stone-100 break-all">{session?.user?.email}</span>
               </div>
               <div>
                 <label className={labelClass}>Nouvel email</label>
                 <div className="relative">
                   <input type="email" value={emailForm.nouvelEmail}
                     onChange={e => setEmailForm(f => ({ ...f, nouvelEmail: e.target.value }))} required
-                    className={`w-full border-b focus:outline-none outline-none py-3 text-sm text-gray-800 dark:text-gray-100 bg-transparent transition-colors pr-8 ${emailInputBorder}`}
+                    className={`w-full border-b focus:outline-none outline-none py-3 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors pr-8 ${emailInputBorder}`}
                     placeholder="nouveau@email.com" />
                   <div className="absolute right-0 top-1/2 -translate-y-1/2">
-                    {emailChecking && <svg className="animate-spin w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>}
+                    {emailChecking && <svg className="animate-spin w-4 h-4 text-stone-400" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>}
                     {!emailChecking && emailStatus === 'available' && <Check className="w-4 h-4 text-green-500" />}
                     {!emailChecking && (emailStatus === 'taken' || emailStatus === 'same') && <X className="w-4 h-4 text-red-500" />}
                   </div>
                 </div>
-                {emailStatus === 'available' && <p className="text-xs text-green-600 dark:text-green-400 mt-1"><Check className="w-4 h-4 inline mr-1" />Email disponible</p>}
+                {emailStatus === 'available' && <p className="text-xs text-green-700 dark:text-green-400 mt-1"><Check className="w-4 h-4 inline mr-1" />Email disponible</p>}
                 {emailStatus === 'same'      && <p className="text-xs text-red-500 dark:text-red-400 mt-1"><X className="w-4 h-4 inline mr-1" />Identique à votre email actuel</p>}
                 {emailStatus === 'taken'     && <p className="text-xs text-red-500 dark:text-red-400 mt-1"><X className="w-4 h-4 inline mr-1" />Email déjà utilisé</p>}
               </div>
@@ -650,8 +653,8 @@ export default function ProfilPage() {
               )}
 
               {!hasPassword && (
-                <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-3">
-                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                <div className="bg-orange-50 dark:bg-stone-900 border border-orange-200 dark:border-stone-700 rounded-xl px-4 py-3">
+                  <p className="text-xs text-orange-700 dark:text-orange-400">
                     <Mail className="w-4 h-4 inline mr-1" />
                     Un code sera envoyé à votre email actuel et au nouvel email pour confirmer le changement.
                   </p>
@@ -677,7 +680,7 @@ export default function ProfilPage() {
 
           {emailForm.etape === 'codeAncien' && (
             <form onSubmit={handleVerifyOldEmail} className="space-y-5">
-              <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-xl p-4 text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+              <div className="bg-orange-50 dark:bg-stone-900 border border-orange-200 dark:border-stone-700 rounded-xl p-4 text-xs text-orange-700 dark:text-orange-400 leading-relaxed">
                 Code envoyé à <strong className="break-all">{session?.user?.email}</strong>. Confirmez votre identité.
               </div>
               <div>
@@ -690,7 +693,7 @@ export default function ProfilPage() {
                 {saving ? 'Vérification...' : 'Valider'}
               </button>
               <button type="button" onClick={() => { setEmailForm({...emailForm, etape: 'form', codeAncien: ''}); clearMessages() }}
-                className="w-full text-gray-400 dark:text-gray-500 hover:text-black dark:hover:text-white text-xs uppercase tracking-[0.2em] transition-colors py-2">
+                className="w-full text-stone-400 dark:text-stone-500 hover:text-orange-700 dark:hover:text-orange-500 text-xs uppercase tracking-[0.2em] transition-colors py-2">
                 ← Retour
               </button>
             </form>
@@ -698,7 +701,7 @@ export default function ProfilPage() {
 
           {emailForm.etape === 'codeNouveau' && (
             <form onSubmit={handleConfirmEmailChange} className="space-y-5">
-              <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-xl p-4 text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+              <div className="bg-orange-50 dark:bg-stone-900 border border-orange-200 dark:border-stone-700 rounded-xl p-4 text-xs text-orange-700 dark:text-orange-400 leading-relaxed">
                 Code envoyé à <strong className="break-all">{emailForm.nouvelEmail}</strong>. Entrez-le pour finaliser.
               </div>
               <div>
@@ -711,7 +714,7 @@ export default function ProfilPage() {
                 {saving ? 'Confirmation...' : 'Confirmer le changement'}
               </button>
               <button type="button" onClick={() => { setEmailForm({...emailForm, etape: 'codeAncien', codeNouveau: ''}); clearMessages() }}
-                className="w-full text-gray-400 dark:text-gray-500 hover:text-black dark:hover:text-white text-xs uppercase tracking-[0.2em] transition-colors py-2">
+                className="w-full text-stone-400 dark:text-stone-500 hover:text-orange-700 dark:hover:text-orange-500 text-xs uppercase tracking-[0.2em] transition-colors py-2">
                 ← Retour
               </button>
             </form>

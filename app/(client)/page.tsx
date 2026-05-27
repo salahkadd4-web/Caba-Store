@@ -3,98 +3,159 @@ import Image from 'next/image'
 import { prisma } from '@/lib/prisma'
 import FavoriIconButton from '@/components/client/FavoriIconButton'
 import CartIconButton from '@/components/client/CartIconButton'
-import SuitcaseAnimationBg from '@/components/client/SuitcaseAnimationBg'
-import { Banknote, Package, Tag } from 'lucide-react'
-import { auth } from '@/auth'
+import CabaLogo from '@/components/CabaLogo'
+import AppFooter from '@/components/AppFooter'
+import { Banknote, Package, Tag, Truck, Wallet, RotateCcw, ShieldCheck, Headphones, Flame } from 'lucide-react'
 
 export default async function HomePage() {
-  const session = await auth()
   return (
-    <div className="bg-white dark:bg-gray-950 transition-colors duration-300">
+    <div className="bg-stone-50 dark:bg-stone-950 transition-colors duration-300">
 
-      {/* ── Hero Section avec animation ─────────────────── */}
-      <section className="bg-black dark:bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-6">
- 
-        {/* ── Animation valise en arrière-plan ── */}
-        <SuitcaseAnimationBg />
-      
-        {/* ── Fond gradient (gardé, il se superpose à l'animation) ── */}
-        <div className="absolute inset-0 bg-linear-to-b from-black via-gray-900 to-black opacity-40" />
-      
-        {/* ── Contenu identique à avant — z-10 pour passer au-dessus ── */}
-        <div className="relative z-10 w-full max-w-5xl mx-auto flex flex-col items-center text-center">
-      
-          <p className="text-gray-500 uppercase tracking-[0.5em] text-xs font-light mb-8">
-            Première boutique online en Algérie spécialisée en importation
-          </p>
-      
-          <div className="w-px h-12 bg-gray-600 mx-auto my-8" />
-      
-          <p className="text-gray-400 text-base md:text-lg font-light leading-relaxed max-w-lg mx-auto mb-10">
-            Des produits d&apos;exception sélectionnés pour vous, livrés partout en Algérie.
-          </p>
-      
-          <div className="flex gap-6 justify-center flex-wrap">
-            <Link
-              href="/produits"
-              className="bg-white text-black hover:bg-gray-100 text-xs uppercase tracking-[0.3em] px-12 py-4 transition-all duration-300"
-            >
-              Explorer
-            </Link>
-            <Link
-              href="/categories"
-              className="border border-gray-600 text-gray-300 hover:border-white hover:text-white text-xs uppercase tracking-[0.3em] px-12 py-4 transition-all duration-300"
-            >
-              Catégories
-            </Link>
+      {/* ── Hero Section ──────────────────────────────────── */}
+      <section className="bg-[#FAF7F2] dark:bg-stone-900 text-stone-800 dark:text-stone-100 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 py-20 md:py-28 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+
+          {/* ── Texte ── */}
+          <div className="relative z-10 text-center md:text-left">
+
+            <span className="inline-flex items-center gap-2 bg-orange-100 dark:bg-orange-950/40 text-orange-800 dark:text-orange-300 text-xs font-medium px-3 py-1.5 rounded-full mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-600 animate-pulse" />
+              Nouveau · Livraison 48h en Algérie
+            </span>
+
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-light tracking-tight mb-6 leading-[1.05]">
+              Vos produits préférés,
+              <span className="block text-orange-700 dark:text-orange-400 font-normal italic mt-2">livrés chez vous.</span>
+            </h1>
+
+            <p className="text-stone-600 dark:text-stone-300 text-base md:text-lg font-light leading-relaxed max-w-lg mb-10 mx-auto md:mx-0">
+              Paiement à la livraison, retours gratuits sous 14 jours. Partout en Algérie, des produits sélectionnés avec soin.
+            </p>
+
+            <div className="flex gap-3 justify-center md:justify-start flex-wrap">
+              <Link
+                href="/produits"
+                className="bg-orange-700 hover:bg-orange-800 text-white text-sm font-medium px-8 py-4 rounded-full transition-colors shadow-sm hover:shadow"
+              >
+                Acheter maintenant
+              </Link>
+              <Link
+                href="/categories"
+                className="border border-stone-300 dark:border-stone-700 text-stone-700 dark:text-stone-200 hover:border-stone-800 dark:hover:border-stone-100 text-sm font-medium px-8 py-4 rounded-full transition-colors"
+              >
+                Voir les catégories
+              </Link>
+            </div>
+
           </div>
-      
+
+          {/* ── Visuel logo ── */}
+          <div className="relative z-10 flex justify-center md:justify-end">
+            <div className="relative w-72 h-72 md:w-96 md:h-96">
+              <div className="absolute inset-0 rounded-full bg-orange-200/60 dark:bg-orange-950/30" />
+              <div className="absolute -top-4 -right-4 w-32 h-32 rounded-full bg-orange-300/50 dark:bg-orange-900/30" />
+              <div className="absolute inset-0 flex items-center justify-center p-12">
+                <CabaLogo className="w-full h-full text-orange-800 dark:text-orange-300" />
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-stone-300 dark:via-stone-700 to-transparent" />
+      </section>
+
+      {/* ── Trust strip ──────────────────────────────────── */}
+      <section className="bg-[#FAF7F2] dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800">
+        <div className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
+          {[
+            { Icon: Truck,     title: 'Livraison 48h',           desc: 'Partout en Algérie' },
+            { Icon: Wallet,    title: 'Paiement à la livraison', desc: 'Payez à la réception' },
+            { Icon: RotateCcw, title: 'Retours gratuits',        desc: '14 jours pour changer d’avis' },
+          ].map(({ Icon, title, desc }) => (
+            <div key={title} className="flex items-center gap-4 justify-center sm:justify-start">
+              <div className="w-11 h-11 rounded-full bg-orange-100 dark:bg-orange-950/40 flex items-center justify-center shrink-0">
+                <Icon className="w-5 h-5 text-orange-700 dark:text-orange-400" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">{title}</p>
+                <p className="text-xs text-stone-500 dark:text-stone-400">{desc}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* ── Catégories ───────────────────────────────────── */}
       <section className="max-w-7xl mx-auto px-6 py-24">
         <div className="text-center mb-16">
-          <Image
-            src="/logo_noir.png"
-            alt="CabaStore Logo"
-            width={120}
-            height={80}
-            className="h-20 w-auto object-contain mx-auto mb-4 dark:invert"
-          />
-          <p className="text-gray-400 dark:text-gray-500 uppercase tracking-[0.4em] text-xs mb-4">Parcourir</p>
-          <h2 className="text-4xl font-extralight tracking-widest text-black dark:text-white">Catégories</h2>
-          <div className="w-12 h-px bg-black dark:bg-white mx-auto mt-6" />
+          <CabaLogo className="w-16 h-16 text-orange-700 dark:text-orange-500 mx-auto mb-4 opacity-80" />
+          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-orange-700 dark:text-orange-500 mb-4">Parcourir</p>
+          <h2 className="text-4xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">Catégories</h2>
+          <div className="w-12 h-px bg-orange-700 dark:bg-orange-500 mx-auto mt-6" />
         </div>
         <CategoriesSection />
       </section>
 
-      {/* ── Bannière ─────────────────────────────────────── */}
-      <div className="bg-black dark:bg-gray-900 py-16 px-6 text-center border-y border-gray-800">
-        <p className="text-gray-500 uppercase tracking-[0.5em] text-xs mb-4">Notre Promesse</p>
-        <h2 className="text-3xl md:text-5xl font-extralight text-white tracking-wider">L&apos;Excellence, Toujours</h2>
-      </div>
+      {/* ── Bloc réassurance ─────────────────────────────── */}
+      <section className="bg-stone-900 dark:bg-stone-950 py-16 px-6 border-y border-stone-800">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 text-center">
+          {[
+            {
+              Icon: ShieldCheck,
+              title: 'Paiement sécurisé',
+              desc: 'Vos transactions sont protégées de bout en bout.',
+            },
+            {
+              Icon: Truck,
+              title: 'Livraison rapide',
+              desc: 'Expédition sous 24h, réception en 48h dans les 58 wilayas.',
+            },
+            {
+              Icon: Headphones,
+              title: 'Support 7j/7',
+              desc: 'Une question ? Notre équipe vous répond chaque jour.',
+            },
+          ].map(({ Icon, title, desc }) => (
+            <div key={title} className="flex flex-col items-center">
+              <div className="w-12 h-12 rounded-2xl bg-orange-700/20 flex items-center justify-center mb-4">
+                <Icon className="w-6 h-6 text-orange-400" />
+              </div>
+              <h3 className="text-stone-100 text-base font-semibold mb-2 tracking-wide">{title}</h3>
+              <p className="text-stone-400 text-sm font-light max-w-xs">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
-      {/* ── Produits récents ─────────────────────────────── */}
-      <section className="bg-gray-50 dark:bg-gray-900 py-24 px-6 transition-colors duration-300">
+      {/* ── Best-sellers ─────────────────────────────────── */}
+      <section className="bg-stone-50 dark:bg-stone-950 py-24 px-6 transition-colors duration-300">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <Image
-              src="/logo_noir.png"
-              alt="CabaStore Logo"
-              width={120}
-              height={80}
-              className="h-20 w-auto object-contain mx-auto mb-4 dark:invert"
-            />
-            <p className="text-gray-400 dark:text-gray-500 uppercase tracking-[0.4em] text-xs mb-4">Nouveautés</p>
-            <h2 className="text-4xl font-extralight tracking-widest text-black dark:text-white">Dernières Arrivées</h2>
-            <div className="w-12 h-px bg-black dark:bg-white mx-auto mt-6" />
+            <p className="text-xs font-semibold uppercase tracking-[0.4em] text-orange-700 dark:text-orange-500 mb-4 flex items-center justify-center gap-2">
+              <Flame className="w-4 h-4" /> Populaires
+            </p>
+            <h2 className="text-4xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">Meilleures Ventes</h2>
+            <div className="w-12 h-px bg-orange-700 dark:bg-orange-500 mx-auto mt-6" />
+          </div>
+          <BestSellersSection />
+        </div>
+      </section>
+
+      {/* ── Produits récents ─────────────────────────────── */}
+      <section className="bg-[#FAF7F2] dark:bg-stone-900 py-24 px-6 transition-colors duration-300">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <CabaLogo className="w-16 h-16 text-orange-700 dark:text-orange-500 mx-auto mb-4 opacity-80" />
+            <p className="text-xs font-semibold uppercase tracking-[0.4em] text-orange-700 dark:text-orange-500 mb-4">Nouveautés</p>
+            <h2 className="text-4xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">Dernières Arrivées</h2>
+            <div className="w-12 h-px bg-orange-700 dark:bg-orange-500 mx-auto mt-6" />
           </div>
           <ProduitsSection />
           <div className="text-center mt-16">
             <Link
               href="/produits"
-              className="nav-link border border-black dark:border-white text-black dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-xs uppercase tracking-[0.3em] px-12 py-4 transition-all duration-300 inline-block"
+              className="border border-stone-800 dark:border-stone-400 text-stone-800 dark:text-stone-200 hover:bg-stone-900 hover:text-white dark:hover:bg-stone-100 dark:hover:text-stone-900 text-xs uppercase tracking-[0.3em] px-12 py-4 transition-all duration-300 inline-block rounded-xl"
             >
               Voir Tout
             </Link>
@@ -103,42 +164,138 @@ export default async function HomePage() {
       </section>
 
       {/* ── Footer ───────────────────────────────────────── */}
-      <footer className="bg-black dark:bg-gray-950 text-white py-16 px-6 border-t border-gray-800">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
-            <div>
-              <h3 className="text-lg font-extralight tracking-[0.5em] uppercase mb-4">CabaStore</h3>
-              <p className="text-gray-500 text-sm font-light leading-relaxed">L&apos;excellence à portée de main.</p>
-            </div>
-            <div>
-              <h4 className="text-xs uppercase tracking-[0.3em] text-gray-400 mb-4">Navigation</h4>
-              <div className="space-y-2">
-                {['/produits', '/categories'].map((href, i) => (
-                  <Link key={href} href={href} className="block text-gray-500 hover:text-white text-xs uppercase tracking-widest transition-colors duration-300">
-                    {['Produits', 'Catégories'][i]}
-                  </Link>
-                ))}
+      <AppFooter />
+    </div>
+  )
+}
+
+async function BestSellersSection() {
+  const produitsRaw = await prisma.product.findMany({
+    where: {
+      actif: true,
+      OR: [
+        { vendeurId: null },
+        { vendeur: { prioriteAffichage: { lt: 99 } } },
+      ],
+    },
+    take: 40,
+    orderBy: { orderItems: { _count: 'desc' } },
+    include: {
+      vendeur: { select: { prioriteAffichage: true } },
+      category: true,
+      variants: { select: { id: true, nom: true, couleur: true }, orderBy: { createdAt: 'asc' } },
+      orderItems: { select: { id: true, order: { select: { statut: true } } } },
+    },
+  })
+
+  const produits = produitsRaw
+    .map(p => ({
+      ...p,
+      ventes: p.orderItems.filter(oi => oi.order.statut !== 'ANNULEE').length,
+    }))
+    .filter(p => p.ventes > 0)
+    .sort((a, b) => b.ventes - a.ventes)
+    .slice(0, 8)
+
+  if (produits.length === 0) {
+    return <p className="text-center text-stone-400 dark:text-stone-500 py-8 text-sm">Bientôt nos meilleures ventes.</p>
+  }
+
+  return (
+    <div className="products-grid grid grid-cols-2 md:grid-cols-4 gap-6">
+      {produits.map((produit) => {
+        const tiers     = produit.prixVariables as { minQte: number; maxQte: number | null; prix: number }[] | null
+        const hasTiers  = Array.isArray(tiers) && tiers.length > 0
+        const prixMin   = hasTiers ? Math.min(...tiers!.map(t => t.prix), produit.prix) : produit.prix
+        const estReduit = hasTiers && prixMin < produit.prix
+
+        return (
+          <Link
+            key={produit.id}
+            href={`/produits/${produit.id}`}
+            className="product-card group bg-white dark:bg-stone-900 rounded-2xl overflow-hidden border border-stone-200 dark:border-stone-800 hover:border-orange-300 dark:hover:border-orange-700"
+          >
+            <div className="relative h-48 bg-stone-100 dark:bg-stone-800 flex items-center justify-center overflow-hidden">
+              {produit.images[0] ? (
+                <Image
+                  src={produit.images[0]}
+                  alt={produit.nom}
+                  fill
+                  sizes="(min-width: 768px) 25vw, 50vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+              ) : (
+                <Package className="w-14 h-14 text-stone-300 dark:text-stone-600" />
+              )}
+
+              <div className="absolute top-2 left-2 flex flex-col gap-1">
+                <span className="text-[10px] bg-orange-600 text-white font-bold px-2 py-0.5 rounded-full shadow flex items-center gap-1">
+                  <Flame className="w-3 h-3" /> Top vente
+                </span>
+                {hasTiers && (
+                  <span className="text-[10px] bg-orange-700 text-white font-bold px-1.5 py-0.5 rounded-full shadow">
+                    <Banknote className="w-3 h-3 inline mr-1" />dégressif
+                  </span>
+                )}
+              </div>
+
+              <div className="absolute top-2 right-2 flex flex-col gap-2">
+                <FavoriIconButton produitId={produit.id} />
+                <CartIconButton produitId={produit.id} stock={produit.stock} />
               </div>
             </div>
-            {!session?.user && (
-              <div>
-                <h4 className="text-xs uppercase tracking-[0.3em] text-gray-400 mb-4">Mon Compte</h4>
-                <div className="space-y-2">
-                  {['/connexion', '/inscription'].map((href, i) => (
-                    <Link key={href} href={href} className="block text-gray-500 hover:text-white text-xs uppercase tracking-widest transition-colors duration-300">
-                      {['Connexion', 'Inscription'][i]}
-                    </Link>
-                  ))}
+
+            <div className="p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500 mb-1">{produit.category.nom}</p>
+              <h3 className="text-sm font-semibold text-stone-800 dark:text-stone-100 mb-2 line-clamp-2">{produit.nom}</h3>
+
+              <div className="flex items-baseline gap-1.5 flex-wrap mb-1.5">
+                {hasTiers && (
+                  <span className="text-[10px] text-stone-400 dark:text-stone-500">à partir de</span>
+                )}
+                <span className={`text-lg font-bold ${estReduit ? 'text-green-700 dark:text-green-400' : 'text-orange-700 dark:text-orange-500'}`}>
+                  {prixMin.toFixed(2)} DA
+                </span>
+                {estReduit && (
+                  <>
+                    <span className="text-sm text-stone-400 line-through font-normal">
+                      {produit.prix.toFixed(2)}
+                    </span>
+                    <span className="text-[9px] bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 font-bold px-1 py-0.5 rounded-full">
+                      −{Math.round((1 - prixMin / produit.prix) * 100)}%
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {produit.variants.length > 0 && (
+                <div className="flex items-center gap-1 flex-wrap">
+                  {produit.variants.slice(0, 5).map(v =>
+                    v.couleur ? (
+                      <span
+                        key={v.id}
+                        title={v.nom}
+                        className="w-4 h-4 rounded-full border border-stone-300 dark:border-stone-600 inline-block shrink-0"
+                        style={{ backgroundColor: v.couleur }}
+                      />
+                    ) : (
+                      <span
+                        key={v.id}
+                        className="text-[9px] text-stone-500 dark:text-stone-400 bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 rounded-full"
+                      >
+                        {v.nom}
+                      </span>
+                    )
+                  )}
+                  {produit.variants.length > 5 && (
+                    <span className="text-[9px] text-stone-400">+{produit.variants.length - 5}</span>
+                  )}
                 </div>
-              </div>
-            )}
-          </div>
-          <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-gray-600 text-xs">© 2026 CabaStore. Tous droits réservés.</p>
-            <p className="text-gray-600 text-xs uppercase tracking-widest">Élégance & Qualité</p>
-          </div>
-        </div>
-      </footer>
+              )}
+            </div>
+          </Link>
+        )
+      })}
     </div>
   )
 }
@@ -155,28 +312,36 @@ async function CategoriesSection() {
             { vendeur: { prioriteAffichage: { lt: 99 } } },
           ],
         },
-        // Tri par createdAt côté DB ; le tri par priorité se fait en JS ci-dessous
         orderBy: [{ createdAt: 'desc' }],
-        take: 10,
+        take: 30,
         include: {
           vendeur: { select: { prioriteAffichage: true } },
           variants: { select: { id: true, couleur: true, nom: true }, orderBy: { createdAt: 'asc' } },
+          orderItems: { select: { id: true, order: { select: { statut: true } } } },
         },
       },
     },
   })
 
   if (categories.length === 0) {
-    return <p className="text-center text-gray-400 dark:text-gray-500 py-8 text-sm">Aucune catégorie disponible.</p>
+    return <p className="text-center text-stone-400 dark:text-stone-500 py-8 text-sm">Aucune catégorie disponible.</p>
   }
 
   return (
     <div className="space-y-14">
       {categories.map((cat) => {
-        // Tri priorité en couche applicative : null (admin) → 0, vendeurs → leur niveau
-        const produitsTries = [...cat.products].sort(
-          (a, b) => (a.vendeur?.prioriteAffichage ?? 0) - (b.vendeur?.prioriteAffichage ?? 0)
-        )
+        const produitsTries = cat.products
+          .map(p => ({
+            ...p,
+            ventes: p.orderItems.filter(oi => oi.order.statut !== 'ANNULEE').length,
+          }))
+          .sort((a, b) => {
+            if (b.ventes !== a.ventes) return b.ventes - a.ventes
+            const prioDiff = (a.vendeur?.prioriteAffichage ?? 0) - (b.vendeur?.prioriteAffichage ?? 0)
+            if (prioDiff !== 0) return prioDiff
+            return b.createdAt.getTime() - a.createdAt.getTime()
+          })
+          .slice(0, 10)
 
         return (
           <div key={cat.id}>
@@ -186,16 +351,16 @@ async function CategoriesSection() {
                 {cat.image ? (
                   <Image src={cat.image} alt={cat.nom} width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                    <Tag className="w-4 h-4 text-gray-400" />
+                  <div className="w-8 h-8 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center">
+                    <Tag className="w-4 h-4 text-stone-400" />
                   </div>
                 )}
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white tracking-wide">{cat.nom}</h3>
-                <span className="text-xs text-gray-400 dark:text-gray-500">{cat.products.length} produits</span>
+                <h3 className="text-lg font-semibold tracking-tight text-stone-900 dark:text-stone-100">{cat.nom}</h3>
+                <span className="text-xs text-stone-400 dark:text-stone-500">{cat.products.length} produits</span>
               </div>
               <Link
                 href={`/categories/${cat.id}`}
-                className="voir-tout-link text-xs uppercase tracking-[0.15em] text-gray-400 dark:text-gray-500 hover:text-black dark:hover:text-white"
+                className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500 hover:text-orange-800 border border-orange-200 dark:border-orange-800 hover:border-orange-400 px-3 py-1.5 rounded-full transition-colors"
               >
                 Voir tout →
               </Link>
@@ -203,20 +368,21 @@ async function CategoriesSection() {
 
             {/* Ligne de produits scrollable */}
             <div className="products-row flex gap-4 overflow-x-auto pb-3 scrollbar-hide snap-x snap-mandatory">
-              {produitsTries.map((produit) => {
+              {produitsTries.map((produit, idx) => {
                 const tiers    = produit.prixVariables as { minQte: number; maxQte: number | null; prix: number }[] | null
                 const hasTiers = Array.isArray(tiers) && tiers.length > 0
                 const prixMin  = hasTiers ? Math.min(...tiers!.map(t => t.prix), produit.prix) : produit.prix
                 const estReduit = hasTiers && prixMin < produit.prix
+                const showRank = idx < 3 && produit.ventes > 0
 
                 return (
                   <Link
                     key={produit.id}
                     href={`/produits/${produit.id}`}
-                    className="product-card group flex-none w-40 bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-transparent dark:border-gray-700 snap-start"
+                    className="product-card group flex-none w-40 bg-white dark:bg-stone-900 rounded-2xl overflow-hidden border border-stone-200 dark:border-stone-800 hover:border-orange-300 dark:hover:border-orange-700 snap-start"
                   >
                     {/* Image */}
-                    <div className="relative h-40 bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                    <div className="relative h-40 bg-stone-100 dark:bg-stone-800 overflow-hidden">
                       {produit.images[0] ? (
                         <Image
                           src={produit.images[0]}
@@ -227,12 +393,19 @@ async function CategoriesSection() {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <Package className="w-10 h-10 text-gray-300 dark:text-gray-600" />
+                          <Package className="w-10 h-10 text-stone-300 dark:text-stone-600" />
+                        </div>
+                      )}
+                      {showRank && (
+                        <div className="absolute top-1.5 left-1.5">
+                          <span className="w-6 h-6 flex items-center justify-center text-[11px] font-bold bg-stone-900/80 text-white rounded-full backdrop-blur-sm shadow">
+                            {idx + 1}
+                          </span>
                         </div>
                       )}
                       {hasTiers && (
-                        <div className="absolute top-1.5 left-1.5">
-                          <span className="text-[9px] bg-blue-600 text-white font-bold px-1.5 py-0.5 rounded-full">
+                        <div className={`absolute ${showRank ? 'top-1.5 left-9' : 'top-1.5 left-1.5'}`}>
+                          <span className="text-[9px] bg-orange-700 text-white font-bold px-1.5 py-0.5 rounded-full">
                             <Banknote className="w-3 h-3 inline mr-0.5" />dégressif
                           </span>
                         </div>
@@ -241,14 +414,14 @@ async function CategoriesSection() {
 
                     {/* Infos */}
                     <div className="p-3">
-                      <p className="text-xs font-semibold text-gray-800 dark:text-white line-clamp-2 mb-1.5 leading-tight">
+                      <p className="text-xs font-semibold text-stone-800 dark:text-stone-100 line-clamp-2 mb-1.5 leading-tight">
                         {produit.nom}
                       </p>
                       <div className="flex items-baseline gap-1 flex-wrap">
                         {hasTiers && (
-                          <span className="text-[9px] text-gray-400">à partir de</span>
+                          <span className="text-[9px] text-stone-400">à partir de</span>
                         )}
-                        <span className={`text-sm font-bold ${estReduit ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}`}>
+                        <span className={`text-sm font-bold ${estReduit ? 'text-green-700 dark:text-green-400' : 'text-orange-700 dark:text-orange-500'}`}>
                           {prixMin.toFixed(2)} DA
                         </span>
                         {estReduit && (
@@ -265,20 +438,20 @@ async function CategoriesSection() {
                               <span
                                 key={v.id}
                                 title={v.nom}
-                                className="w-3 h-3 rounded-full border border-gray-300 dark:border-gray-600 shrink-0"
+                                className="w-3 h-3 rounded-full border border-stone-300 dark:border-stone-600 shrink-0"
                                 style={{ backgroundColor: v.couleur }}
                               />
                             ) : (
                               <span
                                 key={v.id}
-                                className="text-[8px] text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded-full"
+                                className="text-[8px] text-stone-500 dark:text-stone-400 bg-stone-100 dark:bg-stone-800 px-1 py-0.5 rounded-full"
                               >
                                 {v.nom}
                               </span>
                             )
                           )}
                           {produit.variants.length > 4 && (
-                            <span className="text-[8px] text-gray-400">+{produit.variants.length - 4}</span>
+                            <span className="text-[8px] text-stone-400">+{produit.variants.length - 4}</span>
                           )}
                         </div>
                       )}
@@ -303,7 +476,6 @@ async function ProduitsSection() {
         { vendeur: { prioriteAffichage: { lt: 99 } } },
       ],
     },
-    // Tri par createdAt côté DB ; le tri par priorité se fait en JS ci-dessous
     orderBy: [{ createdAt: 'desc' }],
     take: 8,
     include: {
@@ -313,13 +485,12 @@ async function ProduitsSection() {
     },
   })
 
-  // Tri priorité en couche applicative : null (admin) → 0, vendeurs → leur niveau
   const produits = [...produitsRaw].sort(
     (a, b) => (a.vendeur?.prioriteAffichage ?? 0) - (b.vendeur?.prioriteAffichage ?? 0)
   )
 
   if (produits.length === 0) {
-    return <p className="text-center text-gray-400 dark:text-gray-500 py-8 text-sm">Aucun produit disponible.</p>
+    return <p className="text-center text-stone-400 dark:text-stone-500 py-8 text-sm">Aucun produit disponible.</p>
   }
 
   return (
@@ -334,10 +505,10 @@ async function ProduitsSection() {
           <Link
             key={produit.id}
             href={`/produits/${produit.id}`}
-            className="product-card group bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-transparent dark:border-gray-700"
+            className="product-card group bg-white dark:bg-stone-900 rounded-2xl overflow-hidden border border-stone-200 dark:border-stone-800 hover:border-orange-300 dark:hover:border-orange-700"
           >
             {/* Image */}
-            <div className="relative h-48 bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+            <div className="relative h-48 bg-stone-100 dark:bg-stone-800 flex items-center justify-center overflow-hidden">
               {produit.images[0] ? (
                 <Image
                   src={produit.images[0]}
@@ -347,18 +518,17 @@ async function ProduitsSection() {
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                 />
               ) : (
-                <Package className="w-14 h-14" />
+                <Package className="w-14 h-14 text-stone-300 dark:text-stone-600" />
               )}
 
-              {/* Badge dégressif */}
               {hasTiers && (
                 <div className="absolute top-2 left-2">
-                  <span className="text-[10px] bg-blue-600 text-white font-bold px-1.5 py-0.5 rounded-full shadow"><Banknote className="w-4 h-4 inline mr-1" />{' '}dégressif
+                  <span className="text-[10px] bg-orange-700 text-white font-bold px-1.5 py-0.5 rounded-full shadow">
+                    <Banknote className="w-4 h-4 inline mr-1" />{' '}dégressif
                   </span>
                 </div>
               )}
 
-              {/* Actions favoris / panier */}
               <div className="absolute top-2 right-2 flex flex-col gap-2">
                 <FavoriIconButton produitId={produit.id} />
                 <CartIconButton produitId={produit.id} stock={produit.stock} />
@@ -367,20 +537,19 @@ async function ProduitsSection() {
 
             {/* Infos */}
             <div className="p-4">
-              <p className="text-xs text-blue-600 dark:text-blue-400 mb-1">{produit.category.nom}</p>
-              <h3 className="text-sm font-semibold text-gray-800 dark:text-white mb-2 line-clamp-2">{produit.nom}</h3>
+              <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500 mb-1">{produit.category.nom}</p>
+              <h3 className="text-sm font-semibold text-stone-800 dark:text-stone-100 mb-2 line-clamp-2">{produit.nom}</h3>
 
-              {/* Bloc prix */}
               <div className="flex items-baseline gap-1.5 flex-wrap mb-1.5">
                 {hasTiers && (
-                  <span className="text-[10px] text-gray-400 dark:text-gray-500">à partir de</span>
+                  <span className="text-[10px] text-stone-400 dark:text-stone-500">à partir de</span>
                 )}
-                <span className={`text-lg font-bold ${estReduit ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}`}>
+                <span className={`text-lg font-bold ${estReduit ? 'text-green-700 dark:text-green-400' : 'text-orange-700 dark:text-orange-500'}`}>
                   {prixMin.toFixed(2)} DA
                 </span>
                 {estReduit && (
                   <>
-                    <span className="text-sm text-gray-400 line-through font-normal">
+                    <span className="text-sm text-stone-400 line-through font-normal">
                       {produit.prix.toFixed(2)}
                     </span>
                     <span className="text-[9px] bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 font-bold px-1 py-0.5 rounded-full">
@@ -390,7 +559,6 @@ async function ProduitsSection() {
                 )}
               </div>
 
-              {/* Swatches variantes */}
               {produit.variants.length > 0 && (
                 <div className="flex items-center gap-1 flex-wrap">
                   {produit.variants.slice(0, 5).map(v =>
@@ -398,20 +566,20 @@ async function ProduitsSection() {
                       <span
                         key={v.id}
                         title={v.nom}
-                        className="w-4 h-4 rounded-full border border-gray-300 dark:border-gray-600 inline-block shrink-0"
+                        className="w-4 h-4 rounded-full border border-stone-300 dark:border-stone-600 inline-block shrink-0"
                         style={{ backgroundColor: v.couleur }}
                       />
                     ) : (
                       <span
                         key={v.id}
-                        className="text-[9px] text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded-full"
+                        className="text-[9px] text-stone-500 dark:text-stone-400 bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 rounded-full"
                       >
                         {v.nom}
                       </span>
                     )
                   )}
                   {produit.variants.length > 5 && (
-                    <span className="text-[9px] text-gray-400">+{produit.variants.length - 5}</span>
+                    <span className="text-[9px] text-stone-400">+{produit.variants.length - 5}</span>
                   )}
                 </div>
               )}

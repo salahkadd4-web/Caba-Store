@@ -3,15 +3,15 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #0a0a0a;
+  --background: #fafaf9; /* stone-50 */
+  --foreground: #1c1917; /* stone-900 */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ffffff;
+  --background: #0c0a09; /* stone-950 */
+  --foreground: #f5f5f4; /* stone-100 */
 }
 
 @theme inline {
@@ -51,7 +51,7 @@ html, body {
 ::-webkit-scrollbar-thumb { background: #888; }
 ::-webkit-scrollbar-thumb:hover { background: #333; }
 
-::selection { background: #0a0a0a; color: #ffffff; }
+::selection { background: #c2410c; color: #ffffff; } /* orange-700 */
 /* ─── Animation carte produit ─── */
 .product-card {
   transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),

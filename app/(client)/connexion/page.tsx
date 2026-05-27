@@ -5,8 +5,8 @@ import { useState, Suspense, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import { Check } from 'lucide-react'
+import CabaLogo from '@/components/CabaLogo'
 
 const GOOGLE_WEB_CLIENT_ID = '502936788244-mn58pnn6u9v5ekp3o14ord4778gp7ki3.apps.googleusercontent.com'
 
@@ -32,13 +32,13 @@ function GuestLink() {
   return (
     <div className="mt-6 text-center">
       <div className="flex items-center gap-3 mb-4">
-        <div className="flex-1 h-px bg-gray-100 dark:bg-gray-800" />
-        <span className="text-[10px] text-gray-300 dark:text-gray-700 uppercase tracking-[0.25em]">ou</span>
-        <div className="flex-1 h-px bg-gray-100 dark:bg-gray-800" />
+        <div className="flex-1 h-px bg-stone-100 dark:bg-stone-800" />
+        <span className="text-[10px] text-stone-300 dark:text-stone-700 uppercase tracking-[0.25em]">ou</span>
+        <div className="flex-1 h-px bg-stone-100 dark:bg-stone-800" />
       </div>
       <Link
         href="/"
-        className="inline-flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors tracking-wide underline underline-offset-4"
+        className="inline-flex items-center gap-1.5 text-xs text-stone-400 dark:text-stone-500 hover:text-orange-700 dark:hover:text-orange-500 transition-colors tracking-wide underline underline-offset-4"
       >
         Parcourir en tant qu&apos;invité
       </Link>
@@ -49,7 +49,6 @@ function GuestLink() {
 function ConnexionContent() {
   const router       = useRouter()
   const searchParams = useSearchParams()
-  // 'client' | 'vendeur' | null
   const inscription  = searchParams.get('inscription')
   const reset        = searchParams.get('reset')
 
@@ -82,7 +81,6 @@ function ConnexionContent() {
     setError('')
     setLoading(true)
     try {
-      // ✅ Normaliser l'identifiant côté client aussi (défense en profondeur)
       const identifiantNormalized = form.identifiant.trim().replace(/\s/g, '').toLowerCase()
 
       const result = await signIn('credentials', {
@@ -92,10 +90,7 @@ function ConnexionContent() {
       })
 
       if (result?.error) {
-        // ✅ NextAuth v5 encode les erreurs thrown comme 'CredentialsSignin'
-        // On détecte le cas Google via une autre route si nécessaire
         if (result.error === 'CredentialsSignin') {
-          // Vérifier si c'est un compte Google (appel séparé)
           const checkRes = await fetch('/api/auth/verifier-identifiant', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -239,33 +234,38 @@ function ConnexionContent() {
   )
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col lg:flex-row transition-colors duration-300">
+    <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex flex-col lg:flex-row transition-colors duration-300">
 
-      <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-black dark:bg-gray-900 items-center justify-center p-12 border-r border-gray-800">
-        <div className="absolute z-10 mask-[radial-gradient(ellipse_at_center,transparent_-50%,black_10%)]">
-          <Image src="/logo_noir.png" alt="" width={750} height={750}
-            className="object-contain invert opacity-30 scale-150" priority />
+      {/* ── Panneau gauche (desktop) ── */}
+      <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-stone-900 dark:bg-stone-950 items-center justify-center p-12 border-r border-stone-800">
+        {/* Logo watermark */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-[0.06]">
+          <CabaLogo className="w-120 h-120 text-white" />
         </div>
-        <div className="relative z-10 text-center text-white">
-          <div className="w-12 h-px bg-gray-600 mx-auto my-6" />
-          <p className="text-white font-light text-sm tracking-wider drop-shadow-md">
+        {/* Contenu centré */}
+        <div className="relative z-10 text-center">
+          <CabaLogo className="w-20 h-20 text-orange-500 mx-auto mb-6" />
+          <div className="w-10 h-px bg-stone-700 mx-auto mb-5" />
+          <p className="text-stone-400 font-light text-sm tracking-wider">
             L&apos;excellence à portée de main
           </p>
         </div>
       </div>
 
+      {/* ── Formulaire ── */}
       <div className="flex-1 flex flex-col items-center justify-center p-8 overflow-y-auto">
         <div className="w-full max-w-sm py-8">
 
+          {/* Header */}
           <div className="mb-10">
-            <p className="text-gray-400 dark:text-gray-500 uppercase tracking-[0.3em] text-xs mb-2">Bienvenue</p>
-            <h2 className="text-3xl font-extralight text-black dark:text-white tracking-wide">Connexion</h2>
-            <div className="w-8 h-px bg-black dark:bg-white mt-4" />
+            <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500 mb-2">Bienvenue</p>
+            <h2 className="text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">Connexion</h2>
+            <div className="w-8 h-px bg-orange-700 dark:bg-orange-500 mt-4" />
           </div>
 
           {/* ── Bannière succès inscription client ── */}
           {inscription === 'client' && (
-            <div className="border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950 px-4 py-3 mb-6 space-y-1">
+            <div className="border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950 px-4 py-3 mb-6 rounded-xl space-y-1">
               <p className="text-xs font-medium text-green-700 dark:text-green-400 flex items-center gap-1.5">
                 <Check className="w-3.5 h-3.5" />
                 Compte créé avec succès !
@@ -278,7 +278,7 @@ function ConnexionContent() {
 
           {/* ── Bannière succès inscription vendeur ── */}
           {inscription === 'vendeur' && (
-            <div className="border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950 px-4 py-3 mb-6 space-y-1.5">
+            <div className="border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950 px-4 py-3 mb-6 rounded-xl space-y-1.5">
               <p className="text-xs font-medium text-green-700 dark:text-green-400 flex items-center gap-1.5">
                 <Check className="w-3.5 h-3.5" />
                 Boutique créée avec succès !
@@ -294,19 +294,21 @@ function ConnexionContent() {
 
           {/* ── Bannière succès reset mot de passe ── */}
           {reset === 'success' && (
-            <div className="border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs px-4 py-3 mb-6 tracking-wide">
+            <div className="border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 text-xs px-4 py-3 mb-6 rounded-xl tracking-wide">
               Mot de passe mis à jour avec succès.
             </div>
           )}
 
+          {/* ── Erreur ── */}
           {error && (
-            <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 text-xs px-4 py-3 mb-6 tracking-wide">
+            <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 text-xs px-4 py-3 mb-6 rounded-xl tracking-wide">
               {error}
             </div>
           )}
 
+          {/* ── Dev quick-login ── */}
           {IS_DEV && (
-            <div className="border border-dashed border-amber-400 dark:border-amber-600 bg-amber-50 dark:bg-amber-950/40 p-3 mb-6">
+            <div className="border border-dashed border-amber-400 dark:border-amber-600 bg-amber-50 dark:bg-amber-950/40 p-3 mb-6 rounded-xl">
               <p className="text-[10px] uppercase tracking-[0.2em] text-amber-700 dark:text-amber-400 mb-2 text-center">
                 Dev — Connexion rapide
               </p>
@@ -317,7 +319,7 @@ function ConnexionContent() {
                     type="button"
                     onClick={() => quickLogin(acc)}
                     disabled={loading || loadingGoogle}
-                    className="text-xs uppercase tracking-wider py-2 border border-amber-300 dark:border-amber-700 bg-white dark:bg-gray-900 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors disabled:opacity-50"
+                    className="text-xs uppercase tracking-wider py-2 border border-amber-300 dark:border-amber-700 bg-white dark:bg-stone-900 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 rounded-lg transition-colors disabled:opacity-50"
                   >
                     {acc.label}
                   </button>
@@ -326,53 +328,83 @@ function ConnexionContent() {
             </div>
           )}
 
-          <button onClick={handleGoogle} disabled={loadingGoogle || loading}
-            className="w-full flex items-center justify-center gap-3 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-700 dark:text-gray-200 text-xs uppercase tracking-[0.15em] py-3.5 transition-colors duration-300 disabled:opacity-50 mb-6">
-            {loadingGoogle ? <span className="text-gray-400">...</span> : <GoogleIcon />}
+          {/* ── Bouton Google ── */}
+          <button
+            onClick={handleGoogle}
+            disabled={loadingGoogle || loading}
+            className="w-full flex items-center justify-center gap-3 border border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600 hover:bg-stone-100 dark:hover:bg-stone-900 text-stone-700 dark:text-stone-200 text-xs uppercase tracking-[0.15em] py-3.5 rounded-xl transition-colors duration-300 disabled:opacity-50 mb-6"
+          >
+            {loadingGoogle
+              ? <span className="w-4 h-4 border-2 border-stone-200 border-t-stone-500 rounded-full animate-spin" />
+              : <GoogleIcon />
+            }
             Continuer avec Google
           </button>
 
+          {/* ── Séparateur ── */}
           <div className="flex items-center gap-4 mb-6">
-            <div className="flex-1 h-px bg-gray-200 dark:bg-gray-800" />
-            <span className="text-xs text-gray-400 dark:text-gray-600 uppercase tracking-[0.2em]">ou</span>
-            <div className="flex-1 h-px bg-gray-200 dark:bg-gray-800" />
+            <div className="flex-1 h-px bg-stone-200 dark:bg-stone-800" />
+            <span className="text-xs text-stone-400 dark:text-stone-600 uppercase tracking-[0.2em]">ou</span>
+            <div className="flex-1 h-px bg-stone-200 dark:bg-stone-800" />
           </div>
 
+          {/* ── Formulaire email/mdp ── */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400 mb-2">
+              <label className="block text-xs uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400 mb-2">
                 Email ou Téléphone
               </label>
-              <input type="text" name="identifiant" value={form.identifiant}
-                onChange={handleChange} required
-                className="w-full border-b border-gray-300 dark:border-gray-600 focus:border-black dark:focus:border-white outline-none py-3 text-sm text-gray-800 dark:text-gray-100 bg-transparent transition-colors duration-300"
-                placeholder="votre@email.com" />
+              <input
+                type="text"
+                name="identifiant"
+                value={form.identifiant}
+                onChange={handleChange}
+                required
+                className="w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-3 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors duration-300"
+                placeholder="votre@email.com"
+              />
             </div>
             <div>
               <div className="flex justify-between items-center mb-2">
-                <label className="block text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
+                <label className="block text-xs uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
                   Mot de Passe
                 </label>
-                <Link href="/recuperer-mot-de-passe"
-                  className="text-xs text-gray-400 dark:text-gray-500 hover:text-black dark:hover:text-white transition-colors tracking-wide">
+                <Link
+                  href="/recuperer-mot-de-passe"
+                  className="text-xs text-stone-400 dark:text-stone-500 hover:text-orange-700 dark:hover:text-orange-500 transition-colors tracking-wide"
+                >
                   Oublié ?
                 </Link>
               </div>
-              <input type="password" name="motDePasse" value={form.motDePasse}
-                onChange={handleChange} required
-                className="w-full border-b border-gray-300 dark:border-gray-600 focus:border-black dark:focus:border-white outline-none py-3 text-sm text-gray-800 dark:text-gray-100 bg-transparent transition-colors duration-300"
-                placeholder="••••••••" />
+              <input
+                type="password"
+                name="motDePasse"
+                value={form.motDePasse}
+                onChange={handleChange}
+                required
+                className="w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-3 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors duration-300"
+                placeholder="••••••••"
+              />
             </div>
-            <button type="submit" disabled={loading || loadingGoogle}
-              className="w-full bg-black dark:bg-white hover:bg-gray-900 dark:hover:bg-gray-100 text-white dark:text-black text-xs uppercase tracking-[0.3em] py-4 transition-colors duration-300 disabled:opacity-50 mt-4">
-              {loading ? 'Connexion...' : 'Se Connecter'}
+            <button
+              type="submit"
+              disabled={loading || loadingGoogle}
+              className="w-full bg-orange-700 hover:bg-orange-800 text-white text-xs uppercase tracking-[0.3em] py-4 rounded-xl transition-colors duration-300 disabled:opacity-50 mt-4 flex items-center justify-center gap-2"
+            >
+              {loading
+                ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Connexion...</>
+                : 'Se Connecter'
+              }
             </button>
           </form>
 
-          <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-8 tracking-wide">
+          {/* ── Lien inscription ── */}
+          <p className="text-center text-xs text-stone-400 dark:text-stone-500 mt-8 tracking-wide">
             Pas encore de compte ?{' '}
-            <Link href="/inscription"
-              className="text-black dark:text-white hover:text-gray-600 dark:hover:text-gray-300 underline underline-offset-4 transition-colors">
+            <Link
+              href="/inscription"
+              className="text-orange-700 dark:text-orange-500 hover:text-orange-800 dark:hover:text-orange-400 underline underline-offset-4 transition-colors font-medium"
+            >
               S&apos;inscrire
             </Link>
           </p>
@@ -380,11 +412,11 @@ function ConnexionContent() {
           <GuestLink />
         </div>
 
+        {/* ── Logo mobile (bas de page) ── */}
         <div className="lg:hidden mt-12 flex flex-col items-center gap-3 pb-8">
-          <div className="w-16 h-px bg-gray-200 dark:bg-gray-800" />
-          <Image src="/logo_noir.png" alt="Caba Store" width={80} height={80}
-            className="object-contain dark:invert opacity-30" />
-          <p className="text-xs text-gray-300 dark:text-gray-700 uppercase tracking-[0.3em]">Caba Store</p>
+          <div className="w-16 h-px bg-stone-200 dark:bg-stone-800" />
+          <CabaLogo className="w-12 h-12 text-orange-700 dark:text-orange-500 opacity-60" />
+          <p className="text-xs text-stone-300 dark:text-stone-700 uppercase tracking-[0.3em]">Caba Store</p>
         </div>
       </div>
     </div>
@@ -394,8 +426,8 @@ function ConnexionContent() {
 export default function ConnexionPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-white dark:bg-gray-950 flex items-center justify-center">
-        <p className="text-gray-500 dark:text-gray-400">Chargement...</p>
+      <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-stone-200 dark:border-stone-700 border-t-orange-700 rounded-full animate-spin" />
       </div>
     }>
       <ConnexionContent />

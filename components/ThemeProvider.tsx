@@ -17,11 +17,15 @@ const ThemeContext = createContext<ThemeContextType>({
 })
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    const saved = localStorage.getItem('theme') as Theme | null
-    return saved ?? 'system'
-  })
+  const [theme, setThemeState] = useState<Theme>('system')
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light')
+
+  useEffect(() => {
+    const saved = localStorage.getItem('theme') as Theme | null
+    if (saved === 'light' || saved === 'dark' || saved === 'system') {
+      setThemeState(saved)
+    }
+  }, [])
 
   useEffect(() => {
     const root = document.documentElement

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
-import { registerProductReference } from '@/lib/scanApi'
 
 async function checkAdmin() {
   const token = await getAuthToken()
@@ -84,44 +83,7 @@ export async function PATCH(
     const commande = await prisma.order.update({
       where: { id },
       data:  { statut },
-      include: {
-        items: {
-          include: { product: { select: { id: true, images: true, nom: true } } },
-          take: 1,
-        },
-      },
     })
-
-    // Enregistrer la photo de référence ML quand l'admin passe à CONFIRMEE
-    if (statut === 'CONFIRMEE') {
-      const item = commande.items[0]
-      if (item?.product?.images?.[0]) {
-        setImmediate(async () => {
-          try {
-            const imageUrl = item.product.images[0]
-            const controller = new AbortController()
-            const timeout = setTimeout(() => controller.abort(), 15000)
-            const imgRes = await fetch(imageUrl, { signal: controller.signal })
-            clearTimeout(timeout)
-            if (imgRes.ok) {
-              const buffer   = await imgRes.arrayBuffer()
-              const base64   = Buffer.from(buffer).toString('base64')
-              const mime     = imgRes.headers.get('content-type') || 'image/jpeg'
-              const imageB64 = `data:${mime};base64,${base64}`
-              const refResult = await registerProductReference(id, item.product.id, imageB64)
-              if (refResult) console.log(`✅ Référence enregistrée — commande ${id.slice(-6)} — ${item.product.nom}`)
-            }
-          } catch (refError) {
-            const err = refError as { cause?: { code?: string }; message?: string }
-            if (err?.cause?.code === 'UND_ERR_CONNECT_TIMEOUT') {
-              console.warn(`⚠️ Timeout Cloudinary — référence non enregistrée pour commande ${id.slice(-6)}`)
-            } else {
-              console.warn('Référence ML non enregistrée:', err?.message || refError)
-            }
-          }
-        })
-      }
-    }
 
     return NextResponse.json(commande)
   } catch {

@@ -105,7 +105,7 @@ export default function NouvelleCommandePage() {
     ]).then(([panierData, profilData]) => {
         setPanier(panierData)
         setHasTelephone(!!profilData.telephone)
-        if (profilData.adresse) setAdresse(profilData.adresse)  // ← ajouter
+        if (profilData.adresse) setAdresse(profilData.adresse)
         setLoading(false)
       })
   }, [])
@@ -162,21 +162,23 @@ export default function NouvelleCommandePage() {
     } catch { setError('Erreur serveur, veuillez réessayer') } finally { setSubmitting(false) }
   }
 
-  const inputCls = 'w-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500 transition'
-  const labelCls = 'block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5'
+  const inputCls = 'w-full border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-800 dark:text-stone-100 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 dark:focus:ring-orange-500 transition'
+  const labelCls = 'block text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1.5'
 
   if (loading) return (
-    <div className="max-w-5xl mx-auto px-4 py-16 text-center text-gray-400">
-      <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin mx-auto mb-3" />
-      Chargement…
+    <div className="max-w-5xl mx-auto px-4 py-16 text-center">
+      <div className="w-8 h-8 border-2 border-stone-200 dark:border-stone-700 border-t-orange-700 rounded-full animate-spin mx-auto mb-3" />
+      <p className="text-stone-500 dark:text-stone-400 text-sm">Chargement…</p>
     </div>
   )
 
   if (!panier || panier.items.length === 0) return (
     <div className="max-w-5xl mx-auto px-4 py-16 text-center">
-      <ShoppingCart className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-      <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">Panier vide</h1>
-      <Link href="/produits" className="inline-block mt-4 bg-black dark:bg-white text-white dark:text-black px-8 py-3 rounded-xl font-semibold">
+      <div className="w-20 h-20 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <ShoppingCart className="w-10 h-10 text-stone-400 dark:text-stone-500" />
+      </div>
+      <h1 className="text-2xl font-semibold tracking-tight text-stone-800 dark:text-stone-100 mb-2">Panier vide</h1>
+      <Link href="/produits" className="inline-block mt-4 bg-orange-700 hover:bg-orange-800 text-white px-8 py-3 rounded-xl font-semibold transition-colors">
         Voir les produits
       </Link>
     </div>
@@ -184,8 +186,8 @@ export default function NouvelleCommandePage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 pt-4">
-      <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center gap-2">
-        <ShoppingBag className="w-6 h-6" /> Passer la commande
+      <h1 className="text-2xl font-semibold tracking-tight text-stone-800 dark:text-stone-100 mb-6 flex items-center gap-2">
+        <ShoppingBag className="w-6 h-6 text-orange-700" /> Passer la commande
       </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -208,7 +210,7 @@ export default function NouvelleCommandePage() {
               <input type="tel" value={telephone}
                 onChange={e => { setTelephone(e.target.value); setTelError('') }}
                 placeholder="05XX XX XX XX"
-                className="w-full border border-amber-300 dark:border-amber-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 mb-2"
+                className="w-full border border-amber-300 dark:border-amber-700 bg-white dark:bg-stone-800 text-stone-800 dark:text-stone-100 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 mb-2"
               />
               {telError && <p className="text-xs text-red-500 mb-2">{telError}</p>}
               <button onClick={handleSaveTelephone} disabled={savingTel || !telephone}
@@ -219,9 +221,9 @@ export default function NouvelleCommandePage() {
           )}
 
           {/* Formulaire principal */}
-          <div className={`bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5 space-y-5 ${!hasTelephone ? 'opacity-40 pointer-events-none select-none' : ''}`}>
-            <h2 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-              <ClipboardList className="w-4 h-4 text-blue-500" /> Détails de la commande
+          <div className={`bg-white dark:bg-stone-900 rounded-2xl border border-stone-100 dark:border-stone-800 p-5 space-y-5 ${!hasTelephone ? 'opacity-40 pointer-events-none select-none' : ''}`}>
+            <h2 className="font-semibold text-stone-800 dark:text-stone-100 flex items-center gap-2">
+              <ClipboardList className="w-4 h-4 text-orange-700" /> Détails de la commande
             </h2>
 
             {error && (
@@ -232,7 +234,7 @@ export default function NouvelleCommandePage() {
 
             {/* Adresse */}
             <div>
-              <label className={labelCls}><MapPin className="w-4 h-4 inline mr-1 text-blue-500" /> Adresse de livraison *</label>
+              <label className={labelCls}><MapPin className="w-4 h-4 inline mr-1 text-orange-700" /> Adresse de livraison *</label>
               <textarea value={adresse} onChange={e => setAdresse(e.target.value)}
                 required rows={3} placeholder="Numéro, rue, cité, commune, wilaya…"
                 className={inputCls} />
@@ -241,7 +243,7 @@ export default function NouvelleCommandePage() {
             {/* ── Mode de paiement ── */}
             <div>
               <label className={labelCls}>
-                <CreditCard className="w-4 h-4 inline mr-1 text-blue-500" /> Mode de paiement *
+                <CreditCard className="w-4 h-4 inline mr-1 text-orange-700" /> Mode de paiement *
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {MODES_PAIEMENT.map(m => {
@@ -260,10 +262,10 @@ export default function NouvelleCommandePage() {
                         relative flex flex-col items-start gap-1.5 px-3 py-3 rounded-xl border-2 text-left
                         transition-all duration-200
                         ${isDisabled
-                          ? 'border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/40 opacity-50 cursor-not-allowed'
+                          ? 'border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/40 opacity-50 cursor-not-allowed'
                           : isActive
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/60 shadow-sm shadow-blue-100 dark:shadow-blue-900'
-                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-900'
+                            ? 'border-orange-700 bg-orange-50 dark:bg-orange-950/60 shadow-sm shadow-orange-100 dark:shadow-orange-900'
+                            : 'border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600 bg-white dark:bg-stone-900'
                         }
                       `}
                     >
@@ -271,23 +273,23 @@ export default function NouvelleCommandePage() {
                       <div className="flex items-center justify-between w-full">
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                           isDisabled
-                            ? 'bg-gray-100 dark:bg-gray-800'
+                            ? 'bg-stone-100 dark:bg-stone-800'
                             : isActive
-                              ? 'bg-blue-100 dark:bg-blue-900'
-                              : 'bg-gray-100 dark:bg-gray-800'
+                              ? 'bg-orange-100 dark:bg-orange-900'
+                              : 'bg-stone-100 dark:bg-stone-800'
                         }`}>
                           <Icon className={`w-4 h-4 ${
                             isDisabled
-                              ? 'text-gray-400 dark:text-gray-600'
+                              ? 'text-stone-400 dark:text-stone-600'
                               : isActive
-                                ? 'text-blue-600 dark:text-blue-400'
-                                : 'text-gray-500 dark:text-gray-400'
+                                ? 'text-orange-700 dark:text-orange-400'
+                                : 'text-stone-500 dark:text-stone-400'
                           }`} />
                         </div>
                         {isDisabled
-                          ? <Lock className="w-3 h-3 text-gray-400 dark:text-gray-600 shrink-0" />
+                          ? <Lock className="w-3 h-3 text-stone-400 dark:text-stone-600 shrink-0" />
                           : isActive
-                            ? <Check className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                            ? <Check className="w-3.5 h-3.5 text-orange-700 shrink-0" />
                             : null
                         }
                       </div>
@@ -296,15 +298,15 @@ export default function NouvelleCommandePage() {
                       <div>
                         <p className={`text-xs font-semibold leading-tight ${
                           isDisabled
-                            ? 'text-gray-400 dark:text-gray-600'
+                            ? 'text-stone-400 dark:text-stone-600'
                             : isActive
-                              ? 'text-blue-700 dark:text-blue-300'
-                              : 'text-gray-700 dark:text-gray-300'
+                              ? 'text-orange-700 dark:text-orange-400'
+                              : 'text-stone-700 dark:text-stone-300'
                         }`}>
                           {m.label}
                         </p>
                         {isDisabled && (
-                          <p className="text-[10px] text-gray-400 dark:text-gray-600 mt-0.5 leading-tight">
+                          <p className="text-[10px] text-stone-400 dark:text-stone-600 mt-0.5 leading-tight">
                             Bientôt disponible
                           </p>
                         )}
@@ -317,29 +319,29 @@ export default function NouvelleCommandePage() {
 
             {/* Méthode expédition */}
             <div>
-              <label className={labelCls}><Truck className="w-4 h-4 inline mr-1 text-blue-500" /> Méthode d&apos;expédition *</label>
+              <label className={labelCls}><Truck className="w-4 h-4 inline mr-1 text-orange-700" /> Méthode d&apos;expédition *</label>
               <div className="space-y-2">
                 {METHODES_EXPEDITION.map(opt => (
                   <button key={opt.label} type="button" onClick={() => setMethodeExpedition(opt.label)}
                     className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 text-sm transition-all ${
                       methodeExpedition === opt.label
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/60'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                        ? 'border-orange-700 bg-orange-50 dark:bg-orange-950/60'
+                        : 'border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600'
                     }`}>
                     <div className="flex items-center gap-3 text-left">
                       <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
-                        methodeExpedition === opt.label ? 'border-blue-500' : 'border-gray-300 dark:border-gray-600'
+                        methodeExpedition === opt.label ? 'border-orange-700' : 'border-stone-300 dark:border-stone-600'
                       }`}>
-                        {methodeExpedition === opt.label && <div className="w-2 h-2 rounded-full bg-blue-500" />}
+                        {methodeExpedition === opt.label && <div className="w-2 h-2 rounded-full bg-orange-700" />}
                       </div>
                       <div>
-                        <p className={`font-medium ${methodeExpedition === opt.label ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'}`}>
+                        <p className={`font-medium ${methodeExpedition === opt.label ? 'text-orange-700 dark:text-orange-400' : 'text-stone-700 dark:text-stone-300'}`}>
                           {opt.label}
                         </p>
-                        <p className="text-xs text-gray-400">{opt.delai}</p>
+                        <p className="text-xs text-stone-400">{opt.delai}</p>
                       </div>
                     </div>
-                    <span className={`font-bold shrink-0 ${methodeExpedition === opt.label ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                    <span className={`font-bold shrink-0 ${methodeExpedition === opt.label ? 'text-orange-700 dark:text-orange-400' : 'text-stone-500 dark:text-stone-400'}`}>
                       {opt.frais} DA
                     </span>
                   </button>
@@ -349,11 +351,11 @@ export default function NouvelleCommandePage() {
 
             <button type="button" onClick={() => adresse ? setShowModal(true) : null}
               disabled={submitting || !hasTelephone || !adresse}
-              className="w-full bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-black font-semibold py-3.5 rounded-xl transition disabled:opacity-40 flex items-center justify-center gap-2">
+              className="w-full bg-orange-700 hover:bg-orange-800 text-white font-semibold py-3.5 rounded-xl transition disabled:opacity-40 flex items-center justify-center gap-2">
               {submitting ? 'Traitement…' : `Confirmer — ${total.toFixed(2)} DA`}
             </button>
 
-            <Link href="/panier" className="block text-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-sm transition">
+            <Link href="/panier" className="block text-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 text-sm transition">
               ← Retour au panier
             </Link>
           </div>
@@ -361,9 +363,9 @@ export default function NouvelleCommandePage() {
 
         {/* ══ RÉSUMÉ (col 2) ══ */}
         <div className="lg:col-span-2">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5 lg:sticky lg:top-20 space-y-4">
-            <h2 className="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-              <Package className="w-4 h-4 text-blue-500" />
+          <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-100 dark:border-stone-800 p-5 lg:sticky lg:top-20 space-y-4">
+            <h2 className="font-semibold text-stone-800 dark:text-stone-100 flex items-center gap-2">
+              <Package className="w-4 h-4 text-orange-700" />
               Résumé ({panier.items.length} article{panier.items.length > 1 ? 's' : ''})
             </h2>
 
@@ -373,23 +375,23 @@ export default function NouvelleCommandePage() {
                 const img = item.variant?.images?.[0] ?? item.product.images?.[0]
                 return (
                   <div key={item.id} className="flex gap-2.5 items-start">
-                    <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden shrink-0">
+                    <div className="w-10 h-10 bg-stone-100 dark:bg-stone-800 rounded-lg overflow-hidden shrink-0">
                       {img ? <Image src={img} alt={item.product.nom} width={40} height={40} className="w-full h-full object-cover" />
-                           : <div className="w-full h-full flex items-center justify-center"><Package className="w-4 h-4 text-gray-400" /></div>}
+                           : <div className="w-full h-full flex items-center justify-center"><Package className="w-4 h-4 text-stone-400" /></div>}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300 line-clamp-1">{item.product.nom}</p>
+                      <p className="text-xs font-medium text-stone-700 dark:text-stone-300 line-clamp-1">{item.product.nom}</p>
                       {(item.variant || item.variantOption) && (
                         <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                           {item.variant?.couleur && (
-                            <span className="w-2.5 h-2.5 rounded-full border border-gray-300 shrink-0 inline-block"
+                            <span className="w-2.5 h-2.5 rounded-full border border-stone-300 shrink-0 inline-block"
                               style={{ backgroundColor: item.variant.couleur }} />
                           )}
-                          {item.variant && <span className="text-[10px] text-gray-400">{item.variant.nom}</span>}
+                          {item.variant && <span className="text-[10px] text-stone-400">{item.variant.nom}</span>}
                           {item.variantOption && (
                             <>
-                              <ChevronRight className="w-2.5 h-2.5 text-gray-300 shrink-0" />
-                              <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
+                              <ChevronRight className="w-2.5 h-2.5 text-stone-300 shrink-0" />
+                              <span className="text-[10px] text-stone-400 flex items-center gap-0.5">
                                 <Ruler className="w-2.5 h-2.5" />{typeOpt} {item.variantOption.valeur}
                               </span>
                             </>
@@ -397,21 +399,21 @@ export default function NouvelleCommandePage() {
                         </div>
                       )}
                       <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        <span className="text-xs text-gray-400">×{item.quantite}</span>
+                        <span className="text-xs text-stone-400">×{item.quantite}</span>
                         {estReduit ? (
                           <>
-                            <span className="text-xs font-semibold text-green-600 dark:text-green-400">{prixUnit.toFixed(2)} DA/u.</span>
-                            <span className="text-[10px] text-gray-400 line-through">{prixBase.toFixed(2)}</span>
+                            <span className="text-xs font-semibold text-green-700 dark:text-green-400">{prixUnit.toFixed(2)} DA/u.</span>
+                            <span className="text-[10px] text-stone-400 line-through">{prixBase.toFixed(2)}</span>
                             <span className="text-[10px] bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 px-1 py-0.5 rounded-full font-bold flex items-center gap-0.5">
                               <TrendingDown className="w-2.5 h-2.5" />−{Math.round((1 - prixUnit / prixBase) * 100)}%
                             </span>
                           </>
                         ) : (
-                          <span className="text-xs text-gray-500 dark:text-gray-400">{prixUnit.toFixed(2)} DA/u.</span>
+                          <span className="text-xs text-stone-500 dark:text-stone-400">{prixUnit.toFixed(2)} DA/u.</span>
                         )}
                       </div>
                     </div>
-                    <span className="text-xs font-bold text-gray-800 dark:text-gray-200 shrink-0">
+                    <span className="text-xs font-bold text-stone-800 dark:text-stone-200 shrink-0">
                       {sousLigne.toFixed(2)} DA
                     </span>
                   </div>
@@ -419,23 +421,23 @@ export default function NouvelleCommandePage() {
               })}
             </div>
 
-            <div className="border-t border-gray-100 dark:border-gray-800 pt-3 space-y-2">
-              <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
+            <div className="border-t border-stone-100 dark:border-stone-800 pt-3 space-y-2">
+              <div className="flex justify-between text-sm text-stone-500 dark:text-stone-400">
                 <span>Sous-total</span><span>{sousTotal.toFixed(2)} DA</span>
               </div>
               {totalEconomies > 0 && (
-                <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                <div className="flex justify-between text-sm text-green-700 dark:text-green-400">
                   <span className="flex items-center gap-1"><TrendingDown className="w-3.5 h-3.5" /> Économies</span>
                   <span>−{totalEconomies.toFixed(2)} DA</span>
                 </div>
               )}
-              <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
+              <div className="flex justify-between text-sm text-stone-500 dark:text-stone-400">
                 <span>Livraison ({selectedExpedition.label})</span>
                 <span>{fraisLivraison} DA</span>
               </div>
-              <div className="flex justify-between font-bold text-lg pt-1 border-t border-gray-100 dark:border-gray-800">
-                <span className="text-gray-800 dark:text-gray-100">Total</span>
-                <span className="text-blue-600 dark:text-blue-400">{total.toFixed(2)} DA</span>
+              <div className="flex justify-between font-bold text-lg pt-1 border-t border-stone-100 dark:border-stone-800">
+                <span className="text-stone-800 dark:text-stone-100">Total</span>
+                <span className="text-orange-700 dark:text-orange-500">{total.toFixed(2)} DA</span>
               </div>
             </div>
           </div>
@@ -448,14 +450,9 @@ export default function NouvelleCommandePage() {
           className="fixed inset-0 z-60 flex items-end sm:items-center justify-center bg-black/50 px-4"
           onClick={e => { if (e.target === e.currentTarget) setShowModal(false) }}
         >
-          {/*
-            Mobile  : collé en bas, padding bottom = navbar (~64px) + safe area + espace visuel
-            Desktop : centré verticalement, max-w-md
-            overflow-y-auto + max-h pour éviter que le modal dépasse l'écran
-          */}
           <div className="
-            bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-2xl
-            shadow-2xl border border-gray-100 dark:border-gray-800
+            bg-white dark:bg-stone-900 rounded-t-3xl sm:rounded-2xl
+            shadow-2xl border border-stone-100 dark:border-stone-800
             w-full max-w-md
             max-h-[calc(100dvh-5rem)] sm:max-h-[90vh]
             overflow-y-auto
@@ -464,70 +461,70 @@ export default function NouvelleCommandePage() {
           ">
             {/* Drag handle (mobile) */}
             <div className="flex justify-center pt-3 pb-1 sm:hidden">
-              <div className="w-10 h-1 rounded-full bg-gray-200 dark:bg-gray-700" />
+              <div className="w-10 h-1 rounded-full bg-stone-200 dark:bg-stone-700" />
             </div>
 
             <div className="px-6 pt-4 pb-2">
               {/* Header */}
               <div className="text-center mb-5">
-                <div className="w-14 h-14 bg-blue-50 dark:bg-blue-950 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                  <ShoppingBag className="w-7 h-7 text-blue-600 dark:text-blue-400" />
+                <div className="w-14 h-14 bg-orange-50 dark:bg-orange-950/50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                  <ShoppingBag className="w-7 h-7 text-orange-700 dark:text-orange-400" />
                 </div>
-                <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">Confirmer la commande ?</h2>
-                <p className="text-gray-400 text-sm mt-1">Vérifiez les détails avant de valider</p>
+                <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Confirmer la commande ?</h2>
+                <p className="text-stone-400 text-sm mt-1">Vérifiez les détails avant de valider</p>
               </div>
 
               {/* Détails */}
               <div className="space-y-2 mb-4">
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                  <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                <div className="bg-stone-50 dark:bg-stone-800 rounded-xl p-3">
+                  <p className="text-xs text-stone-400 mb-1 flex items-center gap-1">
                     <MapPin className="w-3.5 h-3.5" /> Adresse
                   </p>
-                  <p className="text-sm text-gray-800 dark:text-gray-200">{adresse}</p>
+                  <p className="text-sm text-stone-800 dark:text-stone-200">{adresse}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                    <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                  <div className="bg-stone-50 dark:bg-stone-800 rounded-xl p-3">
+                    <p className="text-xs text-stone-400 mb-1 flex items-center gap-1">
                       <CreditCard className="w-3.5 h-3.5" /> Paiement
                     </p>
-                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 leading-snug">{modePaiement}</p>
+                    <p className="text-sm font-medium text-stone-800 dark:text-stone-200 leading-snug">{modePaiement}</p>
                   </div>
-                  <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                    <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                  <div className="bg-stone-50 dark:bg-stone-800 rounded-xl p-3">
+                    <p className="text-xs text-stone-400 mb-1 flex items-center gap-1">
                       <Truck className="w-3.5 h-3.5" /> Livraison
                     </p>
-                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 leading-snug">{methodeExpedition}</p>
+                    <p className="text-sm font-medium text-stone-800 dark:text-stone-200 leading-snug">{methodeExpedition}</p>
                   </div>
                 </div>
               </div>
 
               {/* Totaux */}
-              <div className="border-t border-gray-100 dark:border-gray-800 pt-3 space-y-1.5 mb-5">
-                <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
+              <div className="border-t border-stone-100 dark:border-stone-800 pt-3 space-y-1.5 mb-5">
+                <div className="flex justify-between text-sm text-stone-500 dark:text-stone-400">
                   <span>Sous-total</span><span>{sousTotal.toFixed(2)} DA</span>
                 </div>
                 {totalEconomies > 0 && (
-                  <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                  <div className="flex justify-between text-sm text-green-700 dark:text-green-400">
                     <span>Économies</span><span>−{totalEconomies.toFixed(2)} DA</span>
                   </div>
                 )}
-                <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
+                <div className="flex justify-between text-sm text-stone-500 dark:text-stone-400">
                   <span>Livraison</span><span>{fraisLivraison} DA</span>
                 </div>
-                <div className="flex justify-between font-bold text-lg border-t border-gray-100 dark:border-gray-800 pt-2">
-                  <span className="text-gray-800 dark:text-gray-100">Total</span>
-                  <span className="text-blue-600 dark:text-blue-400">{total.toFixed(2)} DA</span>
+                <div className="flex justify-between font-bold text-lg border-t border-stone-100 dark:border-stone-800 pt-2">
+                  <span className="text-stone-800 dark:text-stone-100">Total</span>
+                  <span className="text-orange-700 dark:text-orange-500">{total.toFixed(2)} DA</span>
                 </div>
               </div>
 
               {/* Boutons */}
               <div className="flex gap-3">
                 <button onClick={() => setShowModal(false)}
-                  className="flex-1 border-2 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-semibold py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                  className="flex-1 border-2 border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 font-semibold py-3 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800 transition">
                   Annuler
                 </button>
                 <button onClick={handleConfirmer} disabled={submitting}
-                  className="flex-1 flex items-center justify-center gap-2 bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-black font-semibold py-3 rounded-xl transition disabled:opacity-50">
+                  className="flex-1 flex items-center justify-center gap-2 bg-orange-700 hover:bg-orange-800 text-white font-semibold py-3 rounded-xl transition disabled:opacity-50">
                   {submitting ? 'En cours…' : <><CheckCircle2 className="w-5 h-5" /> Confirmer</>}
                 </button>
               </div>

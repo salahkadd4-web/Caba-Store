@@ -39,6 +39,7 @@ const SNAP_MS = 300
 export default function ThemeToggle() {
   const { theme, setTheme } = useTheme()
 
+  const [mounted, setMounted] = useState(false)
   const [open, setOpen] = useState(false)
   const [dragging, setDragging] = useState(false)
   const [snapping, setSnapping] = useState(false)
@@ -50,29 +51,26 @@ export default function ThemeToggle() {
     }
   }, [])
 
-  /* ✅ FIX: init state safe (no effect setState) */
-  const [pos, setPos] = useState<{ x: number; y: number } | null>(() => {
-    if (typeof window === 'undefined') return null
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
 
+  useEffect(() => {
     const saved = localStorage.getItem('theme-btn-pos')
-
     const safeClamp = (x: number, y: number) => ({
       x: Math.max(EDGE, Math.min(window.innerWidth - BTN - EDGE, x)),
       y: Math.max(EDGE, Math.min(window.innerHeight - BTN - EDGE, y)),
     })
-
     if (saved) {
       try {
         const p = JSON.parse(saved)
-        return safeClamp(p.x, p.y)
-      } catch {}
+        setPos(safeClamp(p.x, p.y))
+      } catch {
+        setPos({ x: EDGE, y: window.innerHeight - BTN - NAV_BOTTOM })
+      }
+    } else {
+      setPos({ x: EDGE, y: window.innerHeight - BTN - NAV_BOTTOM })
     }
-
-    return {
-      x: EDGE,
-      y: window.innerHeight - BTN - NAV_BOTTOM,
-    }
-  })
+    setMounted(true)
+  }, [])
 
   const desktopRef = useRef<HTMLDivElement>(null)
   const mobileRef = useRef<HTMLDivElement>(null)
@@ -199,6 +197,8 @@ export default function ThemeToggle() {
 
   const menuAbove = pos ? pos.y > window.innerHeight * 0.55 : true
   const menuRight = pos ? pos.x > window.innerWidth * 0.5 : false
+
+  if (!mounted) return null
 
   return (
     <>

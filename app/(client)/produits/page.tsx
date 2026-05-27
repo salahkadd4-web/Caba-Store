@@ -54,10 +54,17 @@ export default async function ProduitsPage({
   )
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-12 pt-4">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Produits</h1>
+    <div className="max-w-6xl mx-auto px-4 pt-8 pb-20 md:pb-12">
+      {/* En-tête page */}
+      <div className="mb-8">
+        <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-400 mb-1">
+          Catalogue
+        </p>
+        <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">
+          Tous nos produits
+        </h1>
       </div>
+
       <ProduitsSearch
         categories={categories}
         initialProduits={produits as unknown as ProduitSearch[]}

@@ -55,29 +55,29 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
     <div className="max-w-6xl mx-auto px-4 py-12 pt-4">
 
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
-        <Link href="/" className="hover:text-blue-600 dark:hover:text-blue-400">Accueil</Link>
+      <div className="flex items-center gap-2 text-sm text-stone-500 dark:text-stone-400 mb-6">
+        <Link href="/" className="hover:text-orange-700 dark:hover:text-orange-500 transition-colors">Accueil</Link>
         <span>›</span>
-        <Link href="/categories" className="hover:text-blue-600 dark:hover:text-blue-400">Catégories</Link>
+        <Link href="/categories" className="hover:text-orange-700 dark:hover:text-orange-500 transition-colors">Catégories</Link>
         <span>›</span>
-        <span className="text-gray-800 dark:text-gray-200 font-medium">{categorie.nom}</span>
+        <span className="text-stone-800 dark:text-stone-200 font-medium">{categorie.nom}</span>
       </div>
 
       {/* Header catégorie */}
       <div className="flex items-center gap-4 mb-8">
-        <div className="relative w-16 h-16 bg-blue-100 dark:bg-blue-950 rounded-full flex items-center justify-center overflow-hidden">
+        <div className="relative w-16 h-16 bg-orange-50 dark:bg-stone-800 rounded-2xl flex items-center justify-center overflow-hidden">
           {categorie.image ? (
-            <Image src={categorie.image} alt={categorie.nom} fill sizes="64px" className="object-cover rounded-full" />
+            <Image src={categorie.image} alt={categorie.nom} fill sizes="64px" className="object-cover rounded-2xl" />
           ) : (
-            <span className="text-3xl"><Tag className="w-4 h-4" /></span>
+            <Tag className="w-7 h-7 text-orange-700 dark:text-orange-500" />
           )}
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">{categorie.nom}</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">{categorie.nom}</h1>
           {categorie.description && (
-            <p className="text-gray-500 dark:text-gray-400 mt-1">{categorie.description}</p>
+            <p className="text-stone-500 dark:text-stone-400 mt-1">{categorie.description}</p>
           )}
-          <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
+          <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500 mt-1">
             {totalActif} produit{totalActif > 1 ? 's' : ''}
           </p>
         </div>
@@ -85,10 +85,12 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
 
       {/* Produits */}
       {produits.length === 0 ? (
-        <div className="text-center py-20 text-gray-400 dark:text-gray-500">
-          <Package className="w-14 h-14" />
-          <p className="text-lg">Aucun produit dans cette catégorie.</p>
-          <Link href="/categories" className="text-blue-600 dark:text-blue-400 hover:underline mt-4 inline-block">
+        <div className="text-center py-20">
+          <div className="w-20 h-20 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Package className="w-10 h-10 text-stone-400 dark:text-stone-500" />
+          </div>
+          <p className="text-lg text-stone-500 dark:text-stone-400 mb-4">Aucun produit dans cette catégorie.</p>
+          <Link href="/categories" className="inline-block bg-orange-700 hover:bg-orange-800 text-white text-sm font-semibold px-6 py-3 rounded-xl transition-colors">
             ← Retour aux catégories
           </Link>
         </div>
@@ -103,10 +105,10 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
               <Link
                 key={produit.id}
                 href={`/produits/${produit.id}`}
-                className="product-card group bg-white dark:bg-gray-900 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-800"
+                className="product-card group bg-white dark:bg-stone-900 rounded-2xl overflow-hidden border border-stone-200 dark:border-stone-800 hover:border-orange-300 dark:hover:border-orange-700 transition-colors"
               >
                 {/* Image */}
-                <div className="relative h-48 bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
+                <div className="relative h-48 bg-stone-100 dark:bg-stone-800 flex items-center justify-center overflow-hidden">
                   {produit.images[0] ? (
                     <Image
                       src={produit.images[0]}
@@ -116,13 +118,13 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
                       className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
-                    <Package className="w-14 h-14" />
+                    <Package className="w-14 h-14 text-stone-300 dark:text-stone-600" />
                   )}
 
                   {/* Badge prix dégressif */}
                   {hasTiers && (
                     <div className="absolute top-2 left-2">
-                      <span className="text-[10px] bg-blue-600 text-white font-bold px-1.5 py-0.5 rounded-full shadow"><Banknote className="w-4 h-4 inline mr-1" />{' '}dégressif
+                      <span className="text-[10px] bg-orange-700 text-white font-bold px-1.5 py-0.5 rounded-full shadow"><Banknote className="w-4 h-4 inline mr-1" />{' '}dégressif
                       </span>
                     </div>
                   )}
@@ -136,21 +138,21 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
 
                 {/* Infos */}
                 <div className="p-4">
-                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2 line-clamp-2">
+                  <h3 className="text-sm font-semibold text-stone-800 dark:text-stone-100 mb-2 line-clamp-2">
                     {produit.nom}
                   </h3>
 
                   {/* Bloc prix */}
                   <div className="flex items-baseline gap-1.5 flex-wrap mb-1.5">
                     {hasTiers && (
-                      <span className="text-[10px] text-gray-400 dark:text-gray-500">à partir de</span>
+                      <span className="text-[10px] text-stone-400 dark:text-stone-500">à partir de</span>
                     )}
-                    <span className={`text-lg font-bold ${estReduit ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                    <span className={`text-lg font-bold ${estReduit ? 'text-green-700 dark:text-green-400' : 'text-orange-700 dark:text-orange-500'}`}>
                       {prixMin.toFixed(2)} DA
                     </span>
                     {estReduit && (
                       <>
-                        <span className="text-sm text-gray-400 dark:text-gray-500 line-through font-normal">
+                        <span className="text-sm text-stone-400 dark:text-stone-500 line-through font-normal">
                           {produit.prix.toFixed(2)}
                         </span>
                         <span className="text-[9px] bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 font-bold px-1 py-0.5 rounded-full">
@@ -168,26 +170,26 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
                           <span
                             key={v.id}
                             title={v.nom}
-                            className="w-4 h-4 rounded-full border border-gray-300 dark:border-gray-600 inline-block shrink-0"
+                            className="w-4 h-4 rounded-full border border-stone-300 dark:border-stone-600 inline-block shrink-0"
                             style={{ backgroundColor: v.couleur }}
                           />
                         ) : (
                           <span
                             key={v.id}
-                            className="text-[9px] text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded-full"
+                            className="text-[9px] text-stone-500 dark:text-stone-400 bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 rounded-full"
                           >
                             {v.nom}
                           </span>
                         )
                       )}
                       {produit.variants.length > 5 && (
-                        <span className="text-[9px] text-gray-400">+{produit.variants.length - 5}</span>
+                        <span className="text-[9px] text-stone-400">+{produit.variants.length - 5}</span>
                       )}
                     </div>
                   )}
 
                   {/* Stock */}
-                  <p className={`text-xs ${produit.stock > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
+                  <p className={`text-xs ${produit.stock > 0 ? 'text-green-700 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
                     {produit.stock > 0 ? `En stock (${produit.stock})` : 'Rupture de stock'}
                   </p>
                 </div>

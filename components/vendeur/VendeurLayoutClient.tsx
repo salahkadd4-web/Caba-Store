@@ -228,7 +228,7 @@ function ApprouveLayout({
           <div>
             <h1 className="text-sm font-bold text-emerald-600 dark:text-emerald-400"><Store className="w-4 h-4 inline mr-1" />{' '}Espace Vendeur</h1>
             {nomBoutique && (
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate max-w-[160px]">{nomBoutique}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate max-w-40">{nomBoutique}</p>
             )}
           </div>
           <button

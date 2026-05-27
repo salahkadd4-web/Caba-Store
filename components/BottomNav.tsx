@@ -57,7 +57,7 @@ export default function BottomNav() {
   ]
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 flex items-center justify-around px-2 py-2 md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-stone-50 dark:bg-stone-950 border-t border-stone-200 dark:border-stone-800 flex items-center justify-around px-2 py-2 md:hidden">
       {items.map((item) => {
         const isActive = pathname === item.href
         return (
@@ -66,8 +66,8 @@ export default function BottomNav() {
             href={item.href}
             className={`flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-colors ${
               isActive
-                ? 'text-black dark:text-white'
-                : 'text-gray-400 dark:text-gray-500'
+                ? 'text-orange-700 dark:text-orange-500'
+                : 'text-stone-400 dark:text-stone-500'
             }`}
           >
             {item.icon}
