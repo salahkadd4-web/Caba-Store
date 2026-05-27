@@ -92,10 +92,7 @@ function ConnexionContent() {
       })
 
       if (result?.error) {
-        // ✅ NextAuth v5 encode les erreurs thrown comme 'CredentialsSignin'
-        // On détecte le cas Google via une autre route si nécessaire
         if (result.error === 'CredentialsSignin') {
-          // Vérifier si c'est un compte Google (appel séparé)
           const checkRes = await fetch('/api/auth/verifier-identifiant', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -103,12 +100,14 @@ function ConnexionContent() {
           })
           const checkData = await checkRes.json()
           if (checkData.isGoogleAccount) {
-            setError('Ce compte utilise la connexion Google. Connectez-vous avec le bouton Google.')
+            setError('Ce compte utilise la connexion Google.')
           } else {
             setError('Identifiant ou mot de passe incorrect.')
           }
+        } else if (result.error === 'Configuration') {
+          setError('Erreur de configuration serveur. Contactez l\'administrateur.')
         } else {
-          setError('Identifiant ou mot de passe incorrect.')
+          setError(`Erreur : ${result.error}`)  // ← montre le vrai message pour déboguer
         }
         return
       }
