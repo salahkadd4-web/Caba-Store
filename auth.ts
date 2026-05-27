@@ -30,45 +30,43 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         motDePasse:  { label: 'Mot de passe',        type: 'password' },
       },
       async authorize(credentials) {
+        console.log('[authorize] identifiant reçu:', credentials?.identifiant)
         if (!credentials?.identifiant || !credentials?.motDePasse) return null
 
-        // ✅ Normaliser avant la requête DB
         const identifiant = normalizeIdentifiant(credentials.identifiant as string)
         const motDePasse  = credentials.motDePasse as string
 
         if (!identifiant) return null
 
-        const user = await prisma.user.findFirst({
-          where: {
-            OR: [
-              { email:     identifiant },
-              { telephone: identifiant },
-            ],
-          },
-          include: { vendeurProfile: true },
-        })
+        try {
+          const user = await prisma.user.findFirst({
+            where: {
+              OR: [
+                { email:     identifiant },
+                { telephone: identifiant },
+              ],
+            },
+            include: { vendeurProfile: true },
+          })
 
-        if (!user) return null
+          if (!user)             return null
+          if (!user.motDePasse)  return null  // compte Google
 
-        // Compte Google (pas de mot de passe) → erreur spéciale
-        if (!user.motDePasse) {
-          // NextAuth v5 encode les erreurs thrown comme 'CredentialsSignin',
-          // on utilise donc un code dans l'URL de callback (géré dans connexion/page.tsx)
-          // On retourne null ici ; la page de connexion détecte le compte Google
-          // via /api/auth/verifier-identifiant (qui expose isGoogleAccount).
+          const passwordMatch = await bcrypt.compare(motDePasse, user.motDePasse)
+          if (!passwordMatch)    return null
+
+          return {
+            id:            user.id,
+            name:          `${user.prenom} ${user.nom}`,
+            email:         user.email,
+            role:          user.role,
+            telephone:     user.telephone     ?? null,
+            vendeurStatut: user.vendeurProfile?.statut ?? null,
+          }
+        } catch (error) {
+          // 🔴 Sans ce catch, toute erreur Prisma/bcrypt devient silencieusement "CredentialsSignin"
+          console.error('[authorize] Erreur inattendue :', error)
           return null
-        }
-
-        const passwordMatch = await bcrypt.compare(motDePasse, user.motDePasse)
-        if (!passwordMatch) return null
-
-        return {
-          id:            user.id,
-          name:          `${user.prenom} ${user.nom}`,
-          email:         user.email,
-          role:          user.role,
-          telephone:     user.telephone ?? null,
-          vendeurStatut: user.vendeurProfile?.statut ?? null,
         }
       },
     }),
