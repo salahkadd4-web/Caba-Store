@@ -46,7 +46,7 @@ export default function FavoriIconButton({ produitId }: { produitId: string }) {
       className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 shadow-md disabled:opacity-50 ${
         isFavori
           ? 'bg-red-500 hover:bg-red-600 text-white'
-          : 'bg-white hover:bg-red-50 text-gray-400 hover:text-red-500'
+          : 'bg-white hover:bg-red-50 text-stone-400 hover:text-red-500'
       }`}
     >
       {isFavori ? (

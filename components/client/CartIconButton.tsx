@@ -64,8 +64,8 @@ export default function CartIconButton({ produitId, stock }: { produitId: string
   }
 
   if (stock === 0) return (
-    <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center" title="Indisponible">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-gray-400">
+    <div className="w-9 h-9 rounded-full bg-stone-200 dark:bg-stone-700 flex items-center justify-center" title="Indisponible">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-stone-400">
         <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
       </svg>
     </div>
@@ -79,7 +79,7 @@ export default function CartIconButton({ produitId, stock }: { produitId: string
       className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 shadow-md disabled:opacity-50 ${
         inCart
           ? 'bg-green-500 hover:bg-red-500 text-white'
-          : 'bg-white hover:bg-blue-50 text-gray-400 hover:text-blue-600'
+          : 'bg-white hover:bg-orange-50 text-stone-400 hover:text-orange-700'
       }`}
     >
       {inCart ? (

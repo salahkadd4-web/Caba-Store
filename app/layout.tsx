@@ -1,25 +1,28 @@
-import type { Metadata } from 'next'
-import './globals.css'
-import { auth } from '@/auth'
-import { ThemeProvider } from '@/components/ThemeProvider'
-import SessionProvider from '@/components/client/SessionProvider'
-import Header from '@/components/Header'
-import ThemeToggle from '@/components/ThemeToggle'
-import BottomNav from '@/components/BottomNav'
-import AndroidBackButton from '@/components/client/AndroidBackButton'
-import PullToRefresh from '@/components/client/PullToRefresh'
+import type { Metadata } from "next";
+import "./globals.css";
+import { auth } from "@/auth";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import SessionProvider from "@/components/client/SessionProvider";
+import Header from "@/components/Header";
+import ThemeToggle from "@/components/ThemeToggle";
+import BottomNav from "@/components/BottomNav";
+import AndroidBackButton from "@/components/client/AndroidBackButton";
+import PullToRefresh from "@/components/client/PullToRefresh";
 
 export const metadata: Metadata = {
-  title: 'Caba Store',
-  description: 'Votre boutique en ligne — Caba Store',
+  title: "Caba Store",
+  description: "Votre boutique en ligne — Caba Store",
   icons: {
-    icon: '/favicon.ico',
-    apple: '/icons/caba-store-icon-black.png',
+    icon: "/favicon.ico",
   },
-}
+};
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth()
+export default async function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const session = await auth();
 
   return (
     <html lang="fr" suppressHydrationWarning>
@@ -29,27 +32,26 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="Caba Store" />
         <link rel="apple-touch-icon" href="/icons/caba-store-icon-black.png" />
-        <script dangerouslySetInnerHTML={{
-          __html: `
-            (function() {
-              var theme = localStorage.getItem('theme');
-              var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-              if (theme === 'dark' || (theme === 'system' && systemDark) || (!theme && systemDark)) {
-                document.documentElement.classList.add('dark');
-              }
-            })();
-          `
-        }} />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+    (function() {
+      var theme = localStorage.getItem('theme');
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  `,
+          }}
+        />
       </head>
-      <body className="bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 transition-colors duration-300">
+      <body className=" text-stone-900 dark:text-stone-100 transition-colors duration-300">
         <ThemeProvider>
           <SessionProvider session={session}>
             <AndroidBackButton />
             <Header />
             <PullToRefresh>
-              <main className="pb-16 md:pb-0">
-                {children}
-              </main>
+              <main className="pb-16 md:pb-0">{children}</main>
             </PullToRefresh>
             <BottomNav />
             <ThemeToggle />
@@ -57,5 +59,5 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </ThemeProvider>
       </body>
     </html>
-  )
+  );
 }

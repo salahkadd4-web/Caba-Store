@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { AlertTriangle, CheckCircle2, Clock, CreditCard, RefreshCw, XCircle } from 'lucide-react'
 
 interface AbonnementRow {
@@ -35,15 +35,26 @@ export default function AdminAbonnementsPage() {
   const [loading, setLoading]     = useState(true)
   const [filterStatut, setFilter] = useState('')
 
-  const fetch_ = useCallback(async () => {
-    setLoading(true)
-    const res  = await fetch(`/api/admin/abonnements${filterStatut ? `?statut=${filterStatut}` : ''}`)
-    const data = await res.json()
-    setRows(data)
-    setLoading(false)
-  }, [filterStatut])
+  // ✅ Après — un seul useEffect, pas de useCallback
+const [refreshKey, setRefreshKey] = useState(0) // pour le bouton Actualiser
 
-  useEffect(() => { fetch_() }, [fetch_])
+useEffect(() => {
+  let cancelled = false // évite les race conditions si le filtre change vite
+
+  const load = async () => {
+    setLoading(true)
+    try {
+      const res  = await fetch(`/api/admin/abonnements${filterStatut ? `?statut=${filterStatut}` : ''}`)
+      const data = await res.json()
+      if (!cancelled) setRows(data)
+    } finally {
+      if (!cancelled) setLoading(false)
+    }
+  }
+
+  load()
+  return () => { cancelled = true }
+}, [filterStatut, refreshKey])
 
   const expirentBientot = rows.filter(r => r.joursRestants <= 7 && r.statut !== 'EXPIRE')
   const expires         = rows.filter(r => r.statut === 'EXPIRE')
@@ -56,7 +67,7 @@ export default function AdminAbonnementsPage() {
       {/* En-tête */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Abonnements</h1>
-        <button onClick={fetch_} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition">
+        <button onClick={() => setRefreshKey(k => k + 1)} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition">
           <RefreshCw size={14} /> Actualiser
         </button>
       </div>
@@ -122,7 +133,7 @@ export default function AdminAbonnementsPage() {
         ) : (
           /* ── Scrollbar horizontal sur mobile (identique à admin/clients) ── */
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[640px]">
+            <table className="w-full text-sm min-w-160">
               <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase">
                 <tr>
                   <th className="text-left px-4 py-3">Boutique / Vendeur</th>

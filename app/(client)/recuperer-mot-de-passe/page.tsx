@@ -23,10 +23,10 @@ function PasswordStrength({ password }: { password: string }) {
         const ok = rule.test(password)
         return (
           <div key={rule.id} className="flex items-center gap-2">
-            <span className={`text-xs transition-colors ${ok ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-600'}`}>
+            <span className={`text-xs transition-colors ${ok ? 'text-green-600 dark:text-green-400' : 'text-stone-400 dark:text-stone-600'}`}>
               {ok ? <Check className="w-4 h-4" /> : '○'}
             </span>
-            <span className={`text-xs transition-colors ${ok ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
+            <span className={`text-xs transition-colors ${ok ? 'text-green-600 dark:text-green-400' : 'text-stone-400 dark:text-stone-500'}`}>
               {rule.label}
             </span>
           </div>
@@ -141,12 +141,12 @@ export default function RecupererMotDePassePage() {
     } catch { setError('Erreur serveur') } finally { setLoading(false) }
   }
 
-  const inputClass = "w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-  const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+  const inputClass = "w-full border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-800 dark:text-stone-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600 focus:border-orange-700 dark:focus:border-orange-500 transition"
+  const labelClass = "block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1"
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center px-4 transition-colors">
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-md w-full max-w-md p-8">
+    <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex items-center justify-center px-4 transition-colors">
+      <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-md w-full max-w-md p-8">
 
         {/* Indicateur d'étapes */}
         <div className="flex items-center justify-center gap-2 mb-6">
@@ -155,36 +155,36 @@ export default function RecupererMotDePassePage() {
             return (
               <div key={e} className="flex items-center gap-2">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition ${
-                  etape === e         ? 'bg-blue-600 text-white' :
+                  etape === e         ? 'bg-orange-700 text-white' :
                   etapeIndex > i      ? 'bg-green-500 text-white' :
-                  'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                  'bg-stone-200 dark:bg-stone-700 text-stone-500 dark:text-stone-400'
                 }`}>
                   {etapeIndex > i ? <Check className="w-4 h-4" /> : i + 1}
                 </div>
-                {i < 2 && <div className={`w-8 h-0.5 ${etapeIndex > i ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700'}`} />}
+                {i < 2 && <div className={`w-8 h-0.5 ${etapeIndex > i ? 'bg-green-500' : 'bg-stone-200 dark:bg-stone-700'}`} />}
               </div>
             )
           })}
         </div>
 
-        <h1 className="text-2xl font-bold text-center text-gray-800 dark:text-gray-100 mb-1">
+        <h1 className="text-2xl font-bold text-center text-stone-800 dark:text-stone-100 mb-1">
           {etape === 'demande'      && 'Mot de passe oublié'}
           {etape === 'verification' && 'Vérification'}
           {etape === 'nouveau'      && 'Nouveau mot de passe'}
         </h1>
-        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mb-6">
+        <p className="text-center text-sm text-stone-500 dark:text-stone-400 mb-6">
           {etape === 'demande'      && 'Entrez votre email ou téléphone'}
           {etape === 'verification' && 'Entrez le code reçu'}
           {etape === 'nouveau'      && 'Choisissez un nouveau mot de passe sécurisé'}
         </p>
 
         {error && (
-          <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm px-4 py-3 rounded-lg mb-4">
+          <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm px-4 py-3 rounded-xl mb-4">
             {error}
           </div>
         )}
         {success && (
-          <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 text-sm px-4 py-3 rounded-lg mb-4">
+          <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 text-sm px-4 py-3 rounded-xl mb-4">
             {success}
           </div>
         )}
@@ -209,7 +209,7 @@ export default function RecupererMotDePassePage() {
                 {/* Indicateur AJAX */}
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                   {checkingId && (
-                    <svg className="animate-spin w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24">
+                    <svg className="animate-spin w-4 h-4 text-stone-400" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                     </svg>
@@ -235,15 +235,15 @@ export default function RecupererMotDePassePage() {
             <button
               type="submit"
               disabled={loading || idStatus !== 'found'}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-orange-700 hover:bg-orange-800 text-white font-semibold py-2.5 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Envoi en cours...' : 'Envoyer le code'}
             </button>
 
             {idStatus === 'notfound' && (
-              <p className="text-center text-xs text-gray-400 dark:text-gray-500">
+              <p className="text-center text-xs text-stone-400 dark:text-stone-500">
                 Pas encore de compte ?{' '}
-                <Link href="/inscription" className="text-blue-600 dark:text-blue-400 hover:underline">S'inscrire</Link>
+                <Link href="/inscription" className="text-orange-700 dark:text-orange-500 hover:underline">S&apos;inscrire</Link>
               </p>
             )}
           </form>
@@ -258,16 +258,16 @@ export default function RecupererMotDePassePage() {
                 type="text" value={code}
                 onChange={(e) => setCode(e.target.value)}
                 required maxLength={6}
-                className="w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-lg px-3 py-3 text-center text-2xl tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-800 dark:text-stone-100 rounded-xl px-3 py-3 text-center text-2xl tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-700 dark:focus:border-orange-500 transition"
                 placeholder="000000"
               />
             </div>
             <button type="submit" disabled={loading || code.length < 6}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition disabled:opacity-50">
+              className="w-full bg-orange-700 hover:bg-orange-800 text-white font-semibold py-2.5 rounded-xl transition disabled:opacity-50">
               {loading ? 'Vérification...' : 'Vérifier le code'}
             </button>
             <button type="button" onClick={() => { setEtape('demande'); setError(''); setCode('') }}
-              className="w-full text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
+              className="w-full text-sm text-stone-500 dark:text-stone-400 hover:text-orange-700 dark:hover:text-orange-500 transition">
               ← Retour
             </button>
           </form>
@@ -300,14 +300,14 @@ export default function RecupererMotDePassePage() {
               )}
             </div>
             <button type="submit" disabled={loading || !pwdRules.every(r => r.test(nouveauMotDePasse))}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+              className="w-full bg-orange-700 hover:bg-orange-800 text-white font-semibold py-2.5 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed">
               {loading ? 'Mise à jour...' : 'Mettre à jour le mot de passe'}
             </button>
           </form>
         )}
 
-        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
-          <Link href="/connexion" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+        <p className="text-center text-sm text-stone-500 dark:text-stone-400 mt-6">
+          <Link href="/connexion" className="text-orange-700 dark:text-orange-500 hover:underline font-medium">
             ← Retour à la connexion
           </Link>
         </p>

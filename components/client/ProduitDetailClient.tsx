@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
+import { useState, useMemo, useCallback, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useIsMobile } from '@/app/hooks/useIsMobile'
@@ -30,8 +30,9 @@ type LigneSelection = {
 }
 
 // ─── QteInput — saisie libre + stepper ───────────────────────────────────────
-// Utilise useEffect pour synchroniser le raw state avec la prop value externe,
-// ce qui évite le pattern anti-React "setState pendant le rendu".
+// raw === null  →  pas en cours de saisie, on affiche la prop value
+// raw !== null  →  l'utilisateur tape, on affiche ce qu'il tape
+// Aucun useEffect : la synchronisation se fait via onFocus / onBlur / commit.
 
 function QteInput({
   value, stockMax, onChange, onZero, size = 'md',
@@ -42,41 +43,34 @@ function QteInput({
   onZero?:  () => void
   size?:    'sm' | 'md'
 }) {
-  const [raw, setRaw]  = useState(String(value))
-  const inputRef       = useRef<HTMLInputElement>(null)
-  const isFocusedRef   = () => document.activeElement === inputRef.current
+  const [raw, setRaw] = useState<string | null>(null)
+  const inputRef      = useRef<HTMLInputElement>(null)
 
-  // Synchronisation prop → raw uniquement quand l'input n'est pas focalisé
-  useEffect(() => {
-    if (!isFocusedRef()) setRaw(String(value))
-  }, [value])
+  const displayValue = raw !== null ? raw : String(value)
 
   const commit = (str: string) => {
     const n = parseInt(str, 10)
     if (isNaN(n) || n <= 0) {
-      if (onZero) { onZero(); return }
-      setRaw('1'); onChange(1); return
+      if (onZero) { onZero(); setRaw(null); return }
+      onChange(1)
+    } else {
+      onChange(Math.min(n, stockMax))
     }
-    const clamped = Math.min(n, stockMax)
-    setRaw(String(clamped)); onChange(clamped)
+    setRaw(null)
   }
 
   const btnMinus = () => {
     const next = value - 1
-    if (next <= 0) {
-      if (onZero) { onZero(); return }
-      setRaw('1'); onChange(1); return
-    }
-    setRaw(String(next)); onChange(next)
+    if (next <= 0) { if (onZero) { onZero(); return } onChange(1); return }
+    onChange(next)
   }
 
   const btnPlus = () => {
     if (value >= stockMax) return
-    const next = value + 1; setRaw(String(next)); onChange(next)
+    onChange(value + 1)
   }
 
   const isSm = size === 'sm'
-  // Cohérence visuelle : orange/stone comme le reste de l'app (non plus blue/gray)
   const btnCls = isSm
     ? 'w-6 h-6 rounded-md flex items-center justify-center text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-950/40 transition disabled:opacity-30 shrink-0'
     : 'w-7 h-7 rounded-lg bg-stone-100 dark:bg-stone-800 flex items-center justify-center hover:bg-stone-200 dark:hover:bg-stone-700 transition disabled:opacity-30 shrink-0'
@@ -91,11 +85,12 @@ function QteInput({
       </button>
       <input
         ref={inputRef}
-        type="number" min={1} max={stockMax} value={raw}
+        type="number" min={1} max={stockMax}
+        value={displayValue}
         onChange={(e) => setRaw(e.target.value)}
-        onBlur={(e)  => commit(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter') { commit(raw); inputRef.current?.blur() } }}
-        onFocus={(e) => e.target.select()}
+        onBlur={(e)   => commit(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') { commit(raw ?? String(value)); inputRef.current?.blur() } }}
+        onFocus={(e)  => { setRaw(String(value)); e.target.select() }}
         className={inputCls}
       />
       <button onClick={btnPlus} disabled={value >= stockMax} className={btnCls} tabIndex={-1}>
@@ -135,7 +130,6 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
     [activeVariantId, produit.variants]
   )
 
-  // ✅ Fix photo mobile : previewVariant (hover desktop) > activeVariant (clic mobile) > produit
   const images = useMemo(() => {
     if (previewVariant?.images.length) return previewVariant.images
     if (activeVariant?.images.length)  return activeVariant.images
@@ -233,14 +227,13 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
   // ═══════════════════════════════════════════
   if (isMobile) {
     return (
-      // ✅ Fix bouton caché : pb-44 = CTA sticky (~80px) + BottomNav (~64px) + marge
       <div className="flex flex-col">
 
         {/* Galerie compacte 4:3 */}
-        <div className="relative bg-gray-100 dark:bg-gray-800 rounded-2xl overflow-hidden mb-3" style={{ aspectRatio: '4/3' }}>
+        <div className="relative bg-stone-100 dark:bg-stone-800 rounded-2xl overflow-hidden mb-3" style={{ aspectRatio: '4/3' }}>
           {images[imageIdx]
             ? <Image key={`${images[imageIdx]}-${imageIdx}`} src={images[imageIdx]} alt={produit.nom} fill priority sizes="100vw" className="object-cover" />
-            : <Package className="w-20 h-20 text-gray-300 dark:text-gray-600 absolute inset-0 m-auto" />
+            : <Package className="w-20 h-20 text-stone-300 dark:text-stone-600 absolute inset-0 m-auto" />
           }
           {previewVariant && (
             <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/65 text-white text-xs px-2.5 py-1.5 rounded-full backdrop-blur-sm">
@@ -255,7 +248,7 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
           <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
             {images.map((img, i) => (
               <button key={i} onClick={() => setImageIdx(i)}
-                className={`w-14 h-14 rounded-xl overflow-hidden border-2 shrink-0 transition ${i === imageIdx ? 'border-blue-500 shadow-md' : 'border-gray-200 dark:border-gray-700 opacity-60'}`}>
+                className={`w-14 h-14 rounded-xl overflow-hidden border-2 shrink-0 transition ${i === imageIdx ? 'border-orange-700 shadow-md' : 'border-stone-200 dark:border-stone-700 opacity-60'}`}>
                 <Image src={img} alt="" width={56} height={56} className="w-full h-full object-cover" />
               </button>
             ))}
@@ -265,13 +258,13 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
         {/* Prix */}
         <div className="mb-4">
           <div className="flex items-baseline gap-3 flex-wrap">
-            <span className={`text-2xl font-bold ${prixReduit && totalQte > 0 ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400'}`}>
+            <span className={`text-2xl font-bold ${prixReduit && totalQte > 0 ? 'text-green-600 dark:text-green-400' : 'text-orange-700 dark:text-orange-500'}`}>
               {prixUnit.toFixed(2)} DA
-              {totalQte > 1 && <span className="text-sm font-normal text-gray-400 ml-1">/u.</span>}
+              {totalQte > 1 && <span className="text-sm font-normal text-stone-400 ml-1">/u.</span>}
             </span>
             {prixReduit && totalQte > 0 && (
               <>
-                <span className="text-base text-gray-400 line-through">{produit.prix.toFixed(2)} DA</span>
+                <span className="text-base text-stone-400 line-through">{produit.prix.toFixed(2)} DA</span>
                 <span className="text-xs bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 font-semibold px-2 py-0.5 rounded-full">
                   -{Math.round((1 - prixUnit / produit.prix) * 100)}%
                 </span>
@@ -279,7 +272,7 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
             )}
           </div>
           {prochainPalier && totalQte > 0 && (
-            <p className="mt-1 text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+            <p className="mt-1 text-xs text-orange-700 dark:text-orange-500 flex items-center gap-1">
               <TrendingDown className="w-3 h-3 shrink-0" />
               Ajoutez <strong>{prochainPalier.minQte - totalQte}</strong> de plus &rarr; {prochainPalier.prix.toFixed(2)} DA/u.
             </p>
@@ -288,8 +281,8 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
 
         {/* Paliers dégressifs */}
         {hasTiers && (
-          <div className="bg-linear-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/30 border border-blue-100 dark:border-blue-900 rounded-xl p-3 mb-4">
-            <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+          <div className="bg-orange-50 dark:bg-orange-950/40 border border-orange-100 dark:border-orange-900 rounded-xl p-3 mb-4">
+            <p className="text-[10px] font-bold text-orange-700 dark:text-orange-500 uppercase tracking-widest mb-2 flex items-center gap-1">
               <TrendingDown className="w-3 h-3" /> Prix dégressifs
             </p>
             <div className="flex gap-2 overflow-x-auto pb-1">
@@ -297,7 +290,7 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
                 const isActive = totalQte >= tier.minQte && (tier.maxQte === null || totalQte <= tier.maxQte)
                 const isPast   = tier.maxQte !== null && totalQte > tier.maxQte
                 return (
-                  <div key={i} className={`flex flex-col items-center px-3 py-1.5 rounded-lg text-xs shrink-0 transition-all ${isActive ? 'bg-blue-600 text-white shadow-md scale-105' : isPast ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 opacity-60' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700'}`}>
+                  <div key={i} className={`flex flex-col items-center px-3 py-1.5 rounded-lg text-xs shrink-0 transition-all ${isActive ? 'bg-orange-700 text-white shadow-md scale-105' : isPast ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 opacity-60' : 'bg-white dark:bg-stone-800 text-stone-500 dark:text-stone-400 border border-stone-200 dark:border-stone-700'}`}>
                     <span className="font-bold">{tier.prix.toFixed(2)} DA</span>
                     <span className="opacity-75">{tier.maxQte ? `${tier.minQte}-${tier.maxQte}u.` : `>=${tier.minQte}u.`}</span>
                     {isActive && <Check className="w-3 h-3 mt-0.5" />}
@@ -318,7 +311,7 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
             {produit.stock > 0 && (
               <div className="flex items-center gap-3">
                 <QteInput value={qteSimple} stockMax={produit.stock} onChange={setQteSimple} />
-                <span className="text-xs text-gray-400">{produit.stock} dispo.</span>
+                <span className="text-xs text-stone-400">{produit.stock} dispo.</span>
               </div>
             )}
           </div>
@@ -329,9 +322,9 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
           <>
             {/* Swatches couleur */}
             <div className="mb-4">
-              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              <p className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-2">
                 {produit.variants.some(v => v.couleur) ? 'Couleur' : 'Variante'}
-                {activeVariant && <span className="ml-2 font-normal text-gray-400 text-xs">— {activeVariant.nom}</span>}
+                {activeVariant && <span className="ml-2 font-normal text-stone-400 text-xs">— {activeVariant.nom}</span>}
               </p>
               <div className="flex flex-wrap gap-2">
                 {produit.variants.map(variant => {
@@ -343,14 +336,14 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
                       onClick={() => {
                         if (outOfStock) return
                         setActiveVariantId(variant.id)
-                        setImageIdx(0) // ✅ reset l'index quand on change de couleur
+                        setImageIdx(0)
                       }}
                       disabled={outOfStock}
-                      className={`relative flex items-center gap-2 px-3 py-2 rounded-xl border-2 text-sm font-medium transition-all ${isActive ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-950/60 shadow-sm' : outOfStock ? 'border-gray-200 dark:border-gray-700 opacity-30 cursor-not-allowed' : 'border-gray-200 dark:border-gray-700'}`}
+                      className={`relative flex items-center gap-2 px-3 py-2 rounded-xl border-2 text-sm font-medium transition-all ${isActive ? 'border-orange-700 dark:border-orange-500 bg-orange-50 dark:bg-orange-950/60 shadow-sm' : outOfStock ? 'border-stone-200 dark:border-stone-700 opacity-30 cursor-not-allowed' : 'border-stone-200 dark:border-stone-700'}`}
                     >
-                      {variant.couleur && <span className="w-4 h-4 rounded-full border border-gray-300 dark:border-gray-500 shrink-0 shadow-sm" style={{ backgroundColor: variant.couleur }} />}
-                      <span className="text-gray-800 dark:text-gray-200">{variant.nom}</span>
-                      {qteLigne > 0 && <span className="ml-1 bg-blue-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shrink-0">{qteLigne}</span>}
+                      {variant.couleur && <span className="w-4 h-4 rounded-full border border-stone-300 dark:border-stone-500 shrink-0 shadow-sm" style={{ backgroundColor: variant.couleur }} />}
+                      <span className="text-stone-800 dark:text-stone-200">{variant.nom}</span>
+                      {qteLigne > 0 && <span className="ml-1 bg-orange-700 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shrink-0">{qteLigne}</span>}
                       {outOfStock && <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center shadow"><X className="w-2.5 h-2.5" /></span>}
                     </button>
                   )
@@ -358,14 +351,14 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
               </div>
             </div>
 
-            {/* Tailles */}
+            {/* Options (tailles, etc.) */}
             {activeVariant && (
               <div className="mb-4">
                 {hasOptions ? (
                   <div>
-                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    <p className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-2">
                       {typeOpt}
-                      <span className="ml-2 font-normal text-gray-400 text-xs">— touchez pour ajouter</span>
+                      <span className="ml-2 font-normal text-stone-400 text-xs">— touchez pour ajouter</span>
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {activeVariant.options.map(option => {
@@ -375,12 +368,12 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
                         const maxReached = qt >= option.stock
                         return (
                           <div key={option.id}
-                            className={`relative flex items-center rounded-xl border-2 overflow-hidden text-sm transition-all ${outOfStock ? 'border-gray-200 dark:border-gray-700 opacity-30 cursor-not-allowed' : qt > 0 ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-950/50 shadow-sm' : 'border-gray-200 dark:border-gray-700'}`}
+                            className={`relative flex items-center rounded-xl border-2 overflow-hidden text-sm transition-all ${outOfStock ? 'border-stone-200 dark:border-stone-700 opacity-30 cursor-not-allowed' : qt > 0 ? 'border-orange-700 dark:border-orange-500 bg-orange-50 dark:bg-orange-950/50 shadow-sm' : 'border-stone-200 dark:border-stone-700'}`}
                           >
                             <button
                               onClick={() => !outOfStock && qt === 0 && upsertLigne(activeVariant.id, activeVariant.nom, activeVariant.couleur, option.stock, 1, option.id, option.valeur, activeVariant.images[0] ?? produit.images[0])}
                               disabled={outOfStock}
-                              className={`min-w-11 px-2 h-10 flex items-center justify-center font-semibold text-sm ${outOfStock ? 'cursor-not-allowed line-through text-gray-400' : qt > 0 ? 'cursor-default text-blue-700 dark:text-blue-300' : 'cursor-pointer text-gray-700 dark:text-gray-200'}`}
+                              className={`min-w-11 px-2 h-10 flex items-center justify-center font-semibold text-sm ${outOfStock ? 'cursor-not-allowed line-through text-stone-400' : qt > 0 ? 'cursor-default text-orange-700 dark:text-orange-400' : 'cursor-pointer text-stone-700 dark:text-stone-200'}`}
                             >
                               {option.valeur}
                             </button>
@@ -394,14 +387,14 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
                         )
                       })}
                     </div>
-                    <p className="text-[11px] text-gray-400 mt-2 flex items-center gap-1">
+                    <p className="text-[11px] text-stone-400 mt-2 flex items-center gap-1">
                       <Info className="w-3 h-3 shrink-0" />
                       Touchez une taille pour l&apos;ajouter — utilisez +/- pour ajuster
                     </p>
                   </div>
                 ) : (
                   <div className="flex items-center gap-3">
-                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Quantité</p>
+                    <p className="text-sm font-semibold text-stone-700 dark:text-stone-300">Quantité</p>
                     <QteInput
                       value={qteOf(activeVariant.id) || 1}
                       stockMax={activeVariant.stock}
@@ -414,7 +407,7 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
                       }}
                       onZero={() => removeLigne(activeVariant.id)}
                     />
-                    <span className="text-xs text-gray-400">{activeVariant.stock} dispo.</span>
+                    <span className="text-xs text-stone-400">{activeVariant.stock} dispo.</span>
                   </div>
                 )}
               </div>
@@ -429,11 +422,9 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
           </>
         )}
 
-        {/* ── BARRE STICKY MOBILE ──
-            ✅ bottom-16 pour se positionner AU-DESSUS du BottomNav (h ≈ 62px)
-        */}
+        {/* ── BARRE STICKY MOBILE ── */}
         <div
-          className="fixed bottom-16 left-0 right-0 z-40 bg-white dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800"
+          className="fixed bottom-16 left-0 right-0 z-40 bg-white dark:bg-stone-950 border-t border-stone-200 dark:border-stone-800"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
           {/* Récap collapsible */}
@@ -441,41 +432,41 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
             <div>
               <button
                 onClick={() => setRecapOpen(o => !o)}
-                className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800"
+                className="w-full flex items-center justify-between px-4 py-2.5 bg-stone-50 dark:bg-stone-900 border-b border-stone-100 dark:border-stone-800"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">Ma sélection</span>
-                  <span className="bg-blue-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">{totalQte}</span>
+                  <span className="text-xs font-bold text-stone-600 dark:text-stone-400 uppercase tracking-widest">Ma sélection</span>
+                  <span className="bg-orange-700 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">{totalQte}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-sm font-bold ${prixReduit ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                  <span className={`text-sm font-bold ${prixReduit ? 'text-green-600 dark:text-green-400' : 'text-orange-700 dark:text-orange-500'}`}>
                     {totalPrix.toFixed(2)} DA
                   </span>
-                  {recapOpen ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronUp className="w-4 h-4 text-gray-400" />}
+                  {recapOpen ? <ChevronDown className="w-4 h-4 text-stone-400" /> : <ChevronUp className="w-4 h-4 text-stone-400" />}
                 </div>
               </button>
 
               {recapOpen && (
-                <div className="max-h-52 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-950">
+                <div className="max-h-52 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800 bg-white dark:bg-stone-950">
                   {lignes.map(ligne => (
                     <div key={ligne.key} className="flex items-center gap-3 px-4 py-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 overflow-hidden shrink-0 flex items-center justify-center">
-                        {ligne.image ? <Image src={ligne.image} alt="" width={32} height={32} className="w-full h-full object-cover" /> : <Package className="w-3.5 h-3.5 text-gray-400" />}
+                      <div className="w-8 h-8 rounded-lg bg-stone-100 dark:bg-stone-800 overflow-hidden shrink-0 flex items-center justify-center">
+                        {ligne.image ? <Image src={ligne.image} alt="" width={32} height={32} className="w-full h-full object-cover" /> : <Package className="w-3.5 h-3.5 text-stone-400" />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          {ligne.couleur && <span className="w-2.5 h-2.5 rounded-full border border-gray-300 dark:border-gray-600 shrink-0" style={{ backgroundColor: ligne.couleur }} />}
-                          <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">{ligne.variantNom}</span>
+                          {ligne.couleur && <span className="w-2.5 h-2.5 rounded-full border border-stone-300 dark:border-stone-600 shrink-0" style={{ backgroundColor: ligne.couleur }} />}
+                          <span className="text-xs font-medium text-stone-800 dark:text-stone-200 truncate">{ligne.variantNom}</span>
                           {ligne.optionValeur && (
                             <>
-                              <ChevronRight className="w-3 h-3 text-gray-400 shrink-0" />
-                              <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">{typeOpt} {ligne.optionValeur}</span>
+                              <ChevronRight className="w-3 h-3 text-stone-400 shrink-0" />
+                              <span className="text-xs text-stone-500 dark:text-stone-400 shrink-0">{typeOpt} {ligne.optionValeur}</span>
                             </>
                           )}
                         </div>
                       </div>
                       <QteInput size="sm" value={ligne.quantite} stockMax={ligne.stockMax} onChange={v => setLigneQte(ligne.key, v)} onZero={() => removeLigne(ligne.key)} />
-                      <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 w-16 text-right shrink-0">{(prixUnit * ligne.quantite).toFixed(2)} DA</span>
+                      <span className="text-xs font-semibold text-stone-700 dark:text-stone-300 w-16 text-right shrink-0">{(prixUnit * ligne.quantite).toFixed(2)} DA</span>
                       <button onClick={() => removeLigne(ligne.key)} className="text-red-400 hover:text-red-600 p-1 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   ))}
@@ -494,7 +485,7 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
           <div className="px-4 py-3">
             {hasVariants ? (
               <button onClick={handleAjouter} disabled={sending || lignes.length === 0}
-                className={`w-full font-semibold py-4 rounded-2xl flex items-center justify-center gap-2.5 transition-all text-base active:scale-[0.98] ${sent ? 'bg-green-500 text-white shadow-lg' : lignes.length === 0 ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-default' : sending ? 'bg-blue-600 text-white opacity-70' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20'}`}
+                className={`w-full font-semibold py-4 rounded-2xl flex items-center justify-center gap-2.5 transition-all text-base active:scale-[0.98] ${sent ? 'bg-green-500 text-white shadow-lg' : lignes.length === 0 ? 'bg-stone-100 dark:bg-stone-800 text-stone-400 cursor-default' : sending ? 'bg-orange-700 text-white opacity-70' : 'bg-orange-700 hover:bg-orange-800 text-white shadow-lg shadow-orange-700/20'}`}
               >
                 {sent ? <><Check className="w-5 h-5" /> Ajouté au panier !</>
                   : sending ? <><Loader2 className="w-5 h-5 animate-spin" /> Ajout en cours…</>
@@ -504,7 +495,7 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
               </button>
             ) : (
               <button onClick={handleAddSimple} disabled={loadingSimple || produit.stock === 0}
-                className={`w-full font-semibold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all text-base ${successSimple ? 'bg-green-500 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50'}`}
+                className={`w-full font-semibold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all text-base ${successSimple ? 'bg-green-500 text-white' : 'bg-orange-700 hover:bg-orange-800 text-white disabled:opacity-50'}`}
               >
                 {successSimple ? <><Check className="w-5 h-5" /> Ajouté !</> : loadingSimple ? <Loader2 className="w-5 h-5 animate-spin" /> : <><ShoppingCart className="w-5 h-5" /> Ajouter au panier</>}
               </button>
@@ -516,17 +507,17 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
   }
 
   // ═══════════════════════════════════════════
-  //  RENDU DESKTOP (inchangé)
+  //  RENDU DESKTOP
   // ═══════════════════════════════════════════
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
 
       {/* GALERIE */}
       <div>
-        <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl aspect-square max-h-110 flex items-center justify-center overflow-hidden relative">
+        <div className="bg-stone-100 dark:bg-stone-800 rounded-2xl aspect-square max-h-110 flex items-center justify-center overflow-hidden relative">
           {images[imageIdx]
             ? <Image key={`${images[imageIdx]}-${imageIdx}`} src={images[imageIdx]} alt={produit.nom} fill priority sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover transition-opacity duration-300" />
-            : <Package className="w-24 h-24 text-gray-300 dark:text-gray-600" />
+            : <Package className="w-24 h-24 text-stone-300 dark:text-stone-600" />
           }
           {previewVariant && (
             <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/65 text-white text-xs px-2.5 py-1.5 rounded-full backdrop-blur-sm animate-fade-in">
@@ -539,7 +530,7 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
           <div className="flex gap-2 mt-3 flex-wrap">
             {images.map((img, i) => (
               <button key={i} onClick={() => setImageIdx(i)}
-                className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition shrink-0 ${i === imageIdx ? 'border-blue-500 shadow-md' : 'border-gray-200 dark:border-gray-700 opacity-60 hover:opacity-100'}`}>
+                className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition shrink-0 ${i === imageIdx ? 'border-orange-700 shadow-md' : 'border-stone-200 dark:border-stone-700 opacity-60 hover:opacity-100'}`}>
                 <Image src={img} alt="" width={64} height={64} className="w-full h-full object-cover" />
               </button>
             ))}
@@ -553,19 +544,19 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
         {/* Prix */}
         <div>
           <div className="flex items-baseline gap-3 flex-wrap">
-            <span className={`text-3xl font-bold transition-colors duration-300 ${prixReduit && totalQte > 0 ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400'}`}>
+            <span className={`text-3xl font-bold transition-colors duration-300 ${prixReduit && totalQte > 0 ? 'text-green-600 dark:text-green-400' : 'text-orange-700 dark:text-orange-500'}`}>
               {prixUnit.toFixed(2)} DA
-              {totalQte > 1 && <span className="text-base font-normal text-gray-400 ml-1">/u.</span>}
+              {totalQte > 1 && <span className="text-base font-normal text-stone-400 ml-1">/u.</span>}
             </span>
             {prixReduit && totalQte > 0 && (
               <>
-                <span className="text-lg text-gray-400 line-through font-medium">{produit.prix.toFixed(2)} DA</span>
+                <span className="text-lg text-stone-400 line-through font-medium">{produit.prix.toFixed(2)} DA</span>
                 <span className="text-xs bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 font-semibold px-2 py-0.5 rounded-full">-{Math.round((1 - prixUnit / produit.prix) * 100)}%</span>
               </>
             )}
           </div>
           {prochainPalier && totalQte > 0 && (
-            <p className="mt-1.5 text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1.5 animate-pulse">
+            <p className="mt-1.5 text-xs text-orange-700 dark:text-orange-500 flex items-center gap-1.5 animate-pulse">
               <TrendingDown className="w-3.5 h-3.5 shrink-0" />
               Ajoutez <strong>{prochainPalier.minQte - totalQte}</strong> de plus &rarr; {prochainPalier.prix.toFixed(2)} DA/u.
             </p>
@@ -574,8 +565,8 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
 
         {/* Paliers */}
         {hasTiers && (
-          <div className="bg-linear-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/30 border border-blue-100 dark:border-blue-900 rounded-xl p-3">
-            <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+          <div className="bg-orange-50 dark:bg-orange-950/40 border border-orange-100 dark:border-orange-900 rounded-xl p-3">
+            <p className="text-[10px] font-bold text-orange-700 dark:text-orange-500 uppercase tracking-widest mb-2 flex items-center gap-1">
               <TrendingDown className="w-3 h-3" /> Prix dégressifs
             </p>
             <div className="flex flex-wrap gap-1.5">
@@ -583,7 +574,7 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
                 const isActive = totalQte >= tier.minQte && (tier.maxQte === null || totalQte <= tier.maxQte)
                 const isPast   = tier.maxQte !== null && totalQte > tier.maxQte
                 return (
-                  <div key={i} className={`flex flex-col items-center px-3 py-1.5 rounded-lg text-xs transition-all duration-300 ${isActive ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 scale-105' : isPast ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 opacity-60' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700'}`}>
+                  <div key={i} className={`flex flex-col items-center px-3 py-1.5 rounded-lg text-xs transition-all duration-300 ${isActive ? 'bg-orange-700 text-white shadow-md shadow-orange-700/20 scale-105' : isPast ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 opacity-60' : 'bg-white dark:bg-stone-800 text-stone-500 dark:text-stone-400 border border-stone-200 dark:border-stone-700'}`}>
                     <span className="font-bold">{tier.prix.toFixed(2)} DA</span>
                     <span className="opacity-75">{tier.maxQte ? `${tier.minQte}-${tier.maxQte}u.` : `>=${tier.minQte}u.`}</span>
                     {isActive && <Check className="w-3 h-3 mt-0.5" />}
@@ -604,11 +595,11 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
             {produit.stock > 0 && (
               <div className="flex items-center gap-3">
                 <QteInput value={qteSimple} stockMax={produit.stock} onChange={setQteSimple} />
-                <span className="text-xs text-gray-400">{produit.stock} dispo.</span>
+                <span className="text-xs text-stone-400">{produit.stock} dispo.</span>
               </div>
             )}
             <button onClick={handleAddSimple} disabled={loadingSimple || produit.stock === 0}
-              className={`w-full font-semibold py-4 rounded-xl flex items-center justify-center gap-2 transition-all text-base ${successSimple ? 'bg-green-500 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50'}`}>
+              className={`w-full font-semibold py-4 rounded-xl flex items-center justify-center gap-2 transition-all text-base ${successSimple ? 'bg-green-500 text-white' : 'bg-orange-700 hover:bg-orange-800 text-white disabled:opacity-50'}`}>
               {successSimple ? <><Check className="w-5 h-5" /> Ajouté !</> : loadingSimple ? <Loader2 className="w-5 h-5 animate-spin" /> : <><ShoppingCart className="w-5 h-5" /> Ajouter au panier</>}
             </button>
           </div>
@@ -619,9 +610,9 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
           <>
             {/* Swatches */}
             <div>
-              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              <p className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-3">
                 {produit.variants.some(v => v.couleur) ? 'Couleur' : 'Variante'}
-                {activeVariant && <span className="ml-2 font-normal text-gray-400 text-xs">— {activeVariant.nom}</span>}
+                {activeVariant && <span className="ml-2 font-normal text-stone-400 text-xs">— {activeVariant.nom}</span>}
               </p>
               <div className="flex flex-wrap gap-2">
                 {produit.variants.map(variant => {
@@ -635,11 +626,11 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
                       onMouseLeave={() => setHoveredVariant(null)}
                       disabled={outOfStock}
                       title={outOfStock ? 'Rupture de stock' : variant.nom}
-                      className={`relative flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm font-medium transition-all ${isActive ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-950/60 shadow-sm' : outOfStock ? 'border-gray-200 dark:border-gray-700 opacity-30 cursor-not-allowed' : 'border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500'}`}
+                      className={`relative flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm font-medium transition-all ${isActive ? 'border-orange-700 dark:border-orange-500 bg-orange-50 dark:bg-orange-950/60 shadow-sm' : outOfStock ? 'border-stone-200 dark:border-stone-700 opacity-30 cursor-not-allowed' : 'border-stone-200 dark:border-stone-700 hover:border-stone-400 dark:hover:border-stone-500'}`}
                     >
-                      {variant.couleur && <span className="w-5 h-5 rounded-full border border-gray-300 dark:border-gray-500 shrink-0 shadow-sm" style={{ backgroundColor: variant.couleur }} />}
-                      <span className="text-gray-800 dark:text-gray-200">{variant.nom}</span>
-                      {qteLigne > 0 && <span className="ml-1 bg-blue-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shrink-0 shadow">{qteLigne}</span>}
+                      {variant.couleur && <span className="w-5 h-5 rounded-full border border-stone-300 dark:border-stone-500 shrink-0 shadow-sm" style={{ backgroundColor: variant.couleur }} />}
+                      <span className="text-stone-800 dark:text-stone-200">{variant.nom}</span>
+                      {qteLigne > 0 && <span className="ml-1 bg-orange-700 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shrink-0 shadow">{qteLigne}</span>}
                       {outOfStock && <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center shadow"><X className="w-2.5 h-2.5" /></span>}
                     </button>
                   )
@@ -647,14 +638,14 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
               </div>
             </div>
 
-            {/* Tailles desktop */}
+            {/* Options (tailles) desktop */}
             {activeVariant && (
               <div>
                 {hasOptions ? (
                   <div>
-                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                    <p className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-3">
                       {typeOpt}
-                      <span className="ml-2 font-normal text-gray-400 text-xs">— cliquez pour ajouter</span>
+                      <span className="ml-2 font-normal text-stone-400 text-xs">— cliquez pour ajouter</span>
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {activeVariant.options.map(option => {
@@ -664,12 +655,12 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
                         const maxReached = qt >= option.stock
                         return (
                           <div key={option.id}
-                            className={`relative flex items-center rounded-xl border-2 overflow-hidden text-sm transition-all ${outOfStock ? 'border-gray-200 dark:border-gray-700 opacity-30 cursor-not-allowed' : qt > 0 ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-950/50 shadow-sm' : 'border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500'}`}
+                            className={`relative flex items-center rounded-xl border-2 overflow-hidden text-sm transition-all ${outOfStock ? 'border-stone-200 dark:border-stone-700 opacity-30 cursor-not-allowed' : qt > 0 ? 'border-orange-700 dark:border-orange-500 bg-orange-50 dark:bg-orange-950/50 shadow-sm' : 'border-stone-200 dark:border-stone-700 hover:border-orange-500 dark:hover:border-orange-600'}`}
                           >
                             <button
                               onClick={() => !outOfStock && qt === 0 && upsertLigne(activeVariant.id, activeVariant.nom, activeVariant.couleur, option.stock, 1, option.id, option.valeur, activeVariant.images[0] ?? produit.images[0])}
                               disabled={outOfStock}
-                              className={`min-w-10 px-2 h-9 flex items-center justify-center font-semibold transition-all ${outOfStock ? 'cursor-not-allowed line-through text-gray-400' : qt > 0 ? 'cursor-default text-blue-700 dark:text-blue-300' : 'cursor-pointer text-gray-700 dark:text-gray-200'}`}
+                              className={`min-w-10 px-2 h-9 flex items-center justify-center font-semibold transition-all ${outOfStock ? 'cursor-not-allowed line-through text-stone-400' : qt > 0 ? 'cursor-default text-orange-700 dark:text-orange-400' : 'cursor-pointer text-stone-700 dark:text-stone-200'}`}
                             >
                               {option.valeur}
                             </button>
@@ -683,14 +674,14 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
                         )
                       })}
                     </div>
-                    <p className="text-[11px] text-gray-400 mt-2 flex items-center gap-1">
+                    <p className="text-[11px] text-stone-400 mt-2 flex items-center gap-1">
                       <Info className="w-3 h-3 shrink-0" />
                       Cliquez sur une taille pour l&apos;ajouter — tapez ou utilisez +/- pour ajuster
                     </p>
                   </div>
                 ) : (
                   <div className="flex items-center gap-3">
-                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Quantité</p>
+                    <p className="text-sm font-semibold text-stone-700 dark:text-stone-300">Quantité</p>
                     <QteInput
                       value={qteOf(activeVariant.id) || 0}
                       stockMax={activeVariant.stock}
@@ -703,7 +694,7 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
                       }}
                       onZero={() => removeLigne(activeVariant.id)}
                     />
-                    <span className="text-xs text-gray-400">{activeVariant.stock} dispo.</span>
+                    <span className="text-xs text-stone-400">{activeVariant.stock} dispo.</span>
                   </div>
                 )}
               </div>
@@ -711,33 +702,33 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
 
             {/* Récap desktop */}
             {lignes.length > 0 && (
-              <div className="border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden">
-                <div className="bg-gray-50 dark:bg-gray-800/60 px-4 py-2.5 flex items-center justify-between">
-                  <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-widest">Ma sélection</p>
+              <div className="border border-stone-200 dark:border-stone-700 rounded-2xl overflow-hidden">
+                <div className="bg-stone-50 dark:bg-stone-800/60 px-4 py-2.5 flex items-center justify-between">
+                  <p className="text-xs font-bold text-stone-600 dark:text-stone-400 uppercase tracking-widest">Ma sélection</p>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{totalQte} article{totalQte > 1 ? 's' : ''}</span>
-                    {totalQte > 0 && <span className={`text-sm font-bold ${prixReduit ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400'}`}>= {totalPrix.toFixed(2)} DA</span>}
+                    <span className="text-xs text-stone-500 dark:text-stone-400">{totalQte} article{totalQte > 1 ? 's' : ''}</span>
+                    {totalQte > 0 && <span className={`text-sm font-bold ${prixReduit ? 'text-green-600 dark:text-green-400' : 'text-orange-700 dark:text-orange-500'}`}>= {totalPrix.toFixed(2)} DA</span>}
                   </div>
                 </div>
-                <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                <div className="divide-y divide-stone-100 dark:divide-stone-800">
                   {lignes.map(ligne => (
                     <div key={ligne.key} className="flex items-center gap-3 px-4 py-2.5 group">
-                      <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-800 overflow-hidden shrink-0 flex items-center justify-center">
-                        {ligne.image ? <Image src={ligne.image} alt="" width={36} height={36} className="w-full h-full object-cover" /> : <Package className="w-4 h-4 text-gray-400" />}
+                      <div className="w-9 h-9 rounded-lg bg-stone-100 dark:bg-stone-800 overflow-hidden shrink-0 flex items-center justify-center">
+                        {ligne.image ? <Image src={ligne.image} alt="" width={36} height={36} className="w-full h-full object-cover" /> : <Package className="w-4 h-4 text-stone-400" />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          {ligne.couleur && <span className="w-3 h-3 rounded-full border border-gray-300 dark:border-gray-600 shrink-0" style={{ backgroundColor: ligne.couleur }} />}
-                          <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{ligne.variantNom}</span>
+                          {ligne.couleur && <span className="w-3 h-3 rounded-full border border-stone-300 dark:border-stone-600 shrink-0" style={{ backgroundColor: ligne.couleur }} />}
+                          <span className="text-sm font-medium text-stone-800 dark:text-stone-200 truncate">{ligne.variantNom}</span>
                           {ligne.optionValeur && (
-                            <><ChevronRight className="w-3 h-3 text-gray-400 shrink-0" /><span className="text-sm text-gray-500 dark:text-gray-400 shrink-0">{typeOpt} {ligne.optionValeur}</span></>
+                            <><ChevronRight className="w-3 h-3 text-stone-400 shrink-0" /><span className="text-sm text-stone-500 dark:text-stone-400 shrink-0">{typeOpt} {ligne.optionValeur}</span></>
                           )}
                         </div>
                       </div>
                       <div className="shrink-0">
                         <QteInput value={ligne.quantite} stockMax={ligne.stockMax} onChange={v => setLigneQte(ligne.key, v)} onZero={() => removeLigne(ligne.key)} />
                       </div>
-                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 w-20 text-right shrink-0">{(prixUnit * ligne.quantite).toFixed(2)} DA</span>
+                      <span className="text-sm font-semibold text-stone-700 dark:text-stone-300 w-20 text-right shrink-0">{(prixUnit * ligne.quantite).toFixed(2)} DA</span>
                       <button onClick={() => removeLigne(ligne.key)} className="opacity-0 group-hover:opacity-100 transition text-red-400 hover:text-red-600 p-1 shrink-0">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -760,7 +751,7 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
             )}
 
             <button onClick={handleAjouter} disabled={sending || lignes.length === 0}
-              className={`w-full font-semibold py-4 rounded-xl flex items-center justify-center gap-2.5 transition-all duration-300 text-base active:scale-[0.98] ${sent ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' : lignes.length === 0 ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-default' : sending ? 'bg-blue-600 text-white opacity-70 cursor-wait' : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-lg shadow-blue-600/20'}`}
+              className={`w-full font-semibold py-4 rounded-xl flex items-center justify-center gap-2.5 transition-all duration-300 text-base active:scale-[0.98] ${sent ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' : lignes.length === 0 ? 'bg-stone-100 dark:bg-stone-800 text-stone-400 cursor-default' : sending ? 'bg-orange-700 text-white opacity-70 cursor-wait' : 'bg-orange-700 hover:bg-orange-800 active:bg-orange-900 text-white shadow-lg shadow-orange-700/20'}`}
             >
               {sent ? <><Check className="w-5 h-5" /> Ajouté au panier !</>
                 : sending ? <><Loader2 className="w-5 h-5 animate-spin" /> Ajout en cours…</>

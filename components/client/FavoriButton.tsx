@@ -53,7 +53,7 @@ export default function FavoriButton({ produitId }: { produitId: string }) {
       className={`w-full border-2 font-semibold py-3 rounded-xl transition disabled:opacity-50 ${
         isFavori
           ? 'border-red-500 text-red-500 hover:bg-red-50'
-          : 'border-blue-600 text-blue-600 hover:bg-blue-50'
+          : 'border-orange-700 text-orange-700 hover:bg-orange-50 dark:border-orange-600 dark:text-orange-500 dark:hover:bg-orange-950/30'
       }`}
     >
       <span className="flex items-center justify-center gap-2">

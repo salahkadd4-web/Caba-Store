@@ -1,9 +1,7 @@
 'use client'
-
 import { createContext, useContext, useEffect, useState } from 'react'
 
 type Theme = 'light' | 'dark' | 'system'
-
 type ThemeContextType = {
   theme: Theme
   setTheme: (theme: Theme) => void
@@ -16,16 +14,19 @@ const ThemeContext = createContext<ThemeContextType>({
   resolvedTheme: 'light',
 })
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('system')
-  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light')
+// ✅ Lecture du localStorage en dehors du composant (s'exécute une seule fois)
+function getInitialTheme(): Theme {
+  if (typeof window === 'undefined') return 'light' // SSR guard
+  const saved = localStorage.getItem('theme')
+  if (saved === 'light' || saved === 'dark' || saved === 'system') return saved
+  return 'dark'
+}
 
-  useEffect(() => {
-    const saved = localStorage.getItem('theme') as Theme | null
-    if (saved === 'light' || saved === 'dark' || saved === 'system') {
-      setThemeState(saved)
-    }
-  }, [])
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  // ✅ Initialisation paresseuse — pas d'effet, pas de double rendu
+  const [theme, setThemeState] = useState<Theme>(getInitialTheme)
+
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light')
 
   useEffect(() => {
     const root = document.documentElement
@@ -35,9 +36,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const isDark =
         theme === 'dark' ||
         (theme === 'system' && systemDark.matches)
-
       root.classList.toggle('dark', isDark)
-      setResolvedTheme(isDark ? 'dark' : 'light')
+      setResolvedTheme(isDark ? 'dark' : 'light') // ✅ setState dans un callback, pas dans le corps
     }
 
     apply()
