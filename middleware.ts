@@ -60,5 +60,10 @@ export const config = {
   matcher: [
     '/admin/:path*',
     '/vendeur/:path*',
+    '/panier/:path*',
+    '/commandes/:path*',
+    '/favoris/:path*',
+    '/profil/:path*',
+    '/retours/:path*',
   ],
 }

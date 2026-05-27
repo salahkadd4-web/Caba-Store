@@ -5,8 +5,6 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { BarChart2, CreditCard, Package, RefreshCw, Settings, ShoppingCart, Store, Tag, TrendingUp, Users, X } from 'lucide-react'
 
-export const dynamic = 'force-dynamic'
-
 const navItems = [
   { href: '/admin',            label: 'Tableau de bord', icon: BarChart2 },
   { href: '/admin/produits',   label: 'Produits',        icon: Package },

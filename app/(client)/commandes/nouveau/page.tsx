@@ -10,9 +10,10 @@ import {
   ChevronRight, TrendingDown, Ruler,
   Banknote, Landmark, ArrowLeftRight, Lock,
 } from 'lucide-react'
+import { getPrixUnitaire as getPrixUnitaireLib } from '@/lib/prix'
+import { FRAIS_EXPEDITION } from '@/lib/constants'
 
 /* ── Types ── */
-type PrixTier = { minQte: number; maxQte: number | null; prix: number }
 type VariantOption = { id: string; valeur: string; stock: number }
 type Variant = { id: string; nom: string; couleur: string | null; stock: number; images: string[] }
 
@@ -25,7 +26,7 @@ type CartItem = {
     id: string
     nom: string
     prix: number
-    prixVariables: PrixTier[] | null
+    prixVariables: unknown
     images: string[]
     typeOption: string | null
   }
@@ -33,12 +34,9 @@ type CartItem = {
 
 type Cart = { id: string; items: CartItem[] }
 
-/* ── Helper prix dégressif ── */
+/* ── Helper local pour la signature (product + qte) ── */
 function getPrixUnitaire(product: CartItem['product'], quantite: number): number {
-  if (!product.prixVariables?.length) return product.prix
-  const sorted = [...product.prixVariables].sort((a, b) => b.minQte - a.minQte)
-  for (const t of sorted) { if (quantite >= t.minQte) return t.prix }
-  return product.prix
+  return getPrixUnitaireLib(product.prixVariables, quantite, product.prix)
 }
 
 /* ── Modes de paiement avec icônes Lucide ── */
@@ -75,10 +73,11 @@ const MODES_PAIEMENT = [
   },
 ]
 
+// Constantes d'affichage dérivées de la source de vérité (lib/constants.ts)
 const METHODES_EXPEDITION = [
-  { label: 'Livraison standard',      frais: 700,  delai: '3–5 jours' },
-  { label: 'Livraison express',       frais: 1200, delai: '1–2 jours' },
-  { label: 'Retrait en point relais', frais: 400,  delai: '2–4 jours' },
+  { label: 'Livraison standard',      frais: FRAIS_EXPEDITION['Livraison standard'],      delai: '3–5 jours' },
+  { label: 'Livraison express',       frais: FRAIS_EXPEDITION['Livraison express'],        delai: '1–2 jours' },
+  { label: 'Retrait en point relais', frais: FRAIS_EXPEDITION['Retrait en point relais'],  delai: '2–4 jours' },
 ]
 
 export default function NouvelleCommandePage() {
@@ -100,14 +99,16 @@ export default function NouvelleCommandePage() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/panier').then(r => r.json()),
-      fetch('/api/profil').then(r => r.json()),
-    ]).then(([panierData, profilData]) => {
+      fetch('/api/panier').then((r) => r.json()),
+      fetch('/api/profil').then((r)  => r.json()),
+    ])
+      .then(([panierData, profilData]) => {
         setPanier(panierData)
         setHasTelephone(!!profilData.telephone)
         if (profilData.adresse) setAdresse(profilData.adresse)
-        setLoading(false)
       })
+      .catch(() => setError('Impossible de charger le panier. Veuillez réessayer.'))
+      .finally(() => setLoading(false))
   }, [])
 
   const selectedExpedition = METHODES_EXPEDITION.find(m => m.label === methodeExpedition) ?? METHODES_EXPEDITION[0]
@@ -154,7 +155,7 @@ export default function NouvelleCommandePage() {
     try {
       const res = await fetch('/api/commandes', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adresse, modePaiement, methodeExpedition, fraisLivraison }),
+        body: JSON.stringify({ adresse, modePaiement, methodeExpedition }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }

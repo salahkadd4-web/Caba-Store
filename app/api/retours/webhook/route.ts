@@ -15,10 +15,6 @@ import { prisma } from '@/lib/prisma'
 
 const FLOWMERCE_WEBHOOK_SECRET = process.env.FLOWMERCE_WEBHOOK_SECRET || ''
 
-console.log('[flowmerce:webhook] boot', {
-  secretConfigured: !!FLOWMERCE_WEBHOOK_SECRET,
-})
-
 type FlowmerceEvent = {
   type?:  string                       // ex: "claim.updated"
   claim?: {

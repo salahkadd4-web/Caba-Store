@@ -10,8 +10,7 @@ import {
   Heart, LayoutDashboard, LogOut, Menu, Package, RefreshCw,
   ShoppingCart, Store, User, X,
 } from 'lucide-react'
-
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://caba-store.vercel.app'
+import { APP_URL } from '@/lib/constants'
 
 const navItems = [
   { href: '/',           label: 'Accueil' },

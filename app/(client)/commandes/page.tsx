@@ -40,20 +40,31 @@ function CommandesContent() {
   const searchParams      = useSearchParams()
   const success           = searchParams.get('success')
   const [commandes, setCommandes] = useState<Order[]>([])
-  const [loading, setLoading]     = useState(true)
-  const [expanded, setExpanded]   = useState<string | null>(null)
+  const [loading,   setLoading]   = useState(true)
+  const [error,     setError]     = useState<string | null>(null)
+  const [expanded,  setExpanded]  = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/commandes')
-      .then(r => r.json())
-      .then(data => { setCommandes(data); setLoading(false) })
+      .then((r) => {
+        if (!r.ok) throw new Error('Erreur lors du chargement des commandes')
+        return r.json() as Promise<Order[]>
+      })
+      .then((data) => setCommandes(data))
+      .catch(() => setError('Impossible de charger vos commandes. Veuillez réessayer.'))
+      .finally(() => setLoading(false))
   }, [])
 
-  /* ── Loading ── */
   if (loading) return (
     <div className="max-w-4xl mx-auto px-4 py-16 text-center">
       <div className="w-8 h-8 border-2 border-stone-200 border-t-orange-700 rounded-full animate-spin mx-auto mb-3" />
       <p className="text-stone-500 dark:text-stone-400">Chargement des commandes…</p>
+    </div>
+  )
+
+  if (error) return (
+    <div className="max-w-4xl mx-auto px-4 py-16 text-center">
+      <p className="text-red-500 dark:text-red-400 text-sm mb-4">{error}</p>
     </div>
   )
 

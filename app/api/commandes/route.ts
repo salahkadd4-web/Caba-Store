@@ -1,17 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
-
-type PrixTier = { minQte: number; maxQte?: number | null; prix: number }
-
-/** Retourne le prix unitaire en tenant compte des paliers dégressifs */
-function getPrixUnitaire(prixVariables: unknown, prixBase: number, quantite: number): number {
-  if (!Array.isArray(prixVariables) || !prixVariables.length) return prixBase
-  const tiers = prixVariables as PrixTier[]
-  const sorted = [...tiers].sort((a, b) => b.minQte - a.minQte)
-  for (const t of sorted) { if (quantite >= t.minQte) return t.prix }
-  return prixBase
-}
+import { getPrixUnitaire } from '@/lib/prix'
+import { FRAIS_EXPEDITION, METHODE_EXPEDITION_DEFAUT } from '@/lib/constants'
 
 // GET — Récupérer les commandes de l'utilisateur
 export async function GET() {
@@ -49,14 +40,10 @@ export async function POST(req: NextRequest) {
 
     // Source de vérité serveur pour les frais d'expédition. Ne JAMAIS faire
     // confiance à un montant envoyé par le client (CWE-602 : trust boundary).
-    const FRAIS_EXPEDITION: Record<string, number> = {
-      'Livraison standard':      700,
-      'Livraison express':       1200,
-      'Retrait en point relais': 400,
-    }
-    const methodeChoisie = typeof methodeExpedition === 'string' && methodeExpedition in FRAIS_EXPEDITION
-      ? methodeExpedition
-      : 'Livraison standard'
+    const methodeChoisie =
+      typeof methodeExpedition === 'string' && methodeExpedition in FRAIS_EXPEDITION
+        ? methodeExpedition
+        : METHODE_EXPEDITION_DEFAUT
     const frais = FRAIS_EXPEDITION[methodeChoisie]
 
     // Récupérer le panier avec variantes et options
@@ -85,7 +72,7 @@ export async function POST(req: NextRequest) {
 
     // Calculer le total en appliquant les prix dégressifs sur la quantité totale du produit
     const sousTotal = panier.items.reduce(
-      (acc, item) => acc + getPrixUnitaire(item.product.prixVariables, item.product.prix, qteParProduit.get(item.productId)!) * item.quantite,
+      (acc, item) => acc + getPrixUnitaire(item.product.prixVariables, qteParProduit.get(item.productId)!, item.product.prix) * item.quantite,
       0
     )
     const total = sousTotal + frais
@@ -141,7 +128,7 @@ export async function POST(req: NextRequest) {
               create: panier.items.map((item) => ({
                 productId:          item.productId,
                 quantite:           item.quantite,
-                prix:               getPrixUnitaire(item.product.prixVariables, item.product.prix, qteParProduit.get(item.productId)!),
+                prix:               getPrixUnitaire(item.product.prixVariables, qteParProduit.get(item.productId)!, item.product.prix),
                 variantId:          item.variantId          ?? null,
                 variantNom:         item.variant?.nom        ?? null,
                 variantOptionId:    item.variantOptionId    ?? null,

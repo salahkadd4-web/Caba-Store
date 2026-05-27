@@ -9,6 +9,7 @@ import {
   Trash2, ShoppingBag, Tag, ChevronDown, ChevronUp,
   Pencil, Check, Loader2,
 } from 'lucide-react'
+import { getPrixUnitaire as getPrixUnitaireLib, parsePrixTiers } from '@/lib/prix'
 
 /* ══════════════════════════════════════════
    TYPES
@@ -19,7 +20,6 @@ type Variant = {
   stock: number; images: string[]
   options: VariantOption[]
 }
-type PrixTier = { minQte: number; maxQte: number | null; prix: number }
 
 type CartItem = {
   id: string
@@ -28,7 +28,7 @@ type CartItem = {
   variantOption: VariantOption | null
   product: {
     id: string; nom: string; prix: number
-    prixVariables: PrixTier[] | null
+    prixVariables: unknown
     images: string[]; stock: number
     typeOption: string | null
     category: { nom: string }
@@ -47,10 +47,7 @@ type ProductGroup = {
    HELPERS
 ══════════════════════════════════════════ */
 function getPrixUnitaire(product: CartItem['product'], qte: number): number {
-  if (!product.prixVariables?.length) return product.prix
-  const sorted = [...product.prixVariables].sort((a, b) => b.minQte - a.minQte)
-  for (const t of sorted) { if (qte >= t.minQte) return t.prix }
-  return product.prix
+  return getPrixUnitaireLib(product.prixVariables, qte, product.prix)
 }
 
 function groupByProduct(items: CartItem[]): ProductGroup[] {
@@ -356,14 +353,15 @@ function ProductCard({
   const totalQte = items.reduce((s, i) => s + i.quantite, 0)
   const prixUnit = getPrixUnitaire(product, totalQte)
   const prixBase = product.prix
-  const isReduit = (product.prixVariables?.length ?? 0) > 0 && prixUnit < prixBase
+  const pvArray  = Array.isArray(product.prixVariables) ? product.prixVariables : []
+  const isReduit = pvArray.length > 0 && prixUnit < prixBase
   const sousTotal = prixUnit * totalQte
   const economie  = isReduit ? (prixBase - prixUnit) * totalQte : 0
 
   const mainImg = items.find(i => i.variant?.images?.length)?.variant?.images[0]
     ?? product.images?.[0] ?? null
 
-  const tiers = [...(product.prixVariables ?? [])].sort((a, b) => a.minQte - b.minQte)
+  const tiers = parsePrixTiers(product.prixVariables).sort((a, b) => a.minQte - b.minQte)
   const prochainPalier = tiers.find(t => t.minQte > totalQte) ?? null
 
   return (

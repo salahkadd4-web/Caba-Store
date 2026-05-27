@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback, useRef } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useIsMobile } from '@/app/hooks/useIsMobile'
@@ -10,19 +10,47 @@ import {
   Package, ChevronRight, Minus, Plus,
   Trash2, ShoppingBag, Loader2, Info, ChevronDown, ChevronUp,
 } from 'lucide-react'
+import { getPrixUnitaire, parsePrixTiers } from '@/lib/prix'
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type VariantOption = { id: string; valeur: string; stock: number }
+type Variant = {
+  id: string; nom: string; couleur: string | null
+  stock: number; images: string[]; options: VariantOption[]
+}
+type Produit = {
+  id: string; nom: string; prix: number; stock: number; images: string[]
+  prixVariables: unknown; typeOption: string | null; variants: Variant[]
+}
+type LigneSelection = {
+  key: string; variantId: string; optionId?: string
+  variantNom: string; couleur: string | null; optionValeur?: string
+  stockMax: number; quantite: number; image?: string
+}
+
+// ─── QteInput — saisie libre + stepper ───────────────────────────────────────
+// Utilise useEffect pour synchroniser le raw state avec la prop value externe,
+// ce qui évite le pattern anti-React "setState pendant le rendu".
 
 function QteInput({
   value, stockMax, onChange, onZero, size = 'md',
 }: {
-  value: number
+  value:    number
   stockMax: number
   onChange: (v: number) => void
-  onZero?: () => void
-  size?: 'sm' | 'md'
+  onZero?:  () => void
+  size?:    'sm' | 'md'
 }) {
-  const [raw, setRaw] = useState(String(value))
-  const inputRef = useRef<HTMLInputElement>(null)
-  const isFocused = () => document.activeElement === inputRef.current
+  const [raw, setRaw]  = useState(String(value))
+  const inputRef       = useRef<HTMLInputElement>(null)
+  const isFocusedRef   = () => document.activeElement === inputRef.current
+
+  // Synchronisation prop → raw uniquement quand l'input n'est pas focalisé
+  useEffect(() => {
+    if (!isFocusedRef()) setRaw(String(value))
+  }, [value])
+
   const commit = (str: string) => {
     const n = parseInt(str, 10)
     if (isNaN(n) || n <= 0) {
@@ -32,36 +60,42 @@ function QteInput({
     const clamped = Math.min(n, stockMax)
     setRaw(String(clamped)); onChange(clamped)
   }
+
   const btnMinus = () => {
     const next = value - 1
-    if (next <= 0) { if (onZero) onZero(); else { setRaw('1'); onChange(1) }; return }
+    if (next <= 0) {
+      if (onZero) { onZero(); return }
+      setRaw('1'); onChange(1); return
+    }
     setRaw(String(next)); onChange(next)
   }
+
   const btnPlus = () => {
     if (value >= stockMax) return
     const next = value + 1; setRaw(String(next)); onChange(next)
   }
-  const prevValue = useRef(value)
-  if (prevValue.current !== value && !isFocused()) {
-    prevValue.current = value; setRaw(String(value))
-  }
+
   const isSm = size === 'sm'
+  // Cohérence visuelle : orange/stone comme le reste de l'app (non plus blue/gray)
   const btnCls = isSm
-    ? 'w-6 h-6 rounded-md flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-blue-900 transition disabled:opacity-30 shrink-0'
-    : 'w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition disabled:opacity-30 shrink-0'
+    ? 'w-6 h-6 rounded-md flex items-center justify-center text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-950/40 transition disabled:opacity-30 shrink-0'
+    : 'w-7 h-7 rounded-lg bg-stone-100 dark:bg-stone-800 flex items-center justify-center hover:bg-stone-200 dark:hover:bg-stone-700 transition disabled:opacity-30 shrink-0'
   const inputCls = isSm
-    ? 'w-9 text-center font-bold text-sm tabular-nums bg-transparent text-blue-700 dark:text-blue-300 outline-none border border-blue-300 dark:border-blue-600 rounded-md py-0.5 focus:ring-1 focus:ring-blue-400 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'
-    : 'w-12 text-center font-bold text-sm tabular-nums bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 outline-none border border-gray-200 dark:border-gray-700 rounded-lg py-1 focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-500 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'
+    ? 'w-9 text-center font-bold text-sm tabular-nums bg-transparent text-orange-700 dark:text-orange-400 outline-none border border-orange-300 dark:border-orange-700 rounded-md py-0.5 focus:ring-1 focus:ring-orange-400 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'
+    : 'w-12 text-center font-bold text-sm tabular-nums bg-white dark:bg-stone-900 text-stone-800 dark:text-stone-200 outline-none border border-stone-200 dark:border-stone-700 rounded-lg py-1 focus:ring-2 focus:ring-orange-400 dark:focus:ring-orange-500 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'
+
   return (
     <div className="flex items-center gap-1">
       <button onClick={btnMinus} disabled={value <= 1} className={btnCls} tabIndex={-1}>
         <Minus className={isSm ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
       </button>
-      <input ref={inputRef} type="number" min={1} max={stockMax} value={raw}
-        onChange={e => setRaw(e.target.value)}
-        onBlur={e => commit(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter') { commit(raw); inputRef.current?.blur() } }}
-        onFocus={e => e.target.select()}
+      <input
+        ref={inputRef}
+        type="number" min={1} max={stockMax} value={raw}
+        onChange={(e) => setRaw(e.target.value)}
+        onBlur={(e)  => commit(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') { commit(raw); inputRef.current?.blur() } }}
+        onFocus={(e) => e.target.select()}
         className={inputCls}
       />
       <button onClick={btnPlus} disabled={value >= stockMax} className={btnCls} tabIndex={-1}>
@@ -71,36 +105,15 @@ function QteInput({
   )
 }
 
-type PrixTier      = { minQte: number; maxQte: number | null; prix: number }
-type VariantOption = { id: string; valeur: string; stock: number }
-type Variant = {
-  id: string; nom: string; couleur: string | null
-  stock: number; images: string[]; options: VariantOption[]
-}
-type Produit = {
-  id: string; nom: string; prix: number; stock: number; images: string[]
-  prixVariables: PrixTier[] | null; typeOption: string | null; variants: Variant[]
-}
-type LigneSelection = {
-  key: string; variantId: string; optionId?: string
-  variantNom: string; couleur: string | null; optionValeur?: string
-  stockMax: number; quantite: number; image?: string
-}
-
-function getPrixEffectif(tiers: PrixTier[], qte: number, prixBase: number): number {
-  if (!tiers.length) return prixBase
-  for (const t of [...tiers].sort((a, b) => b.minQte - a.minQte)) {
-    if (qte >= t.minQte) return t.prix
-  }
-  return prixBase
-}
-
 export default function ProduitDetailClient({ produit }: { produit: Produit }) {
   const { data: session } = useSession()
   const router = useRouter()
   const isMobile = useIsMobile()
 
-  const tiers       = useMemo(() => (produit.prixVariables ?? []).sort((a, b) => a.minQte - b.minQte), [produit.prixVariables])
+  const tiers       = useMemo(
+    () => parsePrixTiers(produit.prixVariables).sort((a, b) => a.minQte - b.minQte),
+    [produit.prixVariables],
+  )
   const hasTiers    = tiers.length > 0
   const hasVariants = produit.variants.length > 0
   const typeOpt     = produit.typeOption || 'Taille'
@@ -136,7 +149,7 @@ export default function ProduitDetailClient({ produit }: { produit: Produit }) {
   const [recapOpen, setRecapOpen] = useState(false)
 
   const totalQte   = lignes.reduce((s, l) => s + l.quantite, 0)
-  const prixUnit   = getPrixEffectif(tiers, totalQte, produit.prix)
+  const prixUnit   = getPrixUnitaire(tiers, totalQte, produit.prix)
   const prixReduit = hasTiers && prixUnit < produit.prix
   const totalPrix  = prixUnit * totalQte
 

@@ -1,17 +1,6 @@
 import { prisma } from '@/lib/prisma'
-import ProduitsSearch from '@/components/client/ProduitsSearch'
-
-type PrixTier = { minQte: number; maxQte: number | null; prix: number }
-type ProduitSearch = {
-  id: string
-  nom: string
-  images: string[]
-  prix: number
-  stock: number
-  prixVariables?: PrixTier[] | null
-  variants?: { id: string; nom: string; couleur: string | null }[]
-  category: { nom: string }
-}
+import ProduitsSearch, { type ProduitSearch } from '@/components/client/ProduitsSearch'
+import { VENDEUR_SUSPENDU_PRIORITE } from '@/lib/constants'
 
 export default async function ProduitsPage({
   searchParams,
@@ -26,36 +15,33 @@ export default async function ProduitsPage({
         actif: true,
         OR: [
           { vendeurId: null },
-          { vendeur: { prioriteAffichage: { lt: 99 } } },
+          { vendeur: { prioriteAffichage: { lt: VENDEUR_SUSPENDU_PRIORITE } } },
         ],
         ...(categorie ? { categoryId: categorie } : {}),
-        ...(recherche ? { nom: { contains: recherche, mode: 'insensitive' } } : {}),
+        ...(recherche  ? { nom: { contains: recherche, mode: 'insensitive' } } : {}),
       },
-      // Tri par createdAt côté DB ; le tri par priorité se fait en JS ci-dessous
       orderBy: [{ createdAt: 'desc' }],
       select: {
-        id: true,
-        nom: true,
-        images: true,
-        prix: true,
-        stock: true,
+        id:            true,
+        nom:           true,
+        images:        true,
+        prix:          true,
+        stock:         true,
         prixVariables: true,
-        category: { select: { nom: true } },
-        variants: { select: { id: true, couleur: true, nom: true }, orderBy: { createdAt: 'asc' } },
-        vendeur: { select: { prioriteAffichage: true } },
+        category:      { select: { nom: true } },
+        variants:      { select: { id: true, couleur: true, nom: true }, orderBy: { createdAt: 'asc' } },
+        vendeur:       { select: { prioriteAffichage: true } },
       },
     }),
     prisma.category.findMany({ orderBy: { nom: 'asc' } }),
   ])
 
-  // Tri priorité en couche applicative : null (admin) → 0, vendeurs → leur niveau
   const produits = [...produitsRaw].sort(
-    (a, b) => (a.vendeur?.prioriteAffichage ?? 0) - (b.vendeur?.prioriteAffichage ?? 0)
+    (a, b) => (a.vendeur?.prioriteAffichage ?? 0) - (b.vendeur?.prioriteAffichage ?? 0),
   )
 
   return (
     <div className="max-w-6xl mx-auto px-4 pt-8 pb-20 md:pb-12">
-      {/* En-tête page */}
       <div className="mb-8">
         <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-400 mb-1">
           Catalogue

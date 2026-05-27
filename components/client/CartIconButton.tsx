@@ -4,6 +4,13 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
+function broadcastCartUpdate() {
+  window.dispatchEvent(new CustomEvent('cart-updated'))
+  const ch = new BroadcastChannel('cart')
+  ch.postMessage('updated')
+  ch.close()
+}
+
 export default function CartIconButton({ produitId, stock }: { produitId: string; stock: number }) {
   const { data: session } = useSession()
   const router = useRouter()
@@ -36,8 +43,7 @@ export default function CartIconButton({ produitId, stock }: { produitId: string
         if (res.ok) {
           setInCart(false)
           setCartItemId(null)
-          window.dispatchEvent(new CustomEvent('cart-updated'))
-          new BroadcastChannel('cart').postMessage('updated')
+          broadcastCartUpdate()
         }
       } else {
         // Ajouter puis re-fetch pour récupérer l'id du cartItem
@@ -46,13 +52,11 @@ export default function CartIconButton({ produitId, stock }: { produitId: string
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ produitId, quantite: 1 }),
         })
-        // Re-fetch le panier pour obtenir l'id du cartItem créé
-        const res = await fetch('/api/panier')
+        const res  = await fetch('/api/panier')
         const data = await res.json()
         const item = (data?.items as { id: string; productId: string }[] | undefined)?.find((i) => i.productId === produitId)
         if (item) { setInCart(true); setCartItemId(item.id) }
-        window.dispatchEvent(new CustomEvent('cart-updated'))
-        new BroadcastChannel('cart').postMessage('updated')
+        broadcastCartUpdate()
       }
     } finally {
       setLoading(false)
