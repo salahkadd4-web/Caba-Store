@@ -134,6 +134,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
 
   callbacks: {
+    // ── signIn : gestion Google OAuth (Prisma requis) ─────────────────────
     async signIn({ user, account }) {
       if (account?.provider === 'google') {
         try {
@@ -141,26 +142,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             where: { email: user.email ?? '' },
           })
 
-          if (existing) {
-            // ✅ Compte existant → connexion normale
-            return true
-          }
+          if (existing) return true
 
-          // 🆕 Nouveau compte Google → token temporaire + redirection finalisation
           const tempToken = crypto.randomBytes(32).toString('hex')
           const email     = user.email ?? ''
           const name      = user.name  ?? ''
 
-          // Nettoyer d'éventuels anciens tokens pour cet email
           const oldTokens = await prisma.otpToken.findMany({
             where: { identifiant: { startsWith: 'google_oauth_' } },
           })
           for (const t of oldTokens) {
             try {
               const d = JSON.parse(t.data)
-              if (d.email === email) {
-                await prisma.otpToken.delete({ where: { id: t.id } })
-              }
+              if (d.email === email) await prisma.otpToken.delete({ where: { id: t.id } })
             } catch { /* ignored */ }
           }
 
@@ -184,20 +178,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return true
     },
 
+    // ── jwt : étend le callback de authConfig pour enrichir via Prisma ────
     async jwt({ token, user, account }) {
-      // ── Premier appel après connexion : user est défini ──
+      // Champs de base (hérités de authConfig.callbacks.jwt)
       if (user) {
         token.id            = user.id!
-        token.role          = user.role
-        token.telephone     = user.telephone     ?? null
-        token.vendeurStatut = user.vendeurStatut ?? null
+        token.role          = (user as { role?: string }).role          ?? 'CLIENT'
+        token.telephone     = (user as { telephone?: string }).telephone ?? null
+        token.vendeurStatut = (user as { vendeurStatut?: string }).vendeurStatut ?? null
       }
 
-      // ── Google OAuth : enrichir le token depuis la DB ──
+      // Google OAuth : enrichissement depuis la DB (nécessite Prisma)
       if (account?.provider === 'google' && token.email) {
         try {
           const dbUser = await prisma.user.findFirst({
-            where: { email: token.email },
+            where:   { email: token.email },
             include: { vendeurProfile: true },
           })
           if (dbUser) {
@@ -214,20 +209,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return token
     },
 
+    // ── session : identique à authConfig (dupliqué pour auth.ts complet) ──
     async session({ session, token }) {
       if (token) {
         session.user.id            = token.id            as string
         session.user.role          = token.role          as string
-        session.user.telephone     = token.telephone     ?? null
-        session.user.vendeurStatut = token.vendeurStatut ?? null
+        session.user.telephone     = (token.telephone    ?? null) as string | null
+        session.user.vendeurStatut = (token.vendeurStatut ?? null) as string | null
       }
       return session
     },
 
     async redirect({ url, baseUrl }) {
       const base = isProd ? PROD_URL : baseUrl
-      if (url.startsWith('/'))    return `${base}${url}`
-      if (url.startsWith(base))   return url
+      if (url.startsWith('/'))              return `${base}${url}`
+      if (url.startsWith(base))            return url
       if (isProd && url.includes('localhost')) return base
       return base
     },

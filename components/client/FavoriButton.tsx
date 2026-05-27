@@ -1,41 +1,42 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Heart } from 'lucide-react'
 
 export default function FavoriButton({ produitId }: { produitId: string }) {
   const { data: session } = useSession()
-  const router = useRouter()
+  const router    = useRouter()
   const [isFavori, setIsFavori] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [loading,  setLoading]  = useState(false)
+  const abortRef  = useRef<AbortController | null>(null)
 
+  // ── Vérification initiale : ce produit est-il en favori ? ──
+  // On passe le productId en query pour éviter de charger toute la liste.
   useEffect(() => {
     if (!session) return
 
-    const checkFavori = async () => {
-      const res = await fetch('/api/favoris')
-      const data = await res.json()
-      const found = (data as { productId: string }[]).find((f) => f.productId === produitId)
-      setIsFavori(!!found)
-    }
+    abortRef.current?.abort()
+    abortRef.current = new AbortController()
 
-    checkFavori()
+    fetch(`/api/favoris?productId=${produitId}`, { signal: abortRef.current.signal })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data !== null) setIsFavori(!!data.isFavori) })
+      .catch(() => { /* AbortError ignorée */ })
+
+    return () => { abortRef.current?.abort() }
   }, [session, produitId])
 
   const handleToggle = async () => {
-    if (!session) {
-      router.push('/connexion')
-      return
-    }
+    if (!session) { router.push('/connexion'); return }
 
     setLoading(true)
     try {
-      const res = await fetch('/api/favoris', {
-        method: 'POST',
+      const res  = await fetch('/api/favoris', {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ produitId }),
+        body:    JSON.stringify({ produitId }),
       })
       const data = await res.json()
       setIsFavori(data.isFavori)

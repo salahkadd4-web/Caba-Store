@@ -2,15 +2,23 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useIsMobile } from '@/app/hooks/useIsMobile'
+import { useSession }  from 'next-auth/react'
+import { useIsMobile } from '@/lib/hooks/useIsMobile'
 
 export default function BottomNav() {
-  const isMobile = useIsMobile()
-  const pathname = usePathname()
+  const isMobile        = useIsMobile()
+  const pathname        = usePathname()
+  const { data: session } = useSession()
+
+  const role = session?.user?.role as string | undefined
 
   if (!isMobile) return null
   if (pathname.startsWith('/admin') || pathname.startsWith('/vendeur')) return null
   if (pathname.startsWith('/connexion') || pathname.startsWith('/inscription')) return null
+
+  // /commandes et /retours sont des pages dashboard pour admin/vendeur
+  if ((pathname.startsWith('/commandes') || pathname.startsWith('/retours')) &&
+      (role === 'ADMIN' || role === 'VENDEUR')) return null
 
   const items = [
     {

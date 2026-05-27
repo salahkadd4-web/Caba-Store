@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { useIsMobile } from '@/app/hooks/useIsMobile'
+import { useIsMobile } from '@/lib/hooks/useIsMobile'
 
 export default function MobilePageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()

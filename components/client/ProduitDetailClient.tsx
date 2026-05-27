@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useIsMobile } from '@/app/hooks/useIsMobile'
+import { useIsMobile } from '@/lib/hooks/useIsMobile'
 import Image from 'next/image'
 import {
   ShoppingCart, Check, X, TrendingDown,

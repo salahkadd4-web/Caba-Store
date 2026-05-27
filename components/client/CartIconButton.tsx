@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
@@ -13,22 +13,30 @@ function broadcastCartUpdate() {
 
 export default function CartIconButton({ produitId, stock }: { produitId: string; stock: number }) {
   const { data: session } = useSession()
-  const router = useRouter()
-  const [inCart, setInCart] = useState(false)
+  const router   = useRouter()
+  const [inCart,     setInCart]     = useState(false)
   const [cartItemId, setCartItemId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading,    setLoading]    = useState(false)
+  const abortRef = useRef<AbortController | null>(null)
 
+  // ── Vérification initiale ciblée (évite de charger tout le panier) ──
   useEffect(() => {
     if (!session) return
-    const check = async () => {
-      const res = await fetch('/api/panier')
-      const data = await res.json()
-      // Le GET retourne le panier directement, pas { items: [] }
-      const item = (data?.items as { id: string; productId: string }[] | undefined)?.find((i) => i.productId === produitId)
-      if (item) { setInCart(true); setCartItemId(item.id) }
-      else { setInCart(false); setCartItemId(null) }
-    }
-    check()
+
+    abortRef.current?.abort()
+    abortRef.current = new AbortController()
+
+    fetch(`/api/panier/check?productId=${produitId}`, { signal: abortRef.current.signal })
+      .then(r => r.ok ? r.json() : null)
+      .then((data: { inCart: boolean; cartItemId: string | null } | null) => {
+        if (data !== null) {
+          setInCart(data.inCart)
+          setCartItemId(data.cartItemId)
+        }
+      })
+      .catch(() => { /* AbortError ignorée */ })
+
+    return () => { abortRef.current?.abort() }
   }, [session, produitId])
 
   const handleToggle = async (e: React.MouseEvent) => {
@@ -36,6 +44,7 @@ export default function CartIconButton({ produitId, stock }: { produitId: string
     e.stopPropagation()
     if (!session) { router.push('/connexion'); return }
     if (stock === 0) return
+
     setLoading(true)
     try {
       if (inCart && cartItemId) {
@@ -46,18 +55,22 @@ export default function CartIconButton({ produitId, stock }: { produitId: string
           broadcastCartUpdate()
         }
       } else {
-        // Ajouter puis re-fetch pour récupérer l'id du cartItem
-        await fetch('/api/panier', {
-          method: 'POST',
+        // Ajouter au panier
+        const res = await fetch('/api/panier', {
+          method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ produitId, quantite: 1 }),
+          body:    JSON.stringify({ produitId, quantite: 1 }),
         })
-        const res  = await fetch('/api/panier')
         const data = await res.json()
-        const item = (data?.items as { id: string; productId: string }[] | undefined)?.find((i) => i.productId === produitId)
-        if (item) { setInCart(true); setCartItemId(item.id) }
+        // Le POST retourne maintenant l'id du cartItem créé
+        if (data.cartItemId) {
+          setInCart(true)
+          setCartItemId(data.cartItemId)
+        }
         broadcastCartUpdate()
       }
+    } catch {
+      console.error('Erreur panier')
     } finally {
       setLoading(false)
     }

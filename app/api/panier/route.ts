@@ -73,23 +73,30 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    let cartItemId: string
+
     if (itemExistant) {
-      await prisma.cartItem.update({
+      const updated = await prisma.cartItem.update({
         where: { id: itemExistant.id },
-        data: { quantite: itemExistant.quantite + quantite },
+        data:  { quantite: itemExistant.quantite + quantite },
+        select: { id: true },
       })
+      cartItemId = updated.id
     } else {
-      await prisma.cartItem.create({
+      const created = await prisma.cartItem.create({
         data: {
-          cartId: panier.id,
-          productId: produitId,
+          cartId:         panier.id,
+          productId:      produitId,
           quantite,
-          variantId: variantId || null,
+          variantId:      variantId || null,
           variantOptionId: variantOptionId || null,
         },
+        select: { id: true },
       })
+      cartItemId = created.id
     }
-    return NextResponse.json({ message: 'Produit ajouté au panier' })
+    // On retourne l'id du cartItem pour éviter un re-fetch côté client
+    return NextResponse.json({ message: 'Produit ajouté au panier', cartItemId })
   } catch {
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }

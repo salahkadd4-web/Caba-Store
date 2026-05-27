@@ -3,7 +3,7 @@
 import { useSession, signOut } from 'next-auth/react'
 import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
-import { useIsMobile } from '@/app/hooks/useIsMobile'
+import { useIsMobile } from '@/lib/hooks/useIsMobile'
 
 export default function ClearAdminSession() {
   const { data: session, status } = useSession()

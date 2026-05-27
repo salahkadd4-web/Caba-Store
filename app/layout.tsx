@@ -3,11 +3,14 @@ import "./globals.css";
 import { auth } from "@/auth";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import SessionProvider from "@/components/client/SessionProvider";
-import Header from "@/components/Header";
+import Nav from "@/components/Nav";
 import ThemeToggle from "@/components/ThemeToggle";
 import BottomNav from "@/components/BottomNav";
 import AndroidBackButton from "@/components/client/AndroidBackButton";
 import PullToRefresh from "@/components/client/PullToRefresh";
+import Footer from "@/components/Footer";
+import FooterWrapper from "@/components/client/FooterWrapper";
+import MainWrapper from "@/components/client/MainWrapper";
 
 export const metadata: Metadata = {
   title: "Caba Store",
@@ -49,11 +52,12 @@ export default async function RootLayout({
         <ThemeProvider>
           <SessionProvider session={session}>
             <AndroidBackButton />
-            <Header />
+            <Nav />
             <PullToRefresh>
-              <main className="pb-16 md:pb-0">{children}</main>
+              <MainWrapper>{children}</MainWrapper>
             </PullToRefresh>
             <BottomNav />
+            <FooterWrapper><Footer /></FooterWrapper>
             <ThemeToggle />
           </SessionProvider>
         </ThemeProvider>
