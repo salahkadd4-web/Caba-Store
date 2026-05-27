@@ -8,10 +8,6 @@ async function checkAdmin() {
 }
 
 // PATCH /api/admin/commandes/[id]
-// L'admin peut :
-//   1. Changer directement le statut global (comportement inchangé)
-//   2. Envoyer { approuver: true } pour approuver sa part (produits sans vendeur)
-//      → si tous les vendeurs ont aussi approuvé, passe à CONFIRMEE automatiquement
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -45,16 +41,19 @@ export async function PATCH(
       const vendeurIds = [
         ...new Set(
           commande.items
-            .map(item => item.product.vendeurId)
-            .filter((v): v is string => v !== null)
+            .map((item: { product: { vendeurId: string | null } }) => item.product.vendeurId)
+            .filter((v: string | null): v is string => v !== null)
         ),
       ]
-      const aDesProduitsAdmin = commande.items.some(item => item.product.vendeurId === null)
+      const aDesProduitsAdmin = commande.items.some(
+        (item: { product: { vendeurId: string | null } }) => item.product.vendeurId === null
+      )
 
-      const approbations = ((commande.approbationsVendeurs as Record<string, boolean>) ?? {})
+      const approbations: Record<string, boolean> =
+        (commande.approbationsVendeurs as Record<string, boolean>) ?? {}
       if (aDesProduitsAdmin) approbations['admin'] = true
 
-      const tousVendeursOk = vendeurIds.every(vid => approbations[vid] === true)
+      const tousVendeursOk = (vendeurIds as string[]).every((vid: string) => approbations[vid] === true)
       const adminOk = aDesProduitsAdmin ? approbations['admin'] === true : true
       const tousOk = tousVendeursOk && adminOk
 

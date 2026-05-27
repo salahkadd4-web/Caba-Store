@@ -35,7 +35,6 @@ const statutConfig: Record<string, { label: string; color: string; icon: React.E
   ANNULEE:        { label: 'Annulée',        color: 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400',              icon: XCircle },
 }
 
-
 function CommandesContent() {
   const searchParams      = useSearchParams()
   const success           = searchParams.get('success')
@@ -269,7 +268,6 @@ function CommandesContent() {
           })}
         </div>
       )}
-
     </div>
   )
 }
