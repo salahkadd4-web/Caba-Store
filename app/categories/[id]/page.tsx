@@ -1,10 +1,41 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
+
+export const revalidate = 60
 import ProductCard, { type ProductCardData } from '@/components/client/ProductCard'
 import { Package, Tag } from 'lucide-react'
 import { VENDEUR_SUSPENDU_PRIORITE } from '@/lib/constants'
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}): Promise<Metadata> {
+  const { id } = await params
+  const cat = await prisma.category.findUnique({
+    where:  { id },
+    select: { nom: true, description: true, image: true, _count: { select: { products: { where: { actif: true } } } } },
+  })
+  if (!cat) return { title: 'Catégorie introuvable — Caba Store' }
+
+  const title       = `${cat.nom} — Caba Store`
+  const description = cat.description
+    ?? `Découvrez nos ${cat._count.products} produits dans la catégorie ${cat.nom} en Algérie.`
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      ...(cat.image && { images: [{ url: cat.image, alt: cat.nom }] }),
+    },
+  }
+}
 
 export default async function CategoryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

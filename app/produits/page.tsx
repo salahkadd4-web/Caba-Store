@@ -1,6 +1,19 @@
+import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
+
+export const revalidate = 60
 import ProduitsSearch, { type ProduitSearch } from '@/components/client/ProduitsSearch'
 import { VENDEUR_SUSPENDU_PRIORITE } from '@/lib/constants'
+
+export const metadata: Metadata = {
+  title:       'Tous les produits — Caba Store',
+  description: 'Parcourez notre catalogue complet de produits livrés en Algérie. Mode, maison, électronique et plus encore.',
+  openGraph: {
+    title:       'Tous les produits — Caba Store',
+    description: 'Parcourez notre catalogue complet de produits livrés en Algérie.',
+    type:        'website',
+  },
+}
 
 export default async function ProduitsPage({
   searchParams,
@@ -53,7 +66,7 @@ export default async function ProduitsPage({
 
       <ProduitsSearch
         categories={categories}
-        initialProduits={produits as unknown as ProduitSearch[]}
+        initialProduits={produits}
         initialRecherche={recherche}
         initialCategorie={categorie}
       />

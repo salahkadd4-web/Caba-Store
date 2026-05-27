@@ -1,16 +1,17 @@
 'use client'
 
-import { useState, useMemo, useCallback, useRef } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useIsMobile } from '@/lib/hooks/useIsMobile'
 import Image from 'next/image'
 import {
   ShoppingCart, Check, X, TrendingDown,
-  Package, ChevronRight, Minus, Plus,
+  Package, ChevronRight,
   Trash2, ShoppingBag, Loader2, Info, ChevronDown, ChevronUp,
 } from 'lucide-react'
 import { getPrixUnitaire, parsePrixTiers } from '@/lib/prix'
+import QteInput from '@/components/client/QteInput'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -29,76 +30,6 @@ type LigneSelection = {
   stockMax: number; quantite: number; image?: string
 }
 
-// ─── QteInput — saisie libre + stepper ───────────────────────────────────────
-// raw === null  →  pas en cours de saisie, on affiche la prop value
-// raw !== null  →  l'utilisateur tape, on affiche ce qu'il tape
-// Aucun useEffect : la synchronisation se fait via onFocus / onBlur / commit.
-
-function QteInput({
-  value, stockMax, onChange, onZero, size = 'md',
-}: {
-  value:    number
-  stockMax: number
-  onChange: (v: number) => void
-  onZero?:  () => void
-  size?:    'sm' | 'md'
-}) {
-  const [raw, setRaw] = useState<string | null>(null)
-  const inputRef      = useRef<HTMLInputElement>(null)
-
-  const displayValue = raw !== null ? raw : String(value)
-
-  const commit = (str: string) => {
-    const n = parseInt(str, 10)
-    if (isNaN(n) || n <= 0) {
-      if (onZero) { onZero(); setRaw(null); return }
-      onChange(1)
-    } else {
-      onChange(Math.min(n, stockMax))
-    }
-    setRaw(null)
-  }
-
-  const btnMinus = () => {
-    const next = value - 1
-    if (next <= 0) { if (onZero) { onZero(); return } onChange(1); return }
-    onChange(next)
-  }
-
-  const btnPlus = () => {
-    if (value >= stockMax) return
-    onChange(value + 1)
-  }
-
-  const isSm = size === 'sm'
-  const btnCls = isSm
-    ? 'w-6 h-6 rounded-md flex items-center justify-center text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-950/40 transition disabled:opacity-30 shrink-0'
-    : 'w-7 h-7 rounded-lg bg-stone-100 dark:bg-stone-800 flex items-center justify-center hover:bg-stone-200 dark:hover:bg-stone-700 transition disabled:opacity-30 shrink-0'
-  const inputCls = isSm
-    ? 'w-9 text-center font-bold text-sm tabular-nums bg-transparent text-orange-700 dark:text-orange-400 outline-none border border-orange-300 dark:border-orange-700 rounded-md py-0.5 focus:ring-1 focus:ring-orange-400 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'
-    : 'w-12 text-center font-bold text-sm tabular-nums bg-white dark:bg-stone-900 text-stone-800 dark:text-stone-200 outline-none border border-stone-200 dark:border-stone-700 rounded-lg py-1 focus:ring-2 focus:ring-orange-400 dark:focus:ring-orange-500 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'
-
-  return (
-    <div className="flex items-center gap-1">
-      <button onClick={btnMinus} disabled={value <= 1} className={btnCls} tabIndex={-1}>
-        <Minus className={isSm ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
-      </button>
-      <input
-        ref={inputRef}
-        type="number" min={1} max={stockMax}
-        value={displayValue}
-        onChange={(e) => setRaw(e.target.value)}
-        onBlur={(e)   => commit(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter') { commit(raw ?? String(value)); inputRef.current?.blur() } }}
-        onFocus={(e)  => { setRaw(String(value)); e.target.select() }}
-        className={inputCls}
-      />
-      <button onClick={btnPlus} disabled={value >= stockMax} className={btnCls} tabIndex={-1}>
-        <Plus className={isSm ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
-      </button>
-    </div>
-  )
-}
 
 export default function ProduitDetailClient({ produit }: { produit: Produit }) {
   const { data: session } = useSession()

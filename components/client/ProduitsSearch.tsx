@@ -20,7 +20,7 @@ export type ProduitSearch = {
   images:         string[]
   prix:           number
   stock:          number
-  prixVariables?: PrixTier[] | null
+  prixVariables?: unknown
   variants?:      Variant[]
   category:       { nom: string }
 }

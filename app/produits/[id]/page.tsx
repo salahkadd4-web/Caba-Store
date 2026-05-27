@@ -1,10 +1,41 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
+
+export const revalidate = 60
 import ProduitDetailClient from '@/components/client/ProduitDetailClient'
 import ProductCard, { type ProductCardData } from '@/components/client/ProductCard'
 import { ChevronRight } from 'lucide-react'
 import { VENDEUR_SUSPENDU_PRIORITE } from '@/lib/constants'
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}): Promise<Metadata> {
+  const { id } = await params
+  const produit = await prisma.product.findUnique({
+    where: { id },
+    select: { nom: true, description: true, images: true, prix: true, category: { select: { nom: true } } },
+  })
+  if (!produit) return { title: 'Produit introuvable — Caba Store' }
+
+  const title       = `${produit.nom} — Caba Store`
+  const description = produit.description
+    ?? `Achetez ${produit.nom} (${produit.category.nom}) en Algérie. Prix : ${produit.prix.toFixed(2)} DA.`
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title:       produit.nom,
+      description,
+      type:        'website',
+      ...(produit.images[0] && { images: [{ url: produit.images[0], alt: produit.nom }] }),
+    },
+  }
+}
 
 export default async function ProduitDetailPage({
   params,

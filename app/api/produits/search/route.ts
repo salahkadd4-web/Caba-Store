@@ -35,5 +35,14 @@ export async function GET(req: NextRequest) {
     (a, b) => (a.vendeur?.prioriteAffichage ?? 0) - (b.vendeur?.prioriteAffichage ?? 0)
   )
 
-  return NextResponse.json(produits)
+  return NextResponse.json(produits, {
+    headers: {
+      // CDN : sert jusqu'à 60 s de cache, puis ressert l'ancien pendant 5 min
+      // pendant qu'il revalide en arrière-plan. Jamais de cache privé (no-store
+      // sur les navigateurs) car les résultats de recherche ne sont pas
+      // personnalisés mais ne doivent pas non plus se retrouver dans le cache
+      // partagé du navigateur d'un utilisateur précédent.
+      'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+    },
+  })
 }

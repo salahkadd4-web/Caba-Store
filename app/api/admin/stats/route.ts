@@ -2,13 +2,13 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 
-// GET /api/admin/stats — Statistiques globales avancées
 export async function GET() {
   const session = await auth()
   if (!session?.user || session.user.role !== 'ADMIN') {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
   }
 
+  // ── 1. Métriques globales — 1 batch parallèle
   const [
     totalClients,
     totalVendeurs,
@@ -25,106 +25,154 @@ export async function GET() {
     prisma.order.aggregate({ _sum: { total: true }, where: { statut: 'LIVREE' } }),
   ])
 
-  // ── Meilleurs / Pires Vendeurs (par CA)
-  const vendeursRaw = await prisma.vendeurProfile.findMany({
-    where: { statut: 'APPROUVE' },
-    include: {
-      user: { select: { nom: true, prenom: true, email: true } },
-      _count: { select: { products: true } },
-    },
-  })
+  // ── 2. Données brutes — 1 batch parallèle
+  const [
+    vendeursRaw,
+    topProduits,
+    flopProduits,
+    categories,
+    // CA par vendeur : 1 raw query groupée (Prisma groupBy ne traverse pas les relations)
+    caParVendeur,
+    // Nb commandes par vendeur : idem
+    cmdParVendeur,
+    // Ventes par catégorie : 1 raw query groupée
+    ventesParCategorie,
+    // CA par client : groupBy natif (userId direct sur Order)
+    caParClient,
+  ] = await Promise.all([
+    prisma.vendeurProfile.findMany({
+      where: { statut: 'APPROUVE' },
+      select: {
+        id: true,
+        nomBoutique: true,
+        user: { select: { nom: true, prenom: true, email: true } },
+        _count: { select: { products: true } },
+      },
+    }),
 
-  const vendeursAvecCA = await Promise.all(
-    vendeursRaw.map(async (v) => {
-      const [ca, nbCommandes] = await Promise.all([
-        prisma.orderItem.aggregate({
-          _sum: { prix: true },
-          where: { product: { vendeurId: v.id }, order: { statut: 'LIVREE' } },
-        }),
-        prisma.orderItem.count({ where: { product: { vendeurId: v.id } } }),
-      ])
-      return {
-        id:          v.id,
-        nomBoutique: v.nomBoutique,
-        user:        v.user,
-        nbProduits:  v._count.products,
-        nbCommandes,
-        ca:          ca._sum.prix ?? 0,
-      }
-    })
-  )
-  vendeursAvecCA.sort((a, b) => b.ca - a.ca)
+    prisma.product.findMany({
+      select: {
+        id: true, nom: true, prix: true, images: true,
+        category: { select: { nom: true } },
+        vendeur:  { select: { nomBoutique: true } },
+        _count:   { select: { orderItems: true } },
+      },
+      orderBy: { orderItems: { _count: 'desc' } },
+      take: 10,
+    }),
+
+    prisma.product.findMany({
+      where:   { orderItems: { some: {} } },
+      select: {
+        id: true, nom: true, prix: true, images: true,
+        category: { select: { nom: true } },
+        vendeur:  { select: { nomBoutique: true } },
+        _count:   { select: { orderItems: true } },
+      },
+      orderBy: { orderItems: { _count: 'asc' } },
+      take: 10,
+    }),
+
+    prisma.category.findMany({
+      where:  { statut: 'APPROUVEE' },
+      select: { id: true, nom: true, _count: { select: { products: true } } },
+    }),
+
+    // CA livré par vendeur — 1 seule requête SQL
+    prisma.$queryRaw<{ vendeur_id: string; ca: number }[]>`
+      SELECT p."vendeurId" AS vendeur_id,
+             COALESCE(SUM(oi.prix * oi.quantite), 0)::float AS ca
+      FROM   "OrderItem" oi
+      JOIN   "Product"   p  ON p.id = oi."productId"
+      JOIN   "Order"     o  ON o.id = oi."orderId"
+      WHERE  o.statut = 'LIVREE'
+        AND  p."vendeurId" IS NOT NULL
+      GROUP  BY p."vendeurId"
+    `,
+
+    // Nb items commandés par vendeur — 1 seule requête SQL
+    prisma.$queryRaw<{ vendeur_id: string; nb: number }[]>`
+      SELECT p."vendeurId" AS vendeur_id,
+             COUNT(oi.id)::int AS nb
+      FROM   "OrderItem" oi
+      JOIN   "Product"   p ON p.id = oi."productId"
+      WHERE  p."vendeurId" IS NOT NULL
+      GROUP  BY p."vendeurId"
+    `,
+
+    // Ventes (nb items) par catégorie — 1 seule requête SQL
+    prisma.$queryRaw<{ category_id: string; ventes: number }[]>`
+      SELECT p."categoryId" AS category_id,
+             COUNT(oi.id)::int AS ventes
+      FROM   "OrderItem" oi
+      JOIN   "Product"   p ON p.id = oi."productId"
+      GROUP  BY p."categoryId"
+    `,
+
+    // CA livré par client — groupBy natif Prisma (userId direct sur Order)
+    prisma.order.groupBy({
+      by:    ['userId'],
+      _sum:  { total: true },
+      where: { statut: 'LIVREE' },
+    }),
+  ])
+
+  // ── 3. Jointures en mémoire (O(n) — pas de requêtes supplémentaires)
+
+  // Vendeurs
+  const caMap  = new Map(caParVendeur.map(r => [r.vendeur_id, r.ca]))
+  const cmdMap = new Map(cmdParVendeur.map(r => [r.vendeur_id, r.nb]))
+
+  const vendeursAvecCA = vendeursRaw
+    .map(v => ({
+      id:          v.id,
+      nomBoutique: v.nomBoutique,
+      user:        v.user,
+      nbProduits:  v._count.products,
+      nbCommandes: cmdMap.get(v.id) ?? 0,
+      ca:          caMap.get(v.id)  ?? 0,
+    }))
+    .sort((a, b) => b.ca - a.ca)
+
   const meilleursVendeurs = vendeursAvecCA.slice(0, 5)
   const pireVendeurs      = [...vendeursAvecCA].sort((a, b) => a.ca - b.ca).slice(0, 5)
 
-  // ── Meilleurs / Pires Produits (par ventes)
-  const topProduits = await prisma.product.findMany({
-    select: {
-      id: true, nom: true, prix: true, images: true,
-      category: { select: { nom: true } },
-      vendeur: { select: { nomBoutique: true } },
-      _count: { select: { orderItems: true } },
-    },
-    orderBy: { orderItems: { _count: 'desc' } },
-    take: 10,
-  })
-  const flopProduits = await prisma.product.findMany({
-    where: { orderItems: { some: {} } },
-    select: {
-      id: true, nom: true, prix: true, images: true,
-      category: { select: { nom: true } },
-      vendeur: { select: { nomBoutique: true } },
-      _count: { select: { orderItems: true } },
-    },
-    orderBy: { orderItems: { _count: 'asc' } },
-    take: 10,
-  })
+  // Catégories
+  const ventesMap = new Map(ventesParCategorie.map(r => [r.category_id, r.ventes]))
 
-  // ── Meilleures / Pires Catégories (par ventes)
-  const categories = await prisma.category.findMany({
-    where: { statut: 'APPROUVEE' },
-    select: {
-      id: true, nom: true,
-      _count: { select: { products: true } },
-    },
-  })
-  const catsAvecVentes = await Promise.all(
-    categories.map(async (c) => {
-      const ventes = await prisma.orderItem.count({
-        where: { product: { categoryId: c.id } },
-      })
-      return { ...c, ventes }
-    })
-  )
-  catsAvecVentes.sort((a, b) => b.ventes - a.ventes)
+  const catsAvecVentes = categories
+    .map(c => ({ ...c, ventes: ventesMap.get(c.id) ?? 0 }))
+    .sort((a, b) => b.ventes - a.ventes)
+
   const meilleuresCategories = catsAvecVentes.slice(0, 5)
   const piresCategories      = [...catsAvecVentes].sort((a, b) => a.ventes - b.ventes).slice(0, 5)
 
-  // ── Meilleurs / Pires Clients (par CA)
-  const clients = await prisma.user.findMany({
-    where: { role: 'CLIENT' },
+  // Clients — on a besoin des profils des top/flop clients seulement
+  const caClientMap = new Map(caParClient.map(r => [r.userId, r._sum.total ?? 0]))
+
+  // Récupérer les profils uniquement des clients qui ont commandé (max 10 ids)
+  const clientsSorted = [...caClientMap.entries()].sort((a, b) => b[1] - a[1])
+  const topClientIds  = clientsSorted.slice(0, 5).map(([id]) => id)
+  const flopClientIds = clientsSorted.filter(([, ca]) => ca > 0).slice(-5).map(([id]) => id)
+  const clientIds     = [...new Set([...topClientIds, ...flopClientIds])]
+
+  const clientProfils = await prisma.user.findMany({
+    where:  { id: { in: clientIds } },
     select: {
       id: true, nom: true, prenom: true, email: true, wilaya: true,
       _count: { select: { orders: true } },
     },
-    take: 100,
-    orderBy: { createdAt: 'asc' },
   })
-  const clientsAvecCA = await Promise.all(
-    clients.map(async (c) => {
-      const ca = await prisma.order.aggregate({
-        _sum: { total: true },
-        where: { userId: c.id, statut: 'LIVREE' },
-      })
-      return { ...c, ca: ca._sum.total ?? 0 }
-    })
-  )
-  clientsAvecCA.sort((a, b) => b.ca - a.ca)
-  const meilleursClients = clientsAvecCA.slice(0, 5)
-  const piresClients     = clientsAvecCA
-    .filter((c) => c.ca > 0)
-    .sort((a, b) => a.ca - b.ca)
-    .slice(0, 5)
+  const profilMap = new Map(clientProfils.map(c => [c.id, c]))
+
+  const toClientRow = (id: string) => {
+    const p = profilMap.get(id)
+    if (!p) return null
+    return { ...p, ca: caClientMap.get(id) ?? 0 }
+  }
+
+  const meilleursClients = topClientIds.map(toClientRow).filter(Boolean)
+  const piresClients     = flopClientIds.map(toClientRow).filter(Boolean)
 
   return NextResponse.json({
     resume: {

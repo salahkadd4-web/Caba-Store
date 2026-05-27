@@ -270,7 +270,7 @@ async function CategoriesSection() {
                   compact
                   badges={
                     idx < 3 && produit.ventes > 0 ? (
-                      <span className="w-6 h-6 flex items-center justify-center text-[11px] font-bold bg-stone-900/80 text-white rounded-full backdrop-blur-sm shadow">
+                      <span key="rank" className="w-6 h-6 flex items-center justify-center text-[11px] font-bold bg-stone-900/80 text-white rounded-full backdrop-blur-sm shadow">
                         {idx + 1}
                       </span>
                     ) : undefined

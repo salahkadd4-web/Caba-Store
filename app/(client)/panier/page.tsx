@@ -1,15 +1,16 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
-  ShoppingCart, X, Minus, Plus, TrendingDown,
+  ShoppingCart, X, TrendingDown,
   Ruler, Package, ArrowLeft,
   Trash2, ShoppingBag, Tag, ChevronDown, ChevronUp,
   Pencil, Check, Loader2,
 } from 'lucide-react'
 import { getPrixUnitaire as getPrixUnitaireLib, parsePrixTiers } from '@/lib/prix'
+import QteInput from '@/components/client/QteInput'
 
 /* ══════════════════════════════════════════
    TYPES
@@ -60,55 +61,6 @@ function groupByProduct(items: CartItem[]): ProductGroup[] {
   return [...map.values()]
 }
 
-/* ══════════════════════════════════════════
-   QteInput — saisie libre + stepper
-══════════════════════════════════════════ */
-function QteInput({
-  value, stockMax, onChange, onZero, size = 'md', disabled = false,
-}: {
-  value:    number
-  stockMax: number
-  onChange: (v: number) => void
-  onZero?:  () => void
-  size?:    'sm' | 'md'
-  disabled?: boolean
-}) {
-  const [raw, setRaw] = useState(String(value))
-  const ref           = useRef<HTMLInputElement>(null)
-  const focused       = () => document.activeElement === ref.current
-
-  const prev = useRef(value)
-  if (prev.current !== value && !focused()) { prev.current = value; setRaw(String(value)) }
-
-  const commit = (s: string) => {
-    const n = parseInt(s, 10)
-    if (isNaN(n) || n <= 0) { if (onZero) { onZero(); return } setRaw('1'); onChange(1); return }
-    const c = Math.min(n, stockMax); setRaw(String(c)); onChange(c)
-  }
-
-  const isSm = size === 'sm'
-  return (
-    <div className="flex items-center gap-1">
-      <button type="button" tabIndex={-1} disabled={disabled || value <= 1}
-        onClick={() => { if (value - 1 <= 0 && onZero) { onZero(); return } const n = value - 1; setRaw(String(n)); onChange(n) }}
-        className={`flex items-center justify-center rounded-lg disabled:opacity-30 transition ${isSm ? 'w-6 h-6 hover:bg-orange-100 dark:hover:bg-orange-950/40 text-orange-700 dark:text-orange-400' : 'w-8 h-8 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-300'}`}>
-        <Minus className={isSm ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5'} />
-      </button>
-      <input ref={ref} type="number" min={1} max={stockMax} value={raw} disabled={disabled}
-        onChange={e => setRaw(e.target.value)}
-        onBlur={e => commit(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter') { commit(raw); ref.current?.blur() } }}
-        onFocus={e => e.target.select()}
-        className={`text-center font-bold tabular-nums bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-700/20 focus:border-orange-700 dark:focus:border-orange-400 disabled:opacity-50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none transition ${isSm ? 'w-10 text-sm py-0.5' : 'w-14 text-sm py-1.5'}`}
-      />
-      <button type="button" tabIndex={-1} disabled={disabled || value >= stockMax}
-        onClick={() => { const n = Math.min(stockMax, value + 1); setRaw(String(n)); onChange(n) }}
-        className={`flex items-center justify-center rounded-lg disabled:opacity-30 transition ${isSm ? 'w-6 h-6 hover:bg-orange-100 dark:hover:bg-orange-950/40 text-orange-700 dark:text-orange-400' : 'w-8 h-8 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-300'}`}>
-        <Plus className={isSm ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5'} />
-      </button>
-    </div>
-  )
-}
 
 /* ══════════════════════════════════════════
    PANNEAU ÉDITEUR
@@ -483,44 +435,59 @@ export default function PanierPage() {
   const [deleting, setDeleting] = useState(false)
 
   const fetchPanier = useCallback(async () => {
-    try { const r = await fetch('/api/panier'); setPanier(await r.json()) }
-    finally { setLoading(false) }
+    try {
+      const r = await fetch('/api/panier')
+      if (!r.ok) throw new Error(`GET /api/panier échoué: ${r.status}`)
+      setPanier(await r.json())
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => { fetchPanier() }, [fetchPanier])
 
   const updateQuantite = async (itemId: string, quantite: number) => {
-    await fetch(`/api/panier/${itemId}`, {
+    const res = await fetch(`/api/panier/${itemId}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ quantite }),
     })
+    if (!res.ok) throw new Error(`PATCH /api/panier/${itemId} échoué: ${res.status}`)
     await fetchPanier()
   }
 
   const supprimerItem = async (itemId: string) => {
-    await fetch(`/api/panier/${itemId}`, { method: 'DELETE' })
+    const res = await fetch(`/api/panier/${itemId}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error(`DELETE /api/panier/${itemId} échoué: ${res.status}`)
     await fetchPanier()
   }
 
   const supprimerGroupe = async (items: CartItem[]) => {
-    await Promise.all(items.map(i => fetch(`/api/panier/${i.id}`, { method: 'DELETE' })))
+    const results = await Promise.all(items.map(i => fetch(`/api/panier/${i.id}`, { method: 'DELETE' })))
+    const failed = results.filter(r => !r.ok)
+    if (failed.length > 0) throw new Error(`${failed.length} suppression(s) échouée(s)`)
     await fetchPanier()
   }
 
   const ajouterItem = async (productId: string, variantId: string, optionId: string | undefined, quantite: number) => {
-    await fetch('/api/panier', {
+    const res = await fetch('/api/panier', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ produitId: productId, variantId, variantOptionId: optionId, quantite }),
     })
+    if (!res.ok) throw new Error(`POST /api/panier échoué: ${res.status}`)
     await fetchPanier()
   }
 
   const viderPanier = async () => {
     if (!panier) return
     setDeleting(true)
-    await Promise.all(panier.items.map(i => fetch(`/api/panier/${i.id}`, { method: 'DELETE' })))
-    await fetchPanier()
-    setDeleting(false)
+    try {
+      const results = await Promise.all(panier.items.map(i => fetch(`/api/panier/${i.id}`, { method: 'DELETE' })))
+      const failed = results.filter(r => !r.ok)
+      if (failed.length > 0) throw new Error(`${failed.length} suppression(s) échouée(s)`)
+      await fetchPanier()
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const groups = panier ? groupByProduct(panier.items) : []

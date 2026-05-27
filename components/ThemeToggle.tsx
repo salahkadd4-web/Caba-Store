@@ -38,9 +38,9 @@ export default function ThemeToggle() {
   const [dragging, setDragging] = useState(false)
   const [snapping, setSnapping] = useState(false)
 
-  const [pos, setPos] = useState<{ x: number; y: number } | null>(
-    () => typeof window !== 'undefined' ? getInitialPos() : null
-  )
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
+
+  useEffect(() => { setPos(getInitialPos()) }, [])
 
   const desktopRef = useRef<HTMLDivElement>(null)
   const mobileRef  = useRef<HTMLDivElement>(null)

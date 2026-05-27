@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { Geist } from 'next/font/google'
 import "./globals.css";
+import { headers } from "next/headers";
 import { auth } from "@/auth";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import SessionProvider from "@/components/client/SessionProvider";
@@ -11,6 +13,8 @@ import PullToRefresh from "@/components/client/PullToRefresh";
 import Footer from "@/components/Footer";
 import FooterWrapper from "@/components/client/FooterWrapper";
 import MainWrapper from "@/components/client/MainWrapper";
+
+const geistSans = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
 
 export const metadata: Metadata = {
   title: "Caba Store",
@@ -25,7 +29,8 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
+  const [session, hdrs] = await Promise.all([auth(), headers()])
+  const nonce = hdrs.get('x-nonce') ?? undefined
 
   return (
     <html lang="fr" suppressHydrationWarning>
@@ -36,19 +41,13 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Caba Store" />
         <link rel="apple-touch-icon" href="/icons/caba-store-icon-black.png" />
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{
-            __html: `
-    (function() {
-      var theme = localStorage.getItem('theme');
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
-      }
-    })();
-  `,
+            __html: `(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.classList.add('dark')})()`,
           }}
         />
       </head>
-      <body className=" text-stone-900 dark:text-stone-100 transition-colors duration-300">
+      <body className={`${geistSans.variable} font-sans text-stone-900 dark:text-stone-100 transition-colors duration-300`}>
         <ThemeProvider>
           <SessionProvider session={session}>
             <AndroidBackButton />
