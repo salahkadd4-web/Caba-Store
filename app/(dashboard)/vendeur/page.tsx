@@ -21,7 +21,9 @@ export default async function VendeurDashboard() {
     include: { documents: true },
   })
 
-  if (!vendeur || vendeur.statut !== 'APPROUVE') return null
+  // Le layout (vendeur/layout.tsx) bloque déjà les vendeurs non approuvés.
+  // On vérifie quand même pour TypeScript et pour éviter tout crash.
+  if (!vendeur) return null
 
   const vid = vendeur.id
 

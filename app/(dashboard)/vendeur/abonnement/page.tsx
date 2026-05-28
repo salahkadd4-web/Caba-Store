@@ -1,6 +1,6 @@
-import { auth } from '@/auth'
+import { auth }     from '@/auth'
 import { redirect } from 'next/navigation'
-import { prisma } from '@/lib/prisma'
+import { prisma }   from '@/lib/prisma'
 import { AlertTriangle, CheckCircle2, Clock, CreditCard, XCircle } from 'lucide-react'
 
 const TARIFS = {
@@ -28,7 +28,8 @@ export default async function VendeurAbonnementPage() {
     },
   })
 
-  if (!profile || profile.statut !== 'APPROUVE') redirect('/vendeur/statut')
+  // Le layout (vendeur/layout.tsx) bloque les vendeurs non approuvés avant d'atteindre cette page.
+  if (!profile) return null
 
   const abo = profile.abonnement
   const now = new Date()

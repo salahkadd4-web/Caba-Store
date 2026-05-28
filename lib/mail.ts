@@ -12,7 +12,7 @@ export const transporter = nodemailer.createTransport({
 // Email de réinitialisation mot de passe
 export async function sendResetEmail(email: string, code: string) {
   await transporter.sendMail({
-    from: `"Boutique en ligne" <${process.env.EMAIL_USER}>`,
+    from: `"Caba Store" <${process.env.EMAIL_USER}>`,
     to: email,
     subject: 'Code de réinitialisation de mot de passe',
     html: `
@@ -30,7 +30,7 @@ export async function sendResetEmail(email: string, code: string) {
 // Email de confirmation d'inscription
 export async function sendConfirmationEmail(email: string, code: string, prenom: string) {
   await transporter.sendMail({
-    from: `"Boutique en ligne" <${process.env.EMAIL_USER}>`,
+    from: `Caba Store" <${process.env.EMAIL_USER}>`,
     to: email,
     subject: 'Confirmez votre inscription',
     html: `
@@ -49,7 +49,7 @@ export async function sendConfirmationEmail(email: string, code: string, prenom:
 // ── Code de confirmation d'identité (profil sans mot de passe) ───────────────
 export async function sendIdentityOtpEmail(email: string, code: string, prenom: string) {
   await transporter.sendMail({
-    from: `"Boutique en ligne" <${process.env.EMAIL_USER}>`,
+    from: `"Caba Store" <${process.env.EMAIL_USER}>`,
     to: email,
     subject: 'Code de confirmation — Modification du profil',
     html: `

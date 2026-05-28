@@ -112,14 +112,14 @@ function ConnexionContent() {
       }
 
       if (result?.ok) {
-        const res     = await fetch('/api/auth/session')
+        // Rechargement complet pour lire le cookie de session fraîchement posé
+        // et éviter tout problème de cache côté client.
+        const res     = await fetch('/api/auth/session', { cache: 'no-store' })
         const session = await res.json()
 
-        if (session?.user?.role === 'ADMIN')        router.push('/admin')
-        else if (session?.user?.role === 'VENDEUR') router.push('/vendeur')
-        else                                         router.push('/')
-
-        router.refresh()
+        if (session?.user?.role === 'ADMIN')        window.location.href = '/admin'
+        else if (session?.user?.role === 'VENDEUR') window.location.href = '/vendeur'
+        else                                         window.location.href = '/'
       }
     } catch {
       setError('Erreur serveur, veuillez réessayer.')
@@ -196,14 +196,12 @@ function ConnexionContent() {
           })
 
           if (signInResult?.ok) {
-            const sessionRes = await fetch('/api/auth/session')
+            const sessionRes = await fetch('/api/auth/session', { cache: 'no-store' })
             const session    = await sessionRes.json()
 
-            if (session?.user?.role === 'ADMIN')        router.push('/admin')
-            else if (session?.user?.role === 'VENDEUR') router.push('/vendeur')
-            else                                         router.push('/')
-
-            router.refresh()
+            if (session?.user?.role === 'ADMIN')        window.location.href = '/admin'
+            else if (session?.user?.role === 'VENDEUR') window.location.href = '/vendeur'
+            else                                         window.location.href = '/'
           } else {
             setError('Erreur de session. Veuillez réessayer.')
           }
