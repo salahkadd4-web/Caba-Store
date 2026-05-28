@@ -14,21 +14,26 @@ const ThemeContext = createContext<ThemeContextType>({
   resolvedTheme: 'light',
 })
 
-// ✅ Lecture du localStorage en dehors du composant (s'exécute une seule fois)
-function getInitialTheme(): Theme {
-  if (typeof window === 'undefined') return 'light' // SSR guard
-  const saved = localStorage.getItem('theme')
-  if (saved === 'light' || saved === 'dark' || saved === 'system') return saved
-  return 'dark'
-}
-
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // ✅ Initialisation paresseuse — pas d'effet, pas de double rendu
-  const [theme, setThemeState] = useState<Theme>(getInitialTheme)
-
+  // ✅ Valeur initiale neutre — évite tout problème SSR / Capacitor WebView
+  const [theme, setThemeState] = useState<Theme>('system')
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light')
+  const [mounted, setMounted] = useState(false)
+
+  // ✅ Lecture du localStorage uniquement après le montage côté client
+  useEffect(() => {
+    const saved = localStorage.getItem('theme')
+    if (saved === 'light' || saved === 'dark' || saved === 'system') {
+      setThemeState(saved)
+    } else {
+      setThemeState('dark') // valeur par défaut
+    }
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
+    if (!mounted) return
+
     const root = document.documentElement
     const systemDark = window.matchMedia('(prefers-color-scheme: dark)')
 
@@ -37,13 +42,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         theme === 'dark' ||
         (theme === 'system' && systemDark.matches)
       root.classList.toggle('dark', isDark)
-      setResolvedTheme(isDark ? 'dark' : 'light') // ✅ setState dans un callback, pas dans le corps
+      setResolvedTheme(isDark ? 'dark' : 'light')
     }
 
     apply()
     systemDark.addEventListener('change', apply)
     return () => systemDark.removeEventListener('change', apply)
-  }, [theme])
+  }, [theme, mounted])
 
   const setTheme = (t: Theme) => {
     setThemeState(t)
