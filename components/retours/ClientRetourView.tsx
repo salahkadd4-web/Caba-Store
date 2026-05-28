@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
@@ -83,9 +82,7 @@ function chipLabel(item: OrderItem): string {
   return parts.join(' / ') || 'Sans variante'
 }
 
-function RetourContent() {
-  const searchParams = useSearchParams()
-  const preOrderId   = searchParams.get('orderId') ?? ''
+function RetourContent({ orderId: preOrderId }: { orderId: string }) {
 
   const [step,          setStep]          = useState(0)
   const [commandes,     setCommandes]     = useState<Order[]>([])
@@ -99,16 +96,17 @@ function RetourContent() {
   const [result,        setResult]        = useState<{ success?: boolean; claimId?: string; status?: 'PENDING' | 'APPROVED' | 'REJECTED'; error?: string } | null>(null)
 
   useEffect(() => {
-    fetch('/api/commandes')
-      .then(r => r.json())
-      .then((data: Order[]) => {
-        const livrees = data.filter(c => c.statut === 'LIVREE' && !c.retourDemande)
+    fetch('/api/commandes/')
+      .then(async r => {
+        const data = await r.json()
+        if (!r.ok || !Array.isArray(data)) return
+        const livrees = (data as Order[]).filter(c => c.statut === 'LIVREE' && !c.retourDemande)
         setCommandes(livrees)
         const pre = livrees.find(c => c.id === preOrderId) ?? null
         if (pre) { setSelectedOrder(pre); setStep(1) }
-        setLoading(false)
       })
-      .catch(() => setLoading(false))
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [preOrderId])
 
   const selectedItem = selectedOrder?.items.find(i => i.id === selectedItemId) ?? null
@@ -381,15 +379,6 @@ function RetourContent() {
   )
 }
 
-export default function ClientRetourView() {
-  return (
-    <Suspense fallback={
-      <div className="max-w-xl mx-auto px-4 py-20 text-center text-stone-400">
-        <div className="w-8 h-8 border-2 border-stone-200 dark:border-stone-700 border-t-orange-700 rounded-full animate-spin mx-auto mb-3" />
-        Chargement…
-      </div>
-    }>
-      <RetourContent />
-    </Suspense>
-  )
+export default function ClientRetourView({ orderId }: { orderId: string }) {
+  return <RetourContent orderId={orderId} />
 }

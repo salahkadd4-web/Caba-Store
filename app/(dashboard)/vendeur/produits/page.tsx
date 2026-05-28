@@ -69,13 +69,16 @@ export default function VendeurProduitsPage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const [pRes, cRes] = await Promise.all([
-      fetch(`/api/vendeur/produits${filterActif !== 'all' ? `?actif=${filterActif}` : ''}`),
-      fetch('/api/vendeur/categories'),
-    ])
-    if (pRes.ok) setProduits(await pRes.json())
-    if (cRes.ok) { const d = await cRes.json(); setCategories(d.approuvees || []) }
-    setLoading(false)
+    try {
+      const [pRes, cRes] = await Promise.all([
+        fetch(`/api/vendeur/produits${filterActif !== 'all' ? `?actif=${filterActif}` : ''}`),
+        fetch('/api/vendeur/categories'),
+      ])
+      if (pRes.ok) setProduits(await pRes.json())
+      if (cRes.ok) { const d = await cRes.json(); setCategories(d.approuvees || []) }
+    } finally {
+      setLoading(false)
+    }
   }, [filterActif])
 
   useEffect(() => { void fetchData() }, [fetchData])

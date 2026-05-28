@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { CheckCircle2, Loader2, Tag, X, XCircle } from 'lucide-react'
 import {
   heading, inputCls, btnPrimaryEmerald, btnSecondary,
-  modalOverlay, modalBox, loadingPage, card, cardSm,
+  modalOverlay, modalBox, loadingPage, card,
 } from '@/lib/dashboard-ui'
 
 interface Category { id: string; nom: string; statut: string; createdAt: string }
@@ -29,13 +29,16 @@ export default function VendeurCategoriesPage() {
 
   const fetchData = async () => {
     setLoading(true)
-    const res = await fetch('/api/vendeur/categories')
-    if (res.ok) {
-      const d = await res.json()
-      setMesCats(d.mesCats || [])
-      setApprouvees(d.approuvees || [])
+    try {
+      const res = await fetch('/api/vendeur/categories')
+      if (res.ok) {
+        const d = await res.json()
+        setMesCats(d.mesCats || [])
+        setApprouvees(d.approuvees || [])
+      }
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   useEffect(() => { fetchData() }, [])

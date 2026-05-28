@@ -131,19 +131,12 @@ export default auth((req: NextAuthRequest) => {
     }
   }
 
-  // ── Routes dashboard partagées /commandes et /retours ────────────────────
-  // Accessibles aux ADMIN et VENDEUR uniquement (pages Next.js du groupe (dashboard))
-  const isDashboardShared =
+  // ── Routes /commandes et /retours : session requise, tous rôles autorisés ──
+  const isSharedRoute =
     pathname.startsWith('/commandes') || pathname.startsWith('/retours')
 
-  if (isDashboardShared) {
-    if (!session?.user) {
-      return NextResponse.redirect(new URL('/connexion', req.url))
-    }
-    const role = session.user.role
-    if (role !== 'ADMIN' && role !== 'VENDEUR') {
-      return NextResponse.redirect(new URL('/', req.url))
-    }
+  if (isSharedRoute && !session?.user) {
+    return NextResponse.redirect(new URL('/connexion', req.url))
   }
 
   // ── Routes client protégées : session requise (pages) ────────────────────

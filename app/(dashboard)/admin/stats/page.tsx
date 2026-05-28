@@ -2,6 +2,8 @@ import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import Image from 'next/image'
 import { prisma } from '@/lib/prisma'
+
+export const dynamic = 'force-dynamic'
 import BoutonInitProfilAdmin from '@/components/Boutoninitprofiladmin'
 import { CreditCard, Gem, Moon, ShieldCheck, Star, Tag, TrendingDown, Trophy } from 'lucide-react'
 import {
@@ -10,7 +12,28 @@ import {
 } from '@/lib/dashboard-ui'
 
 async function getStats() {
-  const [totalClients, totalVendeurs, totalVendeursApprouves, totalProduits, totalCommandes, totalRetours, caData] = await Promise.all([
+  const now         = new Date()
+  const dans30Jours = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+
+  // ── Toutes les requêtes indépendantes en parallèle ─────────────────────────
+  const [
+    totalClients, totalVendeurs, totalVendeursApprouves,
+    totalProduits, totalCommandes, totalRetours, caData,
+    topProduits, flopProduits,
+    categories,
+    vendeursRaw,
+    clients,
+    // Ventes par catégorie en une seule requête groupée
+    ventesParCat,
+    // CA et commandes par vendeur en deux requêtes groupées
+    caParVendeur, nbParVendeur,
+    // CA et retours par client en deux requêtes groupées
+    caParClient, retoursParClient,
+    // Abonnements groupés par niveau+statut en une requête
+    abonnementsGroupes,
+    revenusParNiveau,
+    bientotExpireParNiveau,
+  ] = await Promise.all([
     prisma.user.count({ where: { role: 'CLIENT' } }),
     prisma.user.count({ where: { role: 'VENDEUR' } }),
     prisma.vendeurProfile.count({ where: { statut: 'APPROUVE' } }),
@@ -18,73 +41,137 @@ async function getStats() {
     prisma.order.count(),
     prisma.order.count({ where: { retourDemande: true } }),
     prisma.order.aggregate({ _sum: { total: true }, where: { statut: 'LIVREE' } }),
+
+    prisma.product.findMany({
+      select: { id: true, nom: true, prix: true, images: true, category: { select: { nom: true } }, vendeur: { select: { nomBoutique: true } }, _count: { select: { orderItems: true } } },
+      orderBy: { orderItems: { _count: 'desc' } }, take: 5,
+    }),
+    prisma.product.findMany({
+      where: { orderItems: { some: {} } },
+      select: { id: true, nom: true, prix: true, images: true, category: { select: { nom: true } }, vendeur: { select: { nomBoutique: true } }, _count: { select: { orderItems: true } } },
+      orderBy: { orderItems: { _count: 'asc' } }, take: 5,
+    }),
+
+    prisma.category.findMany({
+      where: { statut: 'APPROUVEE' },
+      select: { id: true, nom: true, _count: { select: { products: true } } },
+    }),
+
+    prisma.vendeurProfile.findMany({
+      where: { statut: 'APPROUVE' },
+      include: { user: { select: { nom: true, prenom: true } }, _count: { select: { products: true } } },
+    }),
+
+    prisma.user.findMany({
+      where: { role: 'CLIENT' },
+      select: { id: true, nom: true, prenom: true, email: true, _count: { select: { orders: true } } },
+      take: 50,
+    }),
+
+    // Ventes par catégorie (1 requête groupée)
+    prisma.$queryRaw<{ category_id: string; ventes: number }[]>`
+      SELECT p."categoryId" AS category_id, COUNT(oi.id)::int AS ventes
+      FROM "OrderItem" oi JOIN "Product" p ON p.id = oi."productId"
+      GROUP BY p."categoryId"
+    `,
+
+    // CA par vendeur (commandes livrées)
+    prisma.$queryRaw<{ vendeur_id: string; ca: number }[]>`
+      SELECT p."vendeurId" AS vendeur_id,
+             COALESCE(SUM(oi.prix * oi.quantite), 0)::float AS ca
+      FROM "OrderItem" oi
+      JOIN "Product" p ON p.id = oi."productId"
+      JOIN "Order"   o ON o.id = oi."orderId"
+      WHERE o.statut = 'LIVREE' AND p."vendeurId" IS NOT NULL
+      GROUP BY p."vendeurId"
+    `,
+    // Nb commandes par vendeur
+    prisma.$queryRaw<{ vendeur_id: string; nb: number }[]>`
+      SELECT p."vendeurId" AS vendeur_id, COUNT(oi.id)::int AS nb
+      FROM "OrderItem" oi JOIN "Product" p ON p.id = oi."productId"
+      WHERE p."vendeurId" IS NOT NULL
+      GROUP BY p."vendeurId"
+    `,
+
+    // CA par client (commandes livrées)
+    prisma.$queryRaw<{ user_id: string; ca: number }[]>`
+      SELECT o."userId" AS user_id,
+             COALESCE(SUM(o.total), 0)::float AS ca
+      FROM "Order" o WHERE o.statut = 'LIVREE'
+      GROUP BY o."userId"
+    `,
+    // Retours par client
+    prisma.$queryRaw<{ user_id: string; nb: number }[]>`
+      SELECT o."userId" AS user_id, COUNT(o.id)::int AS nb
+      FROM "Order" o WHERE o."retourDemande" = true
+      GROUP BY o."userId"
+    `,
+
+    // Abonnements groupés (niveau + statut)
+    prisma.$queryRaw<{ niveau: string; statut: string; nb: number }[]>`
+      SELECT niveau, statut, COUNT(id)::int AS nb FROM "Abonnement" GROUP BY niveau, statut
+    `,
+    // Revenus par niveau
+    prisma.$queryRaw<{ niveau: string; revenu: number }[]>`
+      SELECT a.niveau, COALESCE(SUM(p.montant), 0)::float AS revenu
+      FROM "Paiement" p JOIN "Abonnement" a ON a.id = p."abonnementId"
+      WHERE p."confirmeParAdmin" = true GROUP BY a.niveau
+    `,
+    // Bientôt expiré par niveau
+    prisma.$queryRaw<{ niveau: string; nb: number }[]>`
+      SELECT niveau, COUNT(id)::int AS nb FROM "Abonnement"
+      WHERE statut IN ('ACTIF','GRATUIT') AND "dateFin" >= ${now} AND "dateFin" <= ${dans30Jours}
+      GROUP BY niveau
+    `,
   ])
 
-  const topProduits = await prisma.product.findMany({
-    select: { id: true, nom: true, prix: true, images: true, category: { select: { nom: true } }, vendeur: { select: { nomBoutique: true } }, _count: { select: { orderItems: true } } },
-    orderBy: { orderItems: { _count: 'desc' } }, take: 5,
-  })
-  const flopProduits = await prisma.product.findMany({
-    where: { orderItems: { some: {} } },
-    select: { id: true, nom: true, prix: true, images: true, category: { select: { nom: true } }, vendeur: { select: { nomBoutique: true } }, _count: { select: { orderItems: true } } },
-    orderBy: { orderItems: { _count: 'asc' } }, take: 5,
-  })
+  // ── Assemblage catégories ──────────────────────────────────────────────────
+  const ventesMap = new Map(ventesParCat.map(r => [r.category_id, r.ventes]))
+  const catsAvecVentes = categories
+    .map(c => ({ ...c, ventes: ventesMap.get(c.id) ?? 0 }))
+    .sort((a, b) => b.ventes - a.ventes)
 
-  const categories = await prisma.category.findMany({
-    where: { statut: 'APPROUVEE' },
-    select: { id: true, nom: true, _count: { select: { products: true } } },
-  })
-  const catsAvecVentes = await Promise.all(categories.map(async c => ({ ...c, ventes: await prisma.orderItem.count({ where: { product: { categoryId: c.id } } }) })))
-  catsAvecVentes.sort((a, b) => b.ventes - a.ventes)
+  // ── Assemblage vendeurs ────────────────────────────────────────────────────
+  const caVMap  = new Map(caParVendeur.map(r => [r.vendeur_id, r.ca]))
+  const nbVMap  = new Map(nbParVendeur.map(r => [r.vendeur_id, r.nb]))
+  const vendeursAvecCA = vendeursRaw
+    .map(v => ({ ...v, ca: caVMap.get(v.id) ?? 0, nb: nbVMap.get(v.id) ?? 0 }))
+    .sort((a, b) => b.ca - a.ca)
 
-  const vendeursRaw    = await prisma.vendeurProfile.findMany({ where: { statut: 'APPROUVE' }, include: { user: { select: { nom: true, prenom: true } }, _count: { select: { products: true } } } })
-  const vendeursAvecCA = await Promise.all(vendeursRaw.map(async v => {
-    const [ca, nb] = await Promise.all([
-      prisma.orderItem.aggregate({ _sum: { prix: true }, where: { product: { vendeurId: v.id }, order: { statut: 'LIVREE' } } }),
-      prisma.orderItem.count({ where: { product: { vendeurId: v.id } } }),
-    ])
-    return { ...v, ca: ca._sum.prix ?? 0, nb }
-  }))
-  vendeursAvecCA.sort((a, b) => b.ca - a.ca)
+  // ── Assemblage clients ─────────────────────────────────────────────────────
+  const caCMap  = new Map(caParClient.map(r => [r.user_id, r.ca]))
+  const retMap  = new Map(retoursParClient.map(r => [r.user_id, r.nb]))
+  const clientsAvecCA = clients
+    .map(c => ({ ...c, ca: caCMap.get(c.id) ?? 0, retours: retMap.get(c.id) ?? 0 }))
+    .sort((a, b) => b.ca - a.ca)
 
-  const clients = await prisma.user.findMany({
-    where: { role: 'CLIENT' },
-    select: { id: true, nom: true, prenom: true, email: true, _count: { select: { orders: true } } },
-    take: 50,
-  })
-  const clientsAvecCA = await Promise.all(clients.map(async c => {
-    const [ca, retours] = await Promise.all([
-      prisma.order.aggregate({ _sum: { total: true }, where: { userId: c.id, statut: 'LIVREE' } }),
-      prisma.order.count({ where: { userId: c.id, retourDemande: true } }),
-    ])
-    return { ...c, ca: ca._sum.total ?? 0, retours }
-  }))
-  clientsAvecCA.sort((a, b) => b.ca - a.ca)
-
-  const now = new Date()
-  const dans30Jours = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+  // ── Assemblage abonnements ─────────────────────────────────────────────────
   const NIVEAUX = ['NIVEAU_1', 'NIVEAU_2', 'NIVEAU_3'] as const
-  const statsAbonnements = await Promise.all(NIVEAUX.map(async niveau => {
-    const [actif, gratuit, expire, suspendu, bientotExpire, revenu] = await Promise.all([
-      prisma.abonnement.count({ where: { niveau, statut: 'ACTIF' } }),
-      prisma.abonnement.count({ where: { niveau, statut: 'GRATUIT' } }),
-      prisma.abonnement.count({ where: { niveau, statut: 'EXPIRE' } }),
-      prisma.abonnement.count({ where: { niveau, statut: 'SUSPENDU' } }),
-      prisma.abonnement.count({ where: { niveau, statut: { in: ['ACTIF', 'GRATUIT'] }, dateFin: { gte: now, lte: dans30Jours } } }),
-      prisma.paiement.aggregate({ _sum: { montant: true }, where: { abonnement: { niveau }, confirmeParAdmin: true } }),
-    ])
-    return { niveau, actif, gratuit, expire, suspendu, total: actif + gratuit + expire + suspendu, bientotExpire, revenu: revenu._sum.montant ?? 0 }
-  }))
+  const revNivMap  = new Map(revenusParNiveau.map(r => [r.niveau, r.revenu]))
+  const expNivMap  = new Map(bientotExpireParNiveau.map(r => [r.niveau, r.nb]))
+
+  const statsAbonnements = NIVEAUX.map(niveau => {
+    const rows = abonnementsGroupes.filter(r => r.niveau === niveau)
+    const get  = (s: string) => rows.find(r => r.statut === s)?.nb ?? 0
+    const actif = get('ACTIF'); const gratuit = get('GRATUIT')
+    const expire = get('EXPIRE'); const suspendu = get('SUSPENDU')
+    return {
+      niveau, actif, gratuit, expire, suspendu,
+      total: actif + gratuit + expire + suspendu,
+      bientotExpire: expNivMap.get(niveau) ?? 0,
+      revenu: revNivMap.get(niveau) ?? 0,
+    }
+  })
 
   return {
     resume: { totalClients, totalVendeurs, totalVendeursApprouves, totalProduits, totalCommandes, totalRetours, ca: caData._sum.total ?? 0 },
     topProduits, flopProduits,
-    topCategories: catsAvecVentes.slice(0, 5),
+    topCategories:  catsAvecVentes.slice(0, 5),
     flopCategories: [...catsAvecVentes].sort((a, b) => a.ventes - b.ventes).slice(0, 5),
-    topVendeurs: vendeursAvecCA.slice(0, 5),
-    flopVendeurs: [...vendeursAvecCA].sort((a, b) => a.ca - b.ca).slice(0, 5),
-    topClients: clientsAvecCA.slice(0, 5),
-    flopClients: clientsAvecCA.filter(c => c.ca > 0).sort((a, b) => a.ca - b.ca).slice(0, 5),
+    topVendeurs:    vendeursAvecCA.slice(0, 5),
+    flopVendeurs:   [...vendeursAvecCA].sort((a, b) => a.ca - b.ca).slice(0, 5),
+    topClients:     clientsAvecCA.slice(0, 5),
+    flopClients:    clientsAvecCA.filter(c => c.ca > 0).sort((a, b) => a.ca - b.ca).slice(0, 5),
     statsAbonnements,
   }
 }

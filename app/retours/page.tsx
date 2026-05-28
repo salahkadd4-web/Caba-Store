@@ -1,16 +1,16 @@
 import { auth }     from '@/auth'
 import { redirect } from 'next/navigation'
 
-import ClientRetourView   from '@/components/retours/ClientRetourView'
+import ClientRetourView     from '@/components/retours/ClientRetourView'
 import DashboardRetoursView from '@/components/retours/DashboardRetoursView'
 
-/**
- * /retours — page unique qui dispatche selon le rôle :
- *  - CLIENT  → formulaire de demande de retour
- *  - ADMIN   → liens Flowmerce (vue globale)
- *  - VENDEUR → info : retours gérés par CabaStore
- */
-export default async function RetoursPage() {
+export const dynamic = 'force-dynamic'
+
+export default async function RetoursPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ orderId?: string }>
+}) {
   const session = await auth()
   if (!session?.user) redirect('/connexion')
 
@@ -18,12 +18,11 @@ export default async function RetoursPage() {
   const isAdmin = role === 'ADMIN'
 
   if (role === 'CLIENT') {
-    return <ClientRetourView />
+    const { orderId } = await searchParams
+    return <ClientRetourView orderId={orderId ?? ''} />
   }
 
-  if (isAdmin || role === 'VENDEUR') {
-    return <DashboardRetoursView isAdmin={isAdmin} />
-  }
+  if (isAdmin || role === 'VENDEUR') return <DashboardRetoursView isAdmin={isAdmin} />
 
   redirect('/')
 }

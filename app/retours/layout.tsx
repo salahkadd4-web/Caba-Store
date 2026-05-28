@@ -2,6 +2,8 @@ import { auth }       from '@/auth'
 import { redirect }   from 'next/navigation'
 import DashboardShell from '@/components/dashboard/DashboardShell'
 
+export const dynamic = 'force-dynamic'
+
 export default async function RetoursLayout({
   children,
 }: {

@@ -24,6 +24,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   trailingSlash: true,
+  skipTrailingSlashRedirect: true,
 
   // ── Security headers sur toutes les routes ──────────────────────────────────
   async headers() {

@@ -44,7 +44,7 @@ function CommandesContent() {
   const [expanded,  setExpanded]  = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/commandes')
+    fetch('/api/commandes/')
       .then(r => { if (!r.ok) throw new Error(); return r.json() as Promise<Order[]> })
       .then(data => setCommandes(data))
       .catch(() => setError('Impossible de charger vos commandes. Veuillez réessayer.'))
@@ -127,9 +127,9 @@ function CommandesContent() {
                           <Check className="w-3.5 h-3.5" /> Retour demandé
                         </span>
                       ) : (
-                        <a href={`/retours?orderId=${commande.id}`} onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition">
+                        <Link href={`/retours`} onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition">
                           ↩ Retour
-                        </a>
+                        </Link>
                       )
                     )}
                     <p className="font-semibold text-orange-700 dark:text-orange-400 text-lg tabular-nums">{commande.total.toFixed(2)} DA</p>

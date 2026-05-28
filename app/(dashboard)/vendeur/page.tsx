@@ -1,6 +1,8 @@
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+
+export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, Package, ShoppingCart, TrendingUp, Store } from 'lucide-react'

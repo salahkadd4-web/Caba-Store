@@ -3,6 +3,8 @@ import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import ClientsClient from './ClientsClient'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminClientsPage() {
   const session = await auth()
   if (!session?.user || session.user.role !== 'ADMIN') redirect('/connexion')
