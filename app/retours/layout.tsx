@@ -3,7 +3,8 @@ import { redirect }      from 'next/navigation'
 import { prisma }        from '@/lib/prisma'
 import DashboardShell    from '@/components/dashboard/DashboardShell'
 import Link              from 'next/link'
-import { Clock, ShieldOff, FileWarning, ArrowLeft, Mail } from 'lucide-react'
+import { Clock, ShieldOff, ArrowLeft, Mail } from 'lucide-react'
+import VendeurDocumentsClient from '@/components/vendeur/VendeurDocumentsClient'
 
 const STATUT_CONFIG = {
   EN_ATTENTE: {
@@ -30,25 +31,12 @@ const STATUT_CONFIG = {
     cardBorder: 'border-red-200 dark:border-red-800/60',
     badgeCls: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800',
   },
-  PIECES_REQUISES: {
-    Icon: FileWarning,
-    badge: 'Documents requis',
-    title: 'Pièces justificatives manquantes',
-    description: "Des documents supplémentaires sont nécessaires pour finaliser la validation de votre compte vendeur. Veuillez contacter l'administration pour soumettre les pièces demandées.",
-    tip: '📎 Préparez les documents officiels relatifs à votre activité commerciale.',
-    iconBg: 'bg-orange-100 dark:bg-orange-900/50',
-    iconColor: 'text-orange-600 dark:text-orange-400',
-    cardBg: 'bg-orange-50 dark:bg-orange-950/20',
-    cardBorder: 'border-orange-200 dark:border-orange-800/60',
-    badgeCls: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/40 dark:text-orange-300 dark:border-orange-800',
-  },
 } as const
 
-type VendeurStatut = keyof typeof STATUT_CONFIG
+type SimpleStatut = keyof typeof STATUT_CONFIG
 
 function VendeurBlocked({ vendeur }: { vendeur: { statut: string; nomBoutique: string | null; adminNote: string | null } }) {
-  const statut = (vendeur.statut ?? 'EN_ATTENTE') as VendeurStatut
-  const cfg    = STATUT_CONFIG[statut] ?? STATUT_CONFIG.EN_ATTENTE
+  const cfg = STATUT_CONFIG[vendeur.statut as SimpleStatut] ?? STATUT_CONFIG.EN_ATTENTE
   const { Icon } = cfg
 
   return (
@@ -102,8 +90,39 @@ export default async function RetoursLayout({ children }: { children: React.Reac
 
     const vendeur = await prisma.vendeurProfile.findUnique({
       where:  { userId: session.user.id },
-      select: { statut: true, nomBoutique: true, adminNote: true },
+      select: {
+        id:          true,
+        statut:      true,
+        nomBoutique: true,
+        adminNote:   true,
+        documents:   {
+          select: {
+            id:          true,
+            type:        true,
+            label:       true,
+            description: true,
+            fichier:     true,
+            statut:      true,
+            adminNote:   true,
+          },
+        },
+      },
     })
+
+    // ── Pièces requises → formulaire d'upload ──────────────────────────────
+    if (vendeur?.statut === 'PIECES_REQUISES') {
+      return (
+        <DashboardShell role="VENDEUR" nomBoutique={nomBoutique} userName={session.user.name ?? ''}>
+          <VendeurDocumentsClient
+            vendeur={{
+              id:        vendeur.id,
+              adminNote: vendeur.adminNote,
+              documents: vendeur.documents,
+            }}
+          />
+        </DashboardShell>
+      )
+    }
 
     if (vendeur?.statut !== 'APPROUVE') {
       return (

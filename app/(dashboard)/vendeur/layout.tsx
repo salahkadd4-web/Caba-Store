@@ -4,7 +4,7 @@
  * Ce Server Component s'exécute avant chaque page vendeur et vérifie
  * que le vendeur est bien APPROUVÉ. Si ce n'est pas le cas, il affiche
  * un écran de blocage avec un message adapté au statut (EN_ATTENTE,
- * SUSPENDU, PIECES_REQUISES) — sans rediriger vers une page inexistante.
+ * SUSPENDU) ou le formulaire d'upload (PIECES_REQUISES).
  *
  * ⚠️  Ce layout s'imbrique dans (dashboard)/layout.tsx qui fournit
  *     le DashboardShell (sidebar + header vendeur). Le message de blocage
@@ -17,10 +17,11 @@ import { redirect } from 'next/navigation'
 import { prisma }   from '@/lib/prisma'
 import Link         from 'next/link'
 import {
-  Clock, ShieldOff, FileWarning, ArrowLeft, Mail,
+  Clock, ShieldOff, ArrowLeft, Mail,
 } from 'lucide-react'
+import VendeurDocumentsClient from '@/components/vendeur/VendeurDocumentsClient'
 
-// ─── Configuration par statut ─────────────────────────────────────────────────
+// ─── Configuration par statut (EN_ATTENTE + SUSPENDU uniquement) ──────────────
 
 const STATUT_CONFIG = {
   EN_ATTENTE: {
@@ -47,21 +48,9 @@ const STATUT_CONFIG = {
     cardBorder:  'border-red-200 dark:border-red-800/60',
     badgeCls:    'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800',
   },
-  PIECES_REQUISES: {
-    Icon:        FileWarning,
-    badge:       'Documents requis',
-    title:       'Pièces justificatives manquantes',
-    description: 'Des documents supplémentaires sont nécessaires pour finaliser la validation de votre compte vendeur. Veuillez contacter l\'administration pour soumettre les pièces demandées.',
-    tip:         '📎 Préparez les documents officiels relatifs à votre activité commerciale.',
-    iconBg:      'bg-orange-100 dark:bg-orange-900/50',
-    iconColor:   'text-orange-600 dark:text-orange-400',
-    cardBg:      'bg-orange-50 dark:bg-orange-950/20',
-    cardBorder:  'border-orange-200 dark:border-orange-800/60',
-    badgeCls:    'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/40 dark:text-orange-300 dark:border-orange-800',
-  },
 } as const
 
-type VendeurStatut = keyof typeof STATUT_CONFIG
+type SimpleStatut = keyof typeof STATUT_CONFIG
 
 // ─── Layout guard ─────────────────────────────────────────────────────────────
 
@@ -79,7 +68,23 @@ export default async function VendeurLayout({
 
   const vendeur = await prisma.vendeurProfile.findUnique({
     where:  { userId: session.user.id },
-    select: { statut: true, nomBoutique: true, adminNote: true },
+    select: {
+      id:          true,
+      statut:      true,
+      nomBoutique: true,
+      adminNote:   true,
+      documents:   {
+        select: {
+          id:          true,
+          type:        true,
+          label:       true,
+          description: true,
+          fichier:     true,
+          statut:      true,
+          adminNote:   true,
+        },
+      },
+    },
   })
 
   // ── Accès autorisé ────────────────────────────────────────────────────────
@@ -87,8 +92,21 @@ export default async function VendeurLayout({
     return <>{children}</>
   }
 
-  // ── Accès bloqué : affichage du message adapté ────────────────────────────
-  const statut = (vendeur?.statut ?? 'EN_ATTENTE') as VendeurStatut
+  // ── Pièces requises → formulaire d'upload ─────────────────────────────────
+  if (vendeur?.statut === 'PIECES_REQUISES') {
+    return (
+      <VendeurDocumentsClient
+        vendeur={{
+          id:        vendeur.id,
+          adminNote: vendeur.adminNote,
+          documents: vendeur.documents,
+        }}
+      />
+    )
+  }
+
+  // ── Accès bloqué : affichage du message adapté (EN_ATTENTE / SUSPENDU) ────
+  const statut = (vendeur?.statut ?? 'EN_ATTENTE') as SimpleStatut
   const cfg    = STATUT_CONFIG[statut] ?? STATUT_CONFIG.EN_ATTENTE
   const { Icon } = cfg
 
