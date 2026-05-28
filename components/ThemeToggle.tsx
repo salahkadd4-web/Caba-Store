@@ -71,18 +71,25 @@ export default function ThemeToggle() {
     return () => window.removeEventListener('resize', onResize)
   }, [clamp])
 
+  // FIX: utilise 'pointerup' au lieu de 'pointerdown' pour la fermeture globale.
+  // Dans le WebView Android (Capacitor), 'pointerdown' se déclenche AVANT le onClick
+  // des boutons enfants, ce qui annulait la sélection du thème avant qu'elle soit traitée.
   useEffect(() => {
     if (!open) return
     const close = (e: PointerEvent) => {
       const t = e.target as Node
       if (!desktopRef.current?.contains(t) && !mobileRef.current?.contains(t)) setOpen(false)
     }
-    document.addEventListener('pointerdown', close)
-    return () => document.removeEventListener('pointerdown', close)
+    document.addEventListener('pointerup', close)
+    return () => document.removeEventListener('pointerup', close)
   }, [open])
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!pos) return
+    // FIX: ne pas capturer le pointer si le tap vient d'un bouton d'option du menu.
+    // Cela évite que setPointerCapture intercepte les taps sur les options dans Capacitor.
+    const target = e.target as HTMLElement
+    if (target.closest('button')) return
     e.currentTarget.setPointerCapture(e.pointerId)
     drag.current = { startClientX: e.clientX, startClientY: e.clientY, startPosX: pos.x, startPosY: pos.y, moved: false }
     setSnapping(false)
@@ -190,6 +197,9 @@ export default function ThemeToggle() {
               return (
                 <button
                   key={opt.key}
+                  // FIX: stopPropagation empêche le tap de remonter au drag container,
+                  // ce qui évite l'interférence avec setPointerCapture dans Capacitor WebView.
+                  onPointerDown={e => e.stopPropagation()}
                   onClick={() => { setTheme(opt.key); setOpen(false) }}
                   className={`flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-full text-xs font-medium
                     border shadow-md backdrop-blur-sm whitespace-nowrap transition-all active:scale-95
