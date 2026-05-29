@@ -13,6 +13,7 @@ import PullToRefresh from "@/components/client/PullToRefresh";
 import Footer from "@/components/Footer";
 import FooterWrapper from "@/components/client/FooterWrapper";
 import MainWrapper from "@/components/client/MainWrapper";
+import OfflineDetector from '@/components/OfflineDetector'
 
 const geistSans = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
 
@@ -49,6 +50,7 @@ export default async function RootLayout({
       </head>
       <body className={`${geistSans.variable} font-sans text-stone-900 dark:text-stone-100 transition-colors duration-300`}>
         <ThemeProvider>
+         <OfflineDetector> 
           <SessionProvider session={session}>
             <AndroidBackButton />
             <Nav />
@@ -59,6 +61,7 @@ export default async function RootLayout({
             <FooterWrapper><Footer /></FooterWrapper>
             <ThemeToggle />
           </SessionProvider>
+         </OfflineDetector> 
         </ThemeProvider>
       </body>
     </html>
