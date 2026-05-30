@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#c2410c" />
+  <title>Caba Store — Hors ligne</title>
+  <style>
+    /* ── Variables ── */
+    :root {
+      --bg:        #fafaf9;
+      --bg2:       #f5f0e8;
+      --fg:        #1c1917;
+      --fg2:       #78716c;
+      --accent:    #c2410c;
+      --accent2:   #ea580c;
+      --border:    #e7e5e4;
+      --card:      #ffffff;
+      --shadow:    rgba(194,65,12,.13);
+    }
+    [data-theme="dark"] {
+      --bg:        #0c0a09;
+      --bg2:       #1c1917;
+      --fg:        #f5f5f4;
+      --fg2:       #a8a29e;
+      --accent:    #ea580c;
+      --accent2:   #fb923c;
+      --border:    #292524;
+      --card:      #1c1917;
+      --shadow:    rgba(234,88,12,.18);
+    }
+
+    /* ── Reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+      transition: background .3s, color .3s;
+    }
+
+    /* ── Fond décoratif ── */
+    .bg-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(72px);
+      pointer-events: none;
+      z-index: 0;
+      opacity: .45;
+      transition: opacity .3s;
+    }
+    .bg-orb-1 {
+      width: 340px; height: 340px;
+      top: -80px; right: -60px;
+      background: radial-gradient(circle, #fb923c55, transparent 70%);
+    }
+    .bg-orb-2 {
+      width: 260px; height: 260px;
+      bottom: 100px; left: -80px;
+      background: radial-gradient(circle, #c2410c33, transparent 70%);
+    }
+    [data-theme="dark"] .bg-orb { opacity: .3; }
+
+    /* ── Contenu centré ── */
+    .page {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100dvh;
+      padding: 32px 28px 100px;
+      gap: 0;
+    }
+
+    /* ── Logo container ── */
+    .logo-wrap {
+      position: relative;
+      width: 148px;
+      height: 148px;
+      margin-bottom: 32px;
+      animation: float 4s ease-in-out infinite;
+    }
+    .logo-bg-ring {
+      position: absolute;
+      inset: -12px;
+      border-radius: 50%;
+      border: 1.5px solid var(--accent);
+      opacity: .18;
+      animation: spin-slow 18s linear infinite;
+    }
+    .logo-bg-ring::before {
+      content: '';
+      position: absolute;
+      top: -4px; left: 50%;
+      transform: translateX(-50%);
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: .7;
+    }
+    .logo-circle {
+      width: 148px; height: 148px;
+      border-radius: 50%;
+      background: var(--bg2);
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 32px var(--shadow), 0 0 0 6px var(--bg);
+      overflow: hidden;
+      position: relative;
+    }
+    .logo-svg {
+      width: 80px;
+      height: auto;
+      display: block;
+    }
+    /* Texte CABA STORE sous le logo */
+    .logo-text {
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .logo-text-caba {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .logo-text-store {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .28em;
+      color: var(--fg2);
+      line-height: 1;
+    }
+    .logo-text-line {
+      width: 32px;
+      height: 2px;
+      background: var(--accent);
+      border-radius: 2px;
+      margin-top: 5px;
+      opacity: .6;
+    }
+
+    /* ── Icône réseau ── */
+    .no-wifi-wrap {
+      position: relative;
+      margin-bottom: 28px;
+    }
+    .no-wifi-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: var(--bg2);
+      border: 1.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 12px var(--shadow);
+    }
+    .no-wifi-icon svg {
+      width: 26px; height: 26px;
+      stroke: var(--accent);
+    }
+    .no-wifi-badge {
+      position: absolute;
+      top: -5px; right: -5px;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid var(--bg);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .no-wifi-badge svg {
+      width: 9px; height: 9px;
+      stroke: #fff; stroke-width: 2.5;
+    }
+
+    /* ── Texte principal ── */
+    .title {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -.02em;
+      color: var(--fg);
+      text-align: center;
+      line-height: 1.25;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: var(--fg2);
+      text-align: center;
+      line-height: 1.55;
+      max-width: 280px;
+      margin-bottom: 36px;
+    }
+
+    /* ── Bouton rafraîchir ── */
+    .btn-refresh {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 32px;
+      border-radius: 50px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: .01em;
+      cursor: pointer;
+      box-shadow: 0 6px 24px var(--shadow);
+      transition: transform .15s, box-shadow .15s, background .15s;
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+    }
+    .btn-refresh:active {
+      transform: scale(.95);
+      box-shadow: 0 2px 10px var(--shadow);
+    }
+    .btn-refresh svg {
+      width: 18px; height: 18px;
+      stroke: #fff; stroke-width: 2.2;
+      transition: transform .5s;
+    }
+    .btn-refresh.spinning svg {
+      animation: spin .6s linear;
+    }
+
+    /* ── Divider + info ── */
+    .info-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 28px;
+      color: var(--fg2);
+      font-size: 12px;
+    }
+    .info-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: .5;
+    }
+
+    /* ── Bouton thème draggable ── */
+    #theme-btn {
+      position: fixed;
+      z-index: 999;
+      width: 44px; height: 44px;
+      touch-action: none;
+      user-select: none;
+      cursor: grab;
+      transition: left .3s cubic-bezier(.4,0,.2,1), top .3s cubic-bezier(.4,0,.2,1);
+    }
+    #theme-btn.dragging { cursor: grabbing; transition: none; }
+    #theme-btn.snapping { transition: left .3s cubic-bezier(.4,0,.2,1), top .3s cubic-bezier(.4,0,.2,1); }
+
+    .theme-bubble {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: rgba(250,247,242,.95);
+      border: 1.5px solid var(--border);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 3px 14px rgba(0,0,0,.12);
+      transition: background .2s, border-color .2s, box-shadow .2s;
+    }
+    [data-theme="dark"] .theme-bubble {
+      background: rgba(28,25,23,.95);
+      border-color: #292524;
+    }
+    .theme-bubble.open {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .theme-bubble svg {
+      width: 18px; height: 18px;
+      stroke: var(--fg);
+      stroke-width: 2;
+      fill: none;
+      transition: stroke .2s;
+    }
+    .theme-bubble.open svg { stroke: #fff; }
+
+    /* Menu thème */
+    .theme-menu {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      pointer-events: none;
+      opacity: 0;
+      transform: scale(.92) translateY(6px);
+      transition: opacity .18s, transform .18s;
+    }
+    .theme-menu.open {
+      pointer-events: auto;
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+    .theme-menu.above { bottom: 54px; }
+    .theme-menu.below { top: 54px; }
+    .theme-menu.align-right { right: 0; }
+    .theme-menu.align-left  { left: 0; }
+
+    .theme-option {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 14px 7px 10px;
+      border-radius: 50px;
+      border: 1.5px solid var(--border);
+      background: rgba(250,247,242,.96);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--fg);
+      white-space: nowrap;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0,0,0,.08);
+      transition: background .15s, border-color .15s, color .15s;
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+      border: none;
+    }
+    [data-theme="dark"] .theme-option {
+      background: rgba(28,25,23,.96);
+      border-color: #292524;
+      color: #d6d3d1;
+    }
+    .theme-option.active,
+    .theme-option:active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .theme-option svg {
+      width: 14px; height: 14px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+      flex-shrink: 0;
+    }
+
+    /* ── Animations ── */
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-8px); }
+    }
+    @keyframes spin-slow {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(22px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .anim-1 { animation: fade-up .5s ease both; }
+    .anim-2 { animation: fade-up .5s .1s ease both; }
+    .anim-3 { animation: fade-up .5s .2s ease both; }
+    .anim-4 { animation: fade-up .5s .3s ease both; }
+    .anim-5 { animation: fade-up .5s .4s ease both; }
+  </style>
+</head>
+<body>
+
+  <!-- Orbes de fond -->
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+
+  <!-- Page principale -->
+  <div class="page">
+
+    <!-- Logo -->
+    <div class="logo-wrap anim-1">
+      <div class="logo-bg-ring"></div>
+      <div class="logo-circle">
+        <!-- Logo SVG Caba Store (inline, couleur adaptative) -->
+        <svg class="logo-svg" viewBox="0 0 221 270" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(0,270) scale(0.1,-0.1)" fill="var(--accent)" stroke="none">
+            <path d="M1065 2721 c-61 -11 -112 -39 -154 -87 -43 -49 -61 -100 -61 -171 l0 -50 -55 -6 c-62 -6 -108 -29 -136 -67 -14 -18 -29 -89 -54 -254 -19 -126 -35 -232 -35 -234 0 -3 17 21 38 54 21 32 46 65 55 73 9 7 17 25 17 40 0 32 36 250 45 273 8 20 28 29 78 34 34 4 37 2 37 -21 0 -37 35 -68 60 -55 18 10 20 21 20 130 0 132 7 160 53 209 87 92 232 79 295 -27 24 -43 27 -59 32 -171 4 -101 8 -126 22 -134 12 -8 21 -7 32 2 13 11 16 37 16 142 0 150 -14 193 -82 255 -64 57 -140 80 -223 65z"/>
+            <path d="M1582 2413 l-143 -36 48 -43 48 -43 -103 -103 -103 -104 -60 30 c-153 76 -373 28 -522 -113 -132 -124 -226 -323 -227 -479 0 -69 27 -121 78 -150 36 -20 53 -22 193 -22 178 0 249 13 355 66 86 42 169 114 230 200 25 35 55 71 67 79 41 29 120 14 146 -27 7 -11 18 -53 25 -93 14 -80 5 -126 -29 -139 -9 -3 -86 -6 -170 -6 l-153 0 -62 -35 c-34 -19 -66 -35 -70 -35 -5 0 -11 -3 -13 -7 -6 -9 444 -6 480 2 38 9 92 64 103 105 14 51 -14 207 -44 253 -27 41 -98 77 -151 77 -65 -1 -119 -32 -167 -97 -75 -102 -149 -168 -229 -206 -98 -46 -150 -56 -313 -58 -150 -1 -180 8 -192 57 -16 63 27 219 88 321 36 61 114 150 102 118 -14 -38 -16 -153 -4 -192 31 -96 116 -185 210 -218 40 -14 44 -14 95 10 29 14 58 32 65 40 11 13 4 15 -51 15 -78 0 -135 26 -187 85 -106 120 -71 301 73 378 31 17 57 22 120 22 88 0 126 -14 183 -68 l32 -31 135 134 135 134 45 -44 c31 -30 46 -39 49 -29 8 27 56 264 56 277 0 16 -1 16 -168 -25z"/>
+            <path d="M970 2370 l0 -40 140 0 140 0 0 40 0 40 -140 0 -140 0 0 -40z"/>
+            <path d="M1465 2040 c-71 -71 -132 -130 -135 -130 -3 0 -27 20 -53 45 -118 110 -279 87 -349 -48 -30 -60 -22 -144 19 -194 62 -78 138 -106 224 -83 35 9 60 28 120 91 87 90 128 112 215 112 47 1 71 -5 109 -26 26 -15 49 -26 50 -25 2 3 -28 213 -46 321 -6 37 -14 67 -18 67 -3 0 -65 -58 -136 -130z"/>
+            <path d="M200 1181 c-138 -42 -215 -179 -176 -312 38 -133 166 -204 316 -177 59 10 139 56 146 83 1 6 -13 22 -31 38 l-33 28 -37 -25 c-47 -32 -91 -41 -141 -27 -49 14 -66 27 -93 71 -41 68 -19 163 48 207 48 32 121 31 180 -2 l44 -26 31 28 c17 15 33 29 35 31 2 1 -6 13 -19 27 -48 51 -189 80 -270 56z"/>
+            <path d="M710 1128 c-13 -29 -60 -135 -106 -235 -46 -100 -84 -187 -84 -192 0 -7 23 -11 55 -11 l55 0 25 55 24 55 116 0 115 0 25 -55 24 -55 61 0 c34 0 60 4 58 9 -1 5 -52 116 -113 245 l-110 236 -61 0 -62 0 -22 -52z m160 -230 c0 -5 -34 -8 -75 -8 -41 0 -75 1 -75 3 0 6 52 132 63 152 9 18 15 11 48 -60 21 -44 39 -83 39 -87z"/>
+            <path d="M1140 936 l0 -246 145 0 c179 0 239 12 282 55 28 28 33 40 33 83 0 53 -24 96 -61 107 -19 6 -18 8 11 41 50 58 38 135 -29 177 -33 20 -51 22 -208 25 l-173 4 0 -246z m308 142 c17 -17 15 -63 -4 -79 -9 -7 -51 -15 -100 -17 l-84 -5 0 57 0 56 88 0 c55 0 92 -4 100 -12z m15 -190 c9 -7 19 -25 22 -39 5 -21 1 -31 -21 -48 -23 -18 -40 -21 -115 -21 l-89 0 0 60 0 60 93 0 c59 0 99 -5 110 -12z"/>
+            <path d="M1746 947 c-58 -127 -106 -238 -106 -245 0 -8 17 -12 53 -12 l54 0 24 53 24 52 117 3 118 3 24 -56 25 -55 61 0 c34 0 60 4 58 9 -1 5 -52 116 -113 245 l-109 236 -62 0 -61 0 -107 -233z m243 -49 c1 -5 -33 -8 -74 -8 -41 0 -75 4 -75 9 0 5 16 44 36 87 l37 79 38 -80 c21 -44 38 -83 38 -87z"/>
+            <path d="M416 548 c-55 -47 -30 -107 52 -128 59 -15 76 -28 61 -46 -14 -17 -72 -18 -101 -3 -18 9 -24 8 -35 -7 -22 -30 6 -47 82 -52 61 -4 66 -3 96 27 25 26 30 37 24 59 -8 35 -28 49 -93 68 -40 12 -52 20 -50 32 3 14 15 17 61 16 48 -1 57 2 63 18 8 28 1 32 -70 36 -55 4 -66 1 -90 -20z"/>
+            <path d="M657 563 c-4 -3 -7 -15 -7 -25 0 -14 8 -18 39 -18 49 0 53 -9 50 -120 l-2 -85 29 0 29 0 3 103 3 102 39 0 c36 0 40 3 40 25 l0 25 -108 0 c-60 0 -112 -3 -115 -7z"/>
+            <path d="M1004 551 c-47 -29 -64 -59 -64 -113 0 -41 5 -54 34 -85 30 -33 39 -37 92 -41 50 -3 65 0 94 20 73 49 77 160 8 209 -44 32 -123 36 -164 10z m123 -53 c49 -53 21 -138 -46 -138 -44 0 -81 35 -81 76 0 71 82 110 127 62z"/>
+            <path d="M1304 557 c-2 -7 -3 -65 -2 -128 l3 -114 30 0 c23 0 30 5 31 20 1 11 2 26 3 33 1 6 13 12 29 12 20 0 33 -9 50 -35 17 -27 29 -35 52 -35 17 0 30 2 30 6 0 3 -11 21 -25 42 -24 36 -24 36 -6 57 49 51 30 126 -37 144 -54 16 -151 14 -158 -2z m150 -53 c19 -19 20 -25 3 -48 -9 -12 -28 -19 -53 -20 -41 -1 -41 -1 -35 69 1 20 65 20 85 -1z"/>
+            <path d="M1620 440 l0 -130 100 0 100 0 0 25 c0 24 -2 25 -70 25 l-70 0 0 30 0 30 61 0 c57 0 60 1 57 23 -3 19 -10 22 -60 25 -54 3 -58 5 -58 27 0 24 2 25 71 25 67 0 70 1 67 23 -3 21 -8 22 -100 25 l-98 3 0 -131z"/>
+            <path d="M770 139 c74 -4 280 -9 458 -11 253 -2 322 0 322 10 0 9 -97 12 -457 11 -344 -2 -424 -4 -323 -10z"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Texte logo -->
+    <div class="logo-text anim-2">
+      <span class="logo-text-caba">CABA</span>
+      <span class="logo-text-store">STORE</span>
+      <div class="logo-text-line"></div>
+    </div>
+
+    <!-- Icône wifi off -->
+    <div class="no-wifi-wrap anim-3" style="margin-top: 36px;">
+      <div class="no-wifi-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="1" y1="1" x2="23" y2="23"/>
+          <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
+          <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/>
+          <path d="M10.71 5.05A16 16 0 0 1 22.56 9"/>
+          <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
+          <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+          <circle cx="12" cy="20" r="1" fill="var(--accent)" stroke="none"/>
+        </svg>
+      </div>
+      <div class="no-wifi-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="12"/>
+          <circle cx="12" cy="17" r="1" fill="#fff" stroke="none"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Titre -->
+    <h1 class="title anim-4" style="margin-top: 20px;">
+      Pas de connexion
+    </h1>
+
+    <!-- Sous-titre -->
+    <p class="subtitle anim-4">
+      Vérifiez votre Wi-Fi ou vos données mobiles, puis réessayez.
+    </p>
+
+    <!-- Bouton rafraîchir -->
+    <button class="btn-refresh anim-5" id="btn-refresh" onclick="reload()">
+      <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"/>
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+      </svg>
+      Réessayer
+    </button>
+
+    <!-- Info bas -->
+    <div class="info-row anim-5">
+      <div class="info-dot"></div>
+      <span>Livraison 48h en Algérie · Paiement à la livraison</span>
+    </div>
+
+  </div>
+
+  <!-- Bouton thème draggable -->
+  <div id="theme-btn">
+    <div class="theme-bubble" id="theme-bubble">
+      <!-- Icône injectée par JS -->
+    </div>
+    <div class="theme-menu" id="theme-menu">
+      <button class="theme-option" data-t="light" onclick="setTheme('light')">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        Clair
+      </button>
+      <button class="theme-option" data-t="dark" onclick="setTheme('dark')">
+        <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        Sombre
+      </button>
+      <button class="theme-option" data-t="system" onclick="setTheme('system')">
+        <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Système
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ── Icônes thème ────────────────────────────────────────────────
+    const ICONS = {
+      light:  `<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`,
+      dark:   `<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`,
+      system: `<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`,
+    }
+
+    // ── Storage : Android bridge (SharedPreferences) > sessionStorage > mémoire ──
+    // localStorage est bloqué sur file:// dans Android WebView,
+    // on passe par le JavascriptInterface injecté par MainActivity.
+    const Store = {
+      get(key) {
+        try {
+          if (window.AndroidBridge) return window.AndroidBridge.getString(key) || null
+        } catch(e) {}
+        try { return sessionStorage.getItem(key) } catch(e) {}
+        return Store._mem[key] || null
+      },
+      set(key, val) {
+        try {
+          if (window.AndroidBridge) { window.AndroidBridge.setString(key, val); return }
+        } catch(e) {}
+        try { sessionStorage.setItem(key, val); return } catch(e) {}
+        Store._mem[key] = val
+      },
+      _mem: {}
+    }
+
+    // ── Thème ───────────────────────────────────────────────────────
+    let currentTheme = 'system'
+
+    function applyTheme(t) {
+      const isDark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light')
+      document.querySelector('#theme-bubble').innerHTML = ICONS[t]
+      document.querySelectorAll('.theme-option').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.t === t)
+      })
+    }
+
+    function setTheme(t) {
+      currentTheme = t
+      Store.set('theme', t)
+      applyTheme(t)
+      closeMenu()
+    }
+
+    // ── Init thème ──────────────────────────────────────────────────
+    ;(function initTheme() {
+      const saved = Store.get('theme')
+      currentTheme = ['light','dark','system'].includes(saved) ? saved : 'system'
+      applyTheme(currentTheme)
+    })()
+
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      if (currentTheme === 'system') applyTheme('system')
+    })
+
+    // ── Menu thème ──────────────────────────────────────────────────
+    const menuEl   = document.getElementById('theme-menu')
+    const bubbleEl = document.getElementById('theme-bubble')
+    let menuOpen   = false
+
+    function openMenu() {
+      menuOpen = true
+      bubbleEl.classList.add('open')
+      menuEl.classList.add('open')
+      updateMenuPosition()
+    }
+    function closeMenu() {
+      menuOpen = false
+      bubbleEl.classList.remove('open')
+      menuEl.classList.remove('open')
+    }
+    function toggleMenu() { menuOpen ? closeMenu() : openMenu() }
+
+    function updateMenuPosition() {
+      const btn = document.getElementById('theme-btn')
+      const x   = parseFloat(btn.style.left) || 0
+      const y   = parseFloat(btn.style.top)  || 0
+      const above = y > window.innerHeight * 0.55
+      const right = x > window.innerWidth  * 0.5
+      menuEl.className = 'theme-menu' + (menuOpen ? ' open' : '') +
+        (above ? ' above' : ' below') + (right ? ' align-right' : ' align-left')
+    }
+
+    document.addEventListener('pointerdown', e => {
+      if (menuOpen && !document.getElementById('theme-btn').contains(e.target)) closeMenu()
+    })
+
+    // ── Drag ────────────────────────────────────────────────────────
+    const BTN  = 44
+    const EDGE = 16
+    const NAV_BOTTOM = 88
+    const DRAG_THRESHOLD = 6
+    const SNAP_MS = 300
+
+    const btnEl = document.getElementById('theme-btn')
+    let pos = { x: 0, y: 0 }
+    let dragState = null
+
+    function clamp(x, y) {
+      return {
+        x: Math.max(EDGE, Math.min(window.innerWidth  - BTN - EDGE, x)),
+        y: Math.max(EDGE, Math.min(window.innerHeight - BTN - EDGE, y)),
+      }
+    }
+
+    function snapToEdge(x, y) {
+      const sx = (x + BTN / 2 < window.innerWidth / 2) ? EDGE : window.innerWidth - BTN - EDGE
+      const sy = Math.max(EDGE, Math.min(window.innerHeight - BTN - NAV_BOTTOM, y))
+      btnEl.classList.add('snapping')
+      setPos(sx, sy, true)
+      setTimeout(() => btnEl.classList.remove('snapping'), SNAP_MS)
+    }
+
+    function setPos(x, y, persist) {
+      pos = { x, y }
+      btnEl.style.left = x + 'px'
+      btnEl.style.top  = y + 'px'
+      if (persist) Store.set('theme-btn-pos', JSON.stringify({ x, y }))
+    }
+
+    function initPos() {
+      const def = { x: EDGE, y: window.innerHeight - BTN - NAV_BOTTOM }
+      try {
+        const saved = JSON.parse(Store.get('theme-btn-pos'))
+        if (saved) { setPos(clamp(saved.x, saved.y).x, clamp(saved.x, saved.y).y); return }
+      } catch(e) {}
+      setPos(def.x, def.y)
+    }
+    initPos()
+
+    btnEl.addEventListener('pointerdown', e => {
+      e.preventDefault()
+      btnEl.setPointerCapture(e.pointerId)
+      btnEl.classList.remove('snapping')
+      dragState = {
+        startCX: e.clientX, startCY: e.clientY,
+        startX:  pos.x,     startY:  pos.y,
+        moved: false,
+      }
+    })
+
+    btnEl.addEventListener('pointermove', e => {
+      if (!dragState) return
+      const dx = e.clientX - dragState.startCX
+      const dy = e.clientY - dragState.startCY
+      if (!dragState.moved && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
+        dragState.moved = true
+        btnEl.classList.add('dragging')
+        closeMenu()
+      }
+      if (dragState.moved) {
+        const c = clamp(dragState.startX + dx, dragState.startY + dy)
+        setPos(c.x, c.y)
+      }
+    })
+
+    btnEl.addEventListener('pointerup', e => {
+      if (!dragState) return
+      if (!dragState.moved) toggleMenu()
+      else snapToEdge(pos.x, pos.y)
+      btnEl.classList.remove('dragging')
+      dragState = null
+    })
+
+    btnEl.addEventListener('pointercancel', () => {
+      btnEl.classList.remove('dragging')
+      dragState = null
+    })
+
+    window.addEventListener('resize', () => {
+      const c = clamp(pos.x, pos.y)
+      setPos(c.x, c.y)
+    })
+
+    // ── Rafraîchir ──────────────────────────────────────────────────
+    // window.location.reload() rechargerait offline.html lui-même (file://).
+    // On navigue vers le serveur : MainActivity intercepte si encore hors ligne
+    // (shouldOverrideUrlLoading → offline.html), sinon l'app reprend normalement.
+    function reload() {
+      const btn = document.getElementById('btn-refresh')
+      if (btn.disabled) return
+      btn.disabled = true
+      btn.classList.add('spinning')
+      setTimeout(() => {
+        btn.classList.remove('spinning')
+        btn.disabled = false
+        window.location.href = 'https://caba-store.vercel.app/app-entry'
+      }, 700)
+    }
+  </script>
+
+</body>
+</html>
