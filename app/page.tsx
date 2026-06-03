@@ -4,7 +4,7 @@ import { Suspense } from 'react'
 import { prisma } from '@/lib/prisma'
 import ProductCard, { type ProductCardData } from '@/components/client/ProductCard'
 import CabaLogo from '@/components/CabaLogo'
-import { Flame, RotateCcw, ShieldCheck, Tag, Truck, Wallet, Headphones, Search, ChevronRight, Package, LayoutGrid } from 'lucide-react'
+import { Flame, RotateCcw, ShieldCheck, Tag, Truck, Wallet, Headphones } from 'lucide-react'
 import { VENDEUR_SUSPENDU_PRIORITE } from '@/lib/constants'
 
 // ─── Filtres Prisma réutilisables ─────────────────────────────────────────────
@@ -73,51 +73,15 @@ export default function HomePage() {
       {/* ══════════════════════════════════════════════════
           HERO — Mobile (<md) : App-like
       ══════════════════════════════════════════════════ */}
-      <section className="md:hidden bg-[#FAF7F2] dark:bg-stone-900">
+      <section className="md:hidden bg-[#FAF7F2] dark:bg-stone-900 flex flex-col items-center justify-center pt-10 pb-6">
 
-        {/* Top bar mobile : logo + badge livraison */}
-        <div className="flex items-center justify-between px-4 pt-4 pb-3">
-          <div className="flex items-center gap-2">
-            <CabaLogo className="w-8 h-8 text-orange-700 dark:text-orange-400" />
-            <span className="text-lg font-semibold text-stone-900 dark:text-stone-100 tracking-tight">
-              Caba<span className="text-orange-700 dark:text-orange-400">Store</span>
-            </span>
-          </div>
-          <span className="inline-flex items-center gap-1.5 bg-orange-100 dark:bg-orange-950/50 text-orange-800 dark:text-orange-300 text-[11px] font-medium px-2.5 py-1 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-            Livraison 48h
-          </span>
-        </div>
-
-        {/* Barre de recherche */}
-        <div className="px-4 pb-4">
-          <Link
-            href="/recherche"
-            className="flex items-center gap-3 w-full bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-2xl px-4 py-3 shadow-sm"
-          >
-            <Search className="w-4 h-4 text-stone-400 shrink-0" />
-            <span className="text-sm text-stone-400 dark:text-stone-500">Rechercher un produit…</span>
-          </Link>
-        </div>
-
-        {/* Raccourcis rapides */}
-        <div className="grid grid-cols-4 gap-3 px-4 pb-5">
-          {MOBILE_SHORTCUTS.map(({ href, label, Icon, color, bg }) => (
-            <Link
-              key={href}
-              href={href}
-              className="flex flex-col items-center gap-1.5"
-            >
-              <div className={`w-14 h-14 rounded-2xl ${bg} flex items-center justify-center shadow-sm`}>
-                <Icon className={`w-6 h-6 ${color}`} />
-              </div>
-              <span className="text-[11px] text-stone-600 dark:text-stone-400 font-medium text-center leading-tight">{label}</span>
-            </Link>
-          ))}
+        {/* Logo centré grand */}
+        <div className="flex flex-col items-center justify-center px-8 w-full">
+          <CabaLogo className="w-full max-w-[320px] text-orange-700 dark:text-orange-400 drop-shadow-lg" />
         </div>
 
         {/* Bandeau trust compact */}
-        <div className="flex items-center justify-around px-4 py-3 bg-white dark:bg-stone-800/60 border-y border-stone-200 dark:border-stone-700">
+        <div className="mt-8 w-full flex items-center justify-around px-4 py-3 bg-white dark:bg-stone-800/60 border-y border-stone-200 dark:border-stone-700">
           {TRUST_ITEMS_MOBILE.map(({ Icon, label }) => (
             <div key={label} className="flex flex-col items-center gap-1">
               <Icon className="w-4 h-4 text-orange-600 dark:text-orange-400" />
@@ -316,10 +280,10 @@ async function CategoriesSection() {
               </div>
               <Link
                 href={`/categories/${cat.id}`}
-                className="flex items-center gap-1 text-xs font-semibold text-orange-700 dark:text-orange-500 hover:text-orange-800"
+                className="text-xs font-semibold text-orange-700 dark:text-orange-500 hover:text-orange-800"
               >
                 <span className="hidden sm:inline uppercase tracking-wider border border-orange-200 dark:border-orange-800 hover:border-orange-400 px-3 py-1.5 rounded-full transition-colors">Voir tout</span>
-                <ChevronRight className="w-4 h-4 sm:hidden" />
+                <span className="sm:hidden text-lg leading-none">›</span>
               </Link>
             </div>
 
@@ -424,13 +388,13 @@ function GridSkeleton() {
 const TRUST_ITEMS = [
   { Icon: Truck,     title: 'Livraison 48h',           desc: 'Partout en Algérie' },
   { Icon: Wallet,    title: 'Paiement à la livraison', desc: 'Payez à la réception' },
-  { Icon: RotateCcw, title: 'Retours gratuits',        desc: '14 jours pour changer d\'avis' },
+  { Icon: RotateCcw, title: 'Retours gratuits',        desc: "14 jours pour changer d'avis" },
 ]
 
 const TRUST_ITEMS_MOBILE = [
-  { Icon: Truck,     label: 'Livraison 48h' },
-  { Icon: Wallet,    label: 'Paiement livraison' },
-  { Icon: RotateCcw, label: 'Retour 14j' },
+  { Icon: Truck,       label: 'Livraison 48h' },
+  { Icon: Wallet,      label: 'Paiement livraison' },
+  { Icon: RotateCcw,   label: 'Retour 14j' },
   { Icon: ShieldCheck, label: 'Sécurisé' },
 ]
 
@@ -438,45 +402,4 @@ const REASSURANCE_ITEMS = [
   { Icon: ShieldCheck, title: 'Paiement sécurisé',  desc: 'Vos transactions sont protégées de bout en bout.' },
   { Icon: Truck,       title: 'Livraison rapide',   desc: 'Expédition sous 24h, réception en 48h dans les 58 wilayas.' },
   { Icon: Headphones,  title: 'Support 7j/7',       desc: 'Une question ? Notre équipe vous répond chaque jour.' },
-]
-
-const MOBILE_SHORTCUTS = [
-  {
-    href: '/produits',
-    label: 'Produits',
-    Icon: Package,
-    color: 'text-orange-700 dark:text-orange-400',
-    bg: 'bg-orange-100 dark:bg-orange-950/40',
-  },
-  {
-    href: '/categories',
-    label: 'Catégories',
-    Icon: LayoutGrid,
-    color: 'text-emerald-700 dark:text-emerald-400',
-    bg: 'bg-emerald-100 dark:bg-emerald-950/40',
-  },
-  {
-    href: '/favoris',
-    label: 'Favoris',
-    Icon: () => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-rose-600 dark:text-rose-400">
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-      </svg>
-    ),
-    color: 'text-rose-600 dark:text-rose-400',
-    bg: 'bg-rose-100 dark:bg-rose-950/40',
-  },
-  {
-    href: '/panier',
-    label: 'Panier',
-    Icon: () => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600 dark:text-blue-400">
-        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-        <line x1="3" y1="6" x2="21" y2="6"/>
-        <path d="M16 10a4 4 0 0 1-8 0"/>
-      </svg>
-    ),
-    color: 'text-blue-600 dark:text-blue-400',
-    bg: 'bg-blue-100 dark:bg-blue-950/40',
-  },
 ]
