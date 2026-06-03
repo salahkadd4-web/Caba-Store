@@ -4,7 +4,7 @@ import { Suspense } from 'react'
 import { prisma } from '@/lib/prisma'
 import ProductCard, { type ProductCardData } from '@/components/client/ProductCard'
 import CabaLogo from '@/components/CabaLogo'
-import { Flame, RotateCcw, ShieldCheck, Tag, Truck, Wallet, Headphones } from 'lucide-react'
+import { Flame, RotateCcw, ShieldCheck, Tag, Truck, Wallet, Headphones, Search, ChevronRight, Package, LayoutGrid } from 'lucide-react'
 import { VENDEUR_SUSPENDU_PRIORITE } from '@/lib/constants'
 
 // ─── Filtres Prisma réutilisables ─────────────────────────────────────────────
@@ -28,8 +28,10 @@ export default function HomePage() {
   return (
     <div className="bg-stone-50 dark:bg-stone-950 transition-colors duration-300">
 
-      {/* ── Hero ── */}
-      <section className="bg-[#FAF7F2] dark:bg-stone-900 text-stone-800 dark:text-stone-100 relative overflow-hidden">
+      {/* ══════════════════════════════════════════════════
+          HERO — Desktop (md+)
+      ══════════════════════════════════════════════════ */}
+      <section className="hidden md:block bg-[#FAF7F2] dark:bg-stone-900 text-stone-800 dark:text-stone-100 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 py-20 md:py-28 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
 
           <div className="relative z-10 text-center md:text-left">
@@ -68,8 +70,67 @@ export default function HomePage() {
         <div className="absolute bottom-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-stone-300 dark:via-stone-700 to-transparent" />
       </section>
 
-      {/* ── Trust strip ── */}
-      <section className="bg-[#FAF7F2] dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800">
+      {/* ══════════════════════════════════════════════════
+          HERO — Mobile (<md) : App-like
+      ══════════════════════════════════════════════════ */}
+      <section className="md:hidden bg-[#FAF7F2] dark:bg-stone-900">
+
+        {/* Top bar mobile : logo + badge livraison */}
+        <div className="flex items-center justify-between px-4 pt-4 pb-3">
+          <div className="flex items-center gap-2">
+            <CabaLogo className="w-8 h-8 text-orange-700 dark:text-orange-400" />
+            <span className="text-lg font-semibold text-stone-900 dark:text-stone-100 tracking-tight">
+              Caba<span className="text-orange-700 dark:text-orange-400">Store</span>
+            </span>
+          </div>
+          <span className="inline-flex items-center gap-1.5 bg-orange-100 dark:bg-orange-950/50 text-orange-800 dark:text-orange-300 text-[11px] font-medium px-2.5 py-1 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+            Livraison 48h
+          </span>
+        </div>
+
+        {/* Barre de recherche */}
+        <div className="px-4 pb-4">
+          <Link
+            href="/recherche"
+            className="flex items-center gap-3 w-full bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-2xl px-4 py-3 shadow-sm"
+          >
+            <Search className="w-4 h-4 text-stone-400 shrink-0" />
+            <span className="text-sm text-stone-400 dark:text-stone-500">Rechercher un produit…</span>
+          </Link>
+        </div>
+
+        {/* Raccourcis rapides */}
+        <div className="grid grid-cols-4 gap-3 px-4 pb-5">
+          {MOBILE_SHORTCUTS.map(({ href, label, Icon, color, bg }) => (
+            <Link
+              key={href}
+              href={href}
+              className="flex flex-col items-center gap-1.5"
+            >
+              <div className={`w-14 h-14 rounded-2xl ${bg} flex items-center justify-center shadow-sm`}>
+                <Icon className={`w-6 h-6 ${color}`} />
+              </div>
+              <span className="text-[11px] text-stone-600 dark:text-stone-400 font-medium text-center leading-tight">{label}</span>
+            </Link>
+          ))}
+        </div>
+
+        {/* Bandeau trust compact */}
+        <div className="flex items-center justify-around px-4 py-3 bg-white dark:bg-stone-800/60 border-y border-stone-200 dark:border-stone-700">
+          {TRUST_ITEMS_MOBILE.map(({ Icon, label }) => (
+            <div key={label} className="flex flex-col items-center gap-1">
+              <Icon className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+              <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium text-center leading-tight max-w-[64px]">{label}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════
+          Trust strip — Desktop uniquement
+      ══════════════════════════════════════════════════ */}
+      <section className="hidden md:block bg-[#FAF7F2] dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800">
         <div className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
           {TRUST_ITEMS.map(({ Icon, title, desc }) => (
             <div key={title} className="flex items-center gap-4 justify-center sm:justify-start">
@@ -86,7 +147,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Catégories ── */}
-      <section className="max-w-7xl mx-auto px-6 py-24">
+      <section className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-24">
         <SectionHeader
           eyebrow="Parcourir"
           title="Catégories"
@@ -97,8 +158,8 @@ export default function HomePage() {
         </Suspense>
       </section>
 
-      {/* ── Réassurance ── */}
-      <section className="bg-stone-900 dark:bg-stone-950 py-16 px-6 border-y border-stone-800">
+      {/* ── Réassurance — Desktop uniquement ── */}
+      <section className="hidden md:block bg-stone-900 dark:bg-stone-950 py-16 px-6 border-y border-stone-800">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 text-center">
           {REASSURANCE_ITEMS.map(({ Icon, title, desc }) => (
             <div key={title} className="flex flex-col items-center">
@@ -113,7 +174,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Best-sellers ── */}
-      <section className="bg-stone-50 dark:bg-stone-950 py-24 px-6 transition-colors duration-300">
+      <section className="bg-stone-50 dark:bg-stone-950 py-8 md:py-24 px-4 md:px-6 transition-colors duration-300">
         <div className="max-w-7xl mx-auto">
           <SectionHeader
             eyebrow={<><Flame className="w-4 h-4" /> Populaires</>}
@@ -126,13 +187,13 @@ export default function HomePage() {
       </section>
 
       {/* ── Dernières arrivées ── */}
-      <section className="bg-[#FAF7F2] dark:bg-stone-900 py-24 px-6 transition-colors duration-300">
+      <section className="bg-[#FAF7F2] dark:bg-stone-900 py-8 md:py-24 px-4 md:px-6 transition-colors duration-300">
         <div className="max-w-7xl mx-auto">
           <SectionHeader eyebrow="Nouveautés" title="Dernières Arrivées" logo />
           <Suspense fallback={<GridSkeleton />}>
             <ProduitsSection />
           </Suspense>
-          <div className="text-center mt-16">
+          <div className="text-center mt-10 md:mt-16">
             <Link
               href="/produits"
               className="border border-stone-800 dark:border-stone-400 text-stone-800 dark:text-stone-200 hover:bg-stone-900 hover:text-white dark:hover:bg-stone-100 dark:hover:text-stone-900 text-xs uppercase tracking-[0.3em] px-12 py-4 transition-all duration-300 inline-block rounded-xl"
@@ -175,7 +236,7 @@ async function BestSellersSection() {
   }
 
   return (
-    <div className="products-grid grid grid-cols-2 md:grid-cols-4 gap-6">
+    <div className="products-grid grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
       {produits.map((produit, idx) => (
         <ProductCard
           key={produit.id}
@@ -213,7 +274,7 @@ async function CategoriesSection() {
   }
 
   return (
-    <div className="space-y-14">
+    <div className="space-y-10 md:space-y-14">
       {categories.map((cat) => {
         const produitsTries = cat.products
           .map((p) => ({
@@ -231,38 +292,39 @@ async function CategoriesSection() {
         return (
           <div key={cat.id}>
             {/* En-tête catégorie */}
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between mb-4 md:mb-5">
+              <div className="flex items-center gap-2 md:gap-3">
                 {cat.image ? (
                   <Image
                     src={cat.image}
                     alt={cat.nom}
                     width={32}
                     height={32}
-                    className="w-8 h-8 rounded-full object-cover"
+                    className="w-7 h-7 md:w-8 md:h-8 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center">
-                    <Tag className="w-4 h-4 text-stone-400" />
+                  <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center">
+                    <Tag className="w-3.5 h-3.5 md:w-4 md:h-4 text-stone-400" />
                   </div>
                 )}
-                <h3 className="text-lg font-semibold tracking-tight text-stone-900 dark:text-stone-100">
+                <h3 className="text-base md:text-lg font-semibold tracking-tight text-stone-900 dark:text-stone-100">
                   {cat.nom}
                 </h3>
-                <span className="text-xs text-stone-400 dark:text-stone-500">
+                <span className="text-xs text-stone-400 dark:text-stone-500 hidden sm:inline">
                   {cat.products.length} produits
                 </span>
               </div>
               <Link
                 href={`/categories/${cat.id}`}
-                className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500 hover:text-orange-800 border border-orange-200 dark:border-orange-800 hover:border-orange-400 px-3 py-1.5 rounded-full transition-colors"
+                className="flex items-center gap-1 text-xs font-semibold text-orange-700 dark:text-orange-500 hover:text-orange-800"
               >
-                Voir tout →
+                <span className="hidden sm:inline uppercase tracking-wider border border-orange-200 dark:border-orange-800 hover:border-orange-400 px-3 py-1.5 rounded-full transition-colors">Voir tout</span>
+                <ChevronRight className="w-4 h-4 sm:hidden" />
               </Link>
             </div>
 
             {/* Rangée scrollable */}
-            <div className="products-row flex gap-4 overflow-x-auto pb-3 scrollbar-hide snap-x snap-mandatory">
+            <div className="products-row flex gap-3 md:gap-4 overflow-x-auto pb-3 scrollbar-hide snap-x snap-mandatory">
               {produitsTries.map((produit, idx) => (
                 <ProductCard
                   key={produit.id}
@@ -306,7 +368,7 @@ async function ProduitsSection() {
   }
 
   return (
-    <div className="products-grid grid grid-cols-2 md:grid-cols-4 gap-6">
+    <div className="products-grid grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
       {produits.map((produit) => (
         <ProductCard key={produit.id} produit={produit as unknown as ProductCardData} />
       ))}
@@ -326,17 +388,17 @@ function SectionHeader({
   logo?: boolean
 }) {
   return (
-    <div className="text-center mb-16">
+    <div className="text-center mb-8 md:mb-16">
       {logo && (
-        <CabaLogo className="w-16 h-16 text-orange-700 dark:text-orange-500 mx-auto mb-4 opacity-80" />
+        <CabaLogo className="w-10 h-10 md:w-16 md:h-16 text-orange-700 dark:text-orange-500 mx-auto mb-3 md:mb-4 opacity-80" />
       )}
-      <p className="text-xs font-semibold uppercase tracking-[0.4em] text-orange-700 dark:text-orange-500 mb-4 flex items-center justify-center gap-2">
+      <p className="text-xs font-semibold uppercase tracking-[0.4em] text-orange-700 dark:text-orange-500 mb-3 md:mb-4 flex items-center justify-center gap-2">
         {eyebrow}
       </p>
-      <h2 className="text-4xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">
+      <h2 className="text-2xl md:text-4xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">
         {title}
       </h2>
-      <div className="w-12 h-px bg-orange-700 dark:bg-orange-500 mx-auto mt-6" />
+      <div className="w-10 md:w-12 h-px bg-orange-700 dark:bg-orange-500 mx-auto mt-4 md:mt-6" />
     </div>
   )
 }
@@ -349,9 +411,9 @@ function EmptyState({ message }: { message: string }) {
 
 function GridSkeleton() {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
       {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="rounded-2xl bg-stone-100 dark:bg-stone-800 animate-pulse h-64" />
+        <div key={i} className="rounded-2xl bg-stone-100 dark:bg-stone-800 animate-pulse h-52 md:h-64" />
       ))}
     </div>
   )
@@ -365,8 +427,56 @@ const TRUST_ITEMS = [
   { Icon: RotateCcw, title: 'Retours gratuits',        desc: '14 jours pour changer d\'avis' },
 ]
 
+const TRUST_ITEMS_MOBILE = [
+  { Icon: Truck,     label: 'Livraison 48h' },
+  { Icon: Wallet,    label: 'Paiement livraison' },
+  { Icon: RotateCcw, label: 'Retour 14j' },
+  { Icon: ShieldCheck, label: 'Sécurisé' },
+]
+
 const REASSURANCE_ITEMS = [
   { Icon: ShieldCheck, title: 'Paiement sécurisé',  desc: 'Vos transactions sont protégées de bout en bout.' },
   { Icon: Truck,       title: 'Livraison rapide',   desc: 'Expédition sous 24h, réception en 48h dans les 58 wilayas.' },
   { Icon: Headphones,  title: 'Support 7j/7',       desc: 'Une question ? Notre équipe vous répond chaque jour.' },
+]
+
+const MOBILE_SHORTCUTS = [
+  {
+    href: '/produits',
+    label: 'Produits',
+    Icon: Package,
+    color: 'text-orange-700 dark:text-orange-400',
+    bg: 'bg-orange-100 dark:bg-orange-950/40',
+  },
+  {
+    href: '/categories',
+    label: 'Catégories',
+    Icon: LayoutGrid,
+    color: 'text-emerald-700 dark:text-emerald-400',
+    bg: 'bg-emerald-100 dark:bg-emerald-950/40',
+  },
+  {
+    href: '/favoris',
+    label: 'Favoris',
+    Icon: () => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-rose-600 dark:text-rose-400">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      </svg>
+    ),
+    color: 'text-rose-600 dark:text-rose-400',
+    bg: 'bg-rose-100 dark:bg-rose-950/40',
+  },
+  {
+    href: '/panier',
+    label: 'Panier',
+    Icon: () => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600 dark:text-blue-400">
+        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <path d="M16 10a4 4 0 0 1-8 0"/>
+      </svg>
+    ),
+    color: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-blue-100 dark:bg-blue-950/40',
+  },
 ]
