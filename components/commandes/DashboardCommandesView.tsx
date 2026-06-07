@@ -61,6 +61,17 @@ const NEXT_ACTION: Record<string, { label: string; statut?: string; approuver?: 
   EXPEDIEE:       { label: 'Marquer livrée',    statut: 'LIVREE',            color: 'bg-green-600 hover:bg-green-700 text-white' },
 }
 
+// Actions pour l'admin (force le statut global directement via /api/admin/commandes)
+const NEXT_ACTION_ADMIN: Record<string, { label: string; statut?: string; approuver?: boolean; color: string }> = {
+  EN_ATTENTE:     { label: 'Confirmer',         statut: 'CONFIRMEE',         color: 'bg-emerald-600 hover:bg-emerald-700 text-white' },
+  CONFIRMEE:      { label: 'Mettre en prépa.',  statut: 'EN_PREPARATION',    color: 'bg-orange-600 hover:bg-orange-700 text-white' },
+  EN_PREPARATION: { label: 'Marquer expédiée',  statut: 'EXPEDIEE',          color: 'bg-indigo-600 hover:bg-indigo-700 text-white' },
+  EXPEDIEE:       { label: 'Marquer livrée',    statut: 'LIVREE',            color: 'bg-green-600 hover:bg-green-700 text-white' },
+}
+
+// Statuts où l'admin peut encore annuler la commande
+const ANNULABLE = ['EN_ATTENTE', 'CONFIRMEE', 'EN_PREPARATION', 'EXPEDIEE']
+
 const STATUTS_FILTRE = ['', 'EN_ATTENTE', 'CONFIRMEE', 'EN_PREPARATION', 'EXPEDIEE', 'LIVREE', 'ANNULEE']
 
 export default function DashboardCommandesView({
@@ -95,14 +106,17 @@ export default function DashboardCommandesView({
   })
 
   const handleAction = async (cmd: Commande) => {
-    const action = NEXT_ACTION[cmd.statut]
+    const action = isAdmin ? NEXT_ACTION_ADMIN[cmd.statut] : NEXT_ACTION[cmd.statut]
     if (!action) return
     setLoading(cmd.id)
     try {
       const body: Record<string, unknown> = {}
       if (action.approuver) body.approuver = true
       if (action.statut)    body.statut    = action.statut
-      const res  = await fetch(`/api/vendeur/commandes/${cmd.id}`, {
+      const endpoint = isAdmin
+        ? `/api/admin/commandes/${cmd.id}`
+        : `/api/vendeur/commandes/${cmd.id}`
+      const res  = await fetch(endpoint, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -111,6 +125,27 @@ export default function DashboardCommandesView({
       if (!res.ok) throw new Error(data.error || 'Erreur')
       setCommandes(prev => prev.map(c => c.id === cmd.id ? { ...c, ...data } : c))
       showToast(data.message ?? 'Statut mis à jour', true)
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Erreur', false)
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  const handleCancel = async (cmd: Commande) => {
+    if (!isAdmin) return
+    if (!window.confirm('Annuler définitivement cette commande ?')) return
+    setLoading(cmd.id)
+    try {
+      const res = await fetch(`/api/admin/commandes/${cmd.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ statut: 'ANNULEE' }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur')
+      setCommandes(prev => prev.map(c => c.id === cmd.id ? { ...c, statut: 'ANNULEE' } : c))
+      showToast('Commande annulée', true)
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Erreur', false)
     } finally {
@@ -189,7 +224,7 @@ export default function DashboardCommandesView({
           <div className="divide-y divide-stone-100 dark:divide-stone-800">
             {filtered.map(cmd => {
               const StatusIcon = STATUT_ICON[cmd.statut] ?? Clock
-              const action     = !isAdmin ? NEXT_ACTION[cmd.statut] : null
+              const action     = isAdmin ? NEXT_ACTION_ADMIN[cmd.statut] : NEXT_ACTION[cmd.statut]
               const isExp      = expanded === cmd.id
               const isLoading  = loading === cmd.id
               const montant    = cmd.totalVendeur ?? cmd.total
@@ -231,6 +266,16 @@ export default function DashboardCommandesView({
                             {action.label}
                           </button>
                         )}
+                        {isAdmin && ANNULABLE.includes(cmd.statut) && (
+                          <button
+                            onClick={e => { e.stopPropagation(); handleCancel(cmd) }}
+                            disabled={isLoading}
+                            className="text-xs px-3 py-1.5 rounded-lg font-semibold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white"
+                          >
+                            {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                            Annuler
+                          </button>
+                        )}
                         {isExp ? <ChevronUp className="w-4 h-4 text-stone-400" /> : <ChevronDown className="w-4 h-4 text-stone-400" />}
                       </div>
                     </div>
@@ -269,7 +314,7 @@ export default function DashboardCommandesView({
                           {STATUT_LABEL[cmd.statut] ?? cmd.statut}
                         </span>
                       </div>
-                      <div className={tableTd}>
+                      <div className={`${tableTd} flex flex-col gap-1.5`}>
                         {action && (
                           <button
                             onClick={e => { e.stopPropagation(); handleAction(cmd) }}
@@ -278,6 +323,16 @@ export default function DashboardCommandesView({
                           >
                             {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
                             {action.label}
+                          </button>
+                        )}
+                        {isAdmin && ANNULABLE.includes(cmd.statut) && (
+                          <button
+                            onClick={e => { e.stopPropagation(); handleCancel(cmd) }}
+                            disabled={isLoading}
+                            className="text-xs px-3 py-2 rounded-xl font-semibold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1 whitespace-nowrap bg-red-600 hover:bg-red-700 text-white"
+                          >
+                            {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                            Annuler
                           </button>
                         )}
                       </div>
