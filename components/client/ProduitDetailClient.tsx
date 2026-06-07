@@ -33,6 +33,7 @@ type LigneSelection = {
 type VendeurInfo = {
   id: string
   nomBoutique: string | null
+  isAdmin: boolean
   user: {
     nom: string | null
     prenom: string | null
@@ -198,7 +199,9 @@ export default function ProduitDetailClient({
               <Store className="w-5 h-5 text-orange-700 dark:text-orange-400" />
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-orange-700 dark:text-orange-400">Vendeur</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-orange-700 dark:text-orange-400">
+                {vendeurInfo.isAdmin ? 'Boutique officielle' : 'Vendeur'}
+              </p>
               <p className="text-base font-semibold text-stone-900 dark:text-stone-100 leading-tight">
                 {vendeurInfo.nomBoutique ?? (`${vendeurInfo.user.prenom ?? ''} ${vendeurInfo.user.nom ?? ''}`.trim() || 'Boutique')}
               </p>
@@ -264,7 +267,7 @@ export default function ProduitDetailClient({
               className="w-full flex items-center justify-center gap-2 bg-orange-700 hover:bg-orange-800 text-white font-semibold py-3.5 rounded-xl transition-colors text-sm"
             >
               <Phone className="w-4 h-4" />
-              Appeler le vendeur
+              {vendeurInfo.isAdmin ? 'Appeler Caba Store' : 'Appeler le vendeur'}
             </a>
           </div>
         )}
@@ -282,7 +285,9 @@ export default function ProduitDetailClient({
         <Store className="w-4 h-4 text-orange-700 dark:text-orange-400" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">Vendu par</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">
+          {vendeurInfo.isAdmin ? 'Boutique officielle' : 'Vendu par'}
+        </p>
         <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 truncate leading-tight">
           {vendeurInfo.nomBoutique ?? (`${vendeurInfo.user.prenom ?? ''} ${vendeurInfo.user.nom ?? ''}`.trim() || 'Boutique')}
         </p>

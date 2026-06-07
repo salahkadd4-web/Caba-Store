@@ -62,16 +62,38 @@ export default async function ProduitDetailPage({
 
   if (!produit || !produit.actif) notFound()
 
+  // Si le produit n'a pas de vendeur → on prend le premier admin comme contact
+  const adminFallback = !produit.vendeur
+    ? await prisma.user.findFirst({
+        where:  { role: 'ADMIN' },
+        select: { nom: true, prenom: true, telephone: true, email: true, wilaya: true },
+      })
+    : null
+
   const vendeurInfo = produit.vendeur
     ? {
         id:          produit.vendeur.id,
         nomBoutique: produit.vendeur.nomBoutique,
+        isAdmin:     false,
         user: {
           nom:       produit.vendeur.user.nom,
           prenom:    produit.vendeur.user.prenom,
           telephone: produit.vendeur.user.telephone,
           email:     produit.vendeur.user.email,
           wilaya:    produit.vendeur.user.wilaya,
+        },
+      }
+    : adminFallback
+    ? {
+        id:          'admin',
+        nomBoutique: 'Caba Store',
+        isAdmin:     true,
+        user: {
+          nom:       adminFallback.nom,
+          prenom:    adminFallback.prenom,
+          telephone: adminFallback.telephone,
+          email:     adminFallback.email,
+          wilaya:    adminFallback.wilaya,
         },
       }
     : null
