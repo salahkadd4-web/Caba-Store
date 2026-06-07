@@ -53,6 +53,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
         },
         orderBy: [{ createdAt: 'desc' }],
         include: {
+          category: { select: { nom: true } },
           vendeur:  { select: { prioriteAffichage: true } },
           variants: { select: { id: true, nom: true, couleur: true }, orderBy: { createdAt: 'asc' } },
         },
