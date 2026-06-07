@@ -9,10 +9,10 @@ import {
   ShoppingCart, Check, X, TrendingDown,
   Package, ChevronRight,
   Trash2, ShoppingBag, Loader2, Info, ChevronDown, ChevronUp,
-  Store, Phone, Mail, MapPin,
 } from 'lucide-react'
 import { getPrixUnitaire, parsePrixTiers } from '@/lib/prix'
 import QteInput from '@/components/client/QteInput'
+import VendeurButton from '@/components/client/VendeurButton'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -30,26 +30,11 @@ type LigneSelection = {
   variantNom: string; couleur: string | null; optionValeur?: string
   stockMax: number; quantite: number; image?: string
 }
-type VendeurInfo = {
-  id: string
-  nomBoutique: string | null
-  isAdmin: boolean
-  user: {
-    nom: string | null
-    prenom: string | null
-    telephone: string | null
-    email: string | null
-    wilaya: string | null
-  }
-} | null
-
 
 export default function ProduitDetailClient({
   produit,
-  vendeurInfo,
 }: {
   produit: Produit
-  vendeurInfo?: VendeurInfo
 }) {
   const { data: session } = useSession()
   const router = useRouter()
@@ -65,7 +50,6 @@ export default function ProduitDetailClient({
   const hasOptions  = produit.variants.some(v => v.options.length > 0)
 
   const [imageIdx, setImageIdx] = useState(0)
-  const [vendeurModalOpen, setVendeurModalOpen] = useState(false)
   const [hoveredVariant, setHoveredVariant] = useState<string | null>(null)
 
   const previewVariant = useMemo(
@@ -173,130 +157,6 @@ export default function ProduitDetailClient({
     } finally { setLoadingSimple(false) }
   }
 
-  // ─── Modal vendeur ────────────────────────────────────────────────────────
-  const VendeurModal = vendeurInfo ? (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-      onClick={() => setVendeurModalOpen(false)}
-    >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-
-      {/* Panneau */}
-      <div
-        className="relative z-10 w-full sm:max-w-md bg-white dark:bg-stone-900 rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Handle mobile */}
-        <div className="flex justify-center pt-3 pb-1 sm:hidden">
-          <div className="w-10 h-1 rounded-full bg-stone-300 dark:bg-stone-600" />
-        </div>
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100 dark:border-stone-800">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-950 flex items-center justify-center shrink-0">
-              <Store className="w-5 h-5 text-orange-700 dark:text-orange-400" />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-orange-700 dark:text-orange-400">
-                {vendeurInfo.isAdmin ? 'Boutique officielle' : 'Vendeur'}
-              </p>
-              <p className="text-base font-semibold text-stone-900 dark:text-stone-100 leading-tight">
-                {vendeurInfo.nomBoutique ?? (`${vendeurInfo.user.prenom ?? ''} ${vendeurInfo.user.nom ?? ''}`.trim() || 'Boutique')}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => setVendeurModalOpen(false)}
-            className="w-8 h-8 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Infos */}
-        <div className="px-5 py-5 space-y-3">
-          {(vendeurInfo.user.nom || vendeurInfo.user.prenom) && (
-            <div className="flex items-center gap-3 text-sm text-stone-700 dark:text-stone-300">
-              <div className="w-8 h-8 rounded-lg bg-stone-100 dark:bg-stone-800 flex items-center justify-center shrink-0">
-                <span className="text-xs font-bold text-stone-500">
-                  {(vendeurInfo.user.prenom?.[0] ?? '') + (vendeurInfo.user.nom?.[0] ?? '')}
-                </span>
-              </div>
-              <span>{vendeurInfo.user.prenom} {vendeurInfo.user.nom}</span>
-            </div>
-          )}
-          {vendeurInfo.user.wilaya && (
-            <div className="flex items-center gap-3 text-sm text-stone-700 dark:text-stone-300">
-              <div className="w-8 h-8 rounded-lg bg-stone-100 dark:bg-stone-800 flex items-center justify-center shrink-0">
-                <MapPin className="w-4 h-4 text-stone-500" />
-              </div>
-              <span>{vendeurInfo.user.wilaya}</span>
-            </div>
-          )}
-          {vendeurInfo.user.telephone && (
-            <a
-              href={`tel:${vendeurInfo.user.telephone}`}
-              className="flex items-center gap-3 text-sm text-stone-700 dark:text-stone-300 hover:text-orange-700 dark:hover:text-orange-400 transition-colors group"
-            >
-              <div className="w-8 h-8 rounded-lg bg-stone-100 dark:bg-stone-800 group-hover:bg-orange-100 dark:group-hover:bg-orange-950 flex items-center justify-center shrink-0 transition-colors">
-                <Phone className="w-4 h-4 text-stone-500 group-hover:text-orange-700 dark:group-hover:text-orange-400 transition-colors" />
-              </div>
-              <span>{vendeurInfo.user.telephone}</span>
-            </a>
-          )}
-          {vendeurInfo.user.email && (
-            <a
-              href={`mailto:${vendeurInfo.user.email}`}
-              className="flex items-center gap-3 text-sm text-stone-700 dark:text-stone-300 hover:text-orange-700 dark:hover:text-orange-400 transition-colors group"
-            >
-              <div className="w-8 h-8 rounded-lg bg-stone-100 dark:bg-stone-800 group-hover:bg-orange-100 dark:group-hover:bg-orange-950 flex items-center justify-center shrink-0 transition-colors">
-                <Mail className="w-4 h-4 text-stone-500 group-hover:text-orange-700 dark:group-hover:text-orange-400 transition-colors" />
-              </div>
-              <span className="truncate">{vendeurInfo.user.email}</span>
-            </a>
-          )}
-        </div>
-
-        {/* CTA téléphone */}
-        {vendeurInfo.user.telephone && (
-          <div className="px-5 pb-6">
-            <a
-              href={`tel:${vendeurInfo.user.telephone}`}
-              className="w-full flex items-center justify-center gap-2 bg-orange-700 hover:bg-orange-800 text-white font-semibold py-3.5 rounded-xl transition-colors text-sm"
-            >
-              <Phone className="w-4 h-4" />
-              {vendeurInfo.isAdmin ? 'Appeler Caba Store' : 'Appeler le vendeur'}
-            </a>
-          </div>
-        )}
-      </div>
-    </div>
-  ) : null
-
-  // ─── Bouton vendeur (réutilisé dans les deux rendus) ──────────────────────
-  const VendeurButton = vendeurInfo ? (
-    <button
-      onClick={() => setVendeurModalOpen(true)}
-      className="flex items-center gap-2.5 w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 hover:border-orange-300 dark:hover:border-orange-700 bg-white dark:bg-stone-900 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-all group text-left"
-    >
-      <div className="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-950 flex items-center justify-center shrink-0">
-        <Store className="w-4 h-4 text-orange-700 dark:text-orange-400" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">
-          {vendeurInfo.isAdmin ? 'Boutique officielle' : 'Vendu par'}
-        </p>
-        <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 truncate leading-tight">
-          {vendeurInfo.nomBoutique ?? (`${vendeurInfo.user.prenom ?? ''} ${vendeurInfo.user.nom ?? ''}`.trim() || 'Boutique')}
-        </p>
-      </div>
-      <ChevronRight className="w-4 h-4 text-stone-400 group-hover:text-orange-700 dark:group-hover:text-orange-400 transition-colors shrink-0" />
-    </button>
-  ) : null
-
-  // ═══════════════════════════════════════════
   //  RENDU MOBILE
   // ═══════════════════════════════════════════
   if (isMobile) {
@@ -497,10 +357,9 @@ export default function ProduitDetailClient({
         )}
 
         {/* Bouton vendeur mobile */}
-        {VendeurButton && <div className="mb-4">{VendeurButton}</div>}
+        <VendeurButton produitId={produit.id} />
 
         {/* Modal vendeur */}
-        {vendeurModalOpen && VendeurModal}
 
         {/* ── BARRE STICKY MOBILE ── */}
         <div
@@ -683,7 +542,7 @@ export default function ProduitDetailClient({
               {successSimple ? <><Check className="w-5 h-5" /> Ajouté !</> : loadingSimple ? <Loader2 className="w-5 h-5 animate-spin" /> : <><ShoppingCart className="w-5 h-5" /> Ajouter au panier</>}
             </button>
             {/* Bouton vendeur desktop (sans variantes) */}
-            {VendeurButton}
+            <VendeurButton produitId={produit.id} />
           </div>
         )}
 
@@ -843,12 +702,10 @@ export default function ProduitDetailClient({
             </button>
 
             {/* Bouton vendeur desktop */}
-            {VendeurButton}
+            <VendeurButton produitId={produit.id} />
           </>
         )}
 
-        {/* Modal vendeur */}
-        {vendeurModalOpen && VendeurModal}
       </div>
     </div>
   )
