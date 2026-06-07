@@ -29,9 +29,26 @@ type LigneSelection = {
   variantNom: string; couleur: string | null; optionValeur?: string
   stockMax: number; quantite: number; image?: string
 }
+type VendeurInfo = {
+  id: string
+  nomBoutique: string | null
+  user: {
+    nom: string | null
+    prenom: string | null
+    telephone: string | null
+    email: string | null
+    wilaya: string | null
+  }
+} | null
 
 
-export default function ProduitDetailClient({ produit }: { produit: Produit }) {
+export default function ProduitDetailClient({
+  produit,
+  vendeurInfo,
+}: {
+  produit: Produit
+  vendeurInfo?: VendeurInfo
+}) {
   const { data: session } = useSession()
   const router = useRouter()
   const isMobile = useIsMobile()
