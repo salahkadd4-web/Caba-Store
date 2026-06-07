@@ -7,6 +7,8 @@ async function checkAdmin() {
   return token?.role === 'ADMIN' ? token : null
 }
 
+const VALID_STATUTS = ['EN_ATTENTE', 'CONFIRMEE', 'EN_PREPARATION', 'EXPEDIEE', 'LIVREE', 'ANNULEE'] as const
+
 // PATCH /api/admin/commandes/[id]
 export async function PATCH(
   req: NextRequest,
@@ -20,7 +22,7 @@ export async function PATCH(
     const body = await req.json()
     const { statut, approuver } = body
 
-    // ── Cas 1 : l'admin approuve juste sa part ──────────────────────────
+    // ── Cas 1 : l'admin approuve sa part ──────────────────────────────────
     if (approuver === true) {
       const commande = await prisma.order.findUnique({
         where: { id },
@@ -55,7 +57,7 @@ export async function PATCH(
 
       const tousVendeursOk = (vendeurIds as string[]).every((vid: string) => approbations[vid] === true)
       const adminOk = aDesProduitsAdmin ? approbations['admin'] === true : true
-      const tousOk = tousVendeursOk && adminOk
+      const tousOk  = tousVendeursOk && adminOk
 
       const updated = await prisma.order.update({
         where: { id },
@@ -73,10 +75,12 @@ export async function PATCH(
       })
     }
 
-    // ── Cas 2 : l'admin change directement le statut global ─────────────
-    const validStatuts = ['EN_ATTENTE', 'CONFIRMEE', 'EN_PREPARATION', 'EXPEDIEE', 'LIVREE', 'ANNULEE']
-    if (!statut || !validStatuts.includes(statut)) {
-      return NextResponse.json({ error: 'Statut invalide' }, { status: 400 })
+    // ── Cas 2 : l'admin change directement le statut global ───────────────
+    if (!statut || !(VALID_STATUTS as readonly string[]).includes(statut)) {
+      return NextResponse.json(
+        { error: `Statut invalide. Valeurs acceptées : ${VALID_STATUTS.join(', ')}` },
+        { status: 400 }
+      )
     }
 
     const commande = await prisma.order.update({
@@ -84,7 +88,10 @@ export async function PATCH(
       data:  { statut },
     })
 
-    return NextResponse.json(commande)
+    return NextResponse.json({
+      ...commande,
+      message: `Statut mis à jour : ${statut}`,
+    })
   } catch {
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }

@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import {
   heading, card, tableWrapper, tableHead, tableTh, tableTd, tableRow,
-  btnPrimaryEmerald, btnSecondary, selectCls, inputCls, loadingPage,
+  selectCls, inputCls,
   statutOrderColor,
 } from '@/lib/dashboard-ui'
 
@@ -26,7 +26,8 @@ export type Commande = {
   createdAt: Date | string
   statut: string
   total: number
-  adresseLivraison?: string | null
+  adresse?: string | null
+  adresseLivraison?: string | null   // alias de compatibilité
   user?: { nom: string | null; prenom: string | null; email: string | null; telephone?: string | null } | null
   items: OrderItem[]
   totalVendeur?: number
@@ -40,7 +41,6 @@ const STATUT_LABEL: Record<string, string> = {
   EXPEDIEE:       'Expédiée',
   LIVREE:         'Livrée',
   ANNULEE:        'Annulée',
-  RETOURNEE:      'Retournée',
 }
 
 const STATUT_ICON: Record<string, React.ElementType> = {
@@ -50,10 +50,9 @@ const STATUT_ICON: Record<string, React.ElementType> = {
   EXPEDIEE:       Truck,
   LIVREE:         PackageCheck,
   ANNULEE:        XCircle,
-  RETOURNEE:      RotateCcw,
 }
 
-// Actions rapides (avancement linéaire) — vendeur
+// ── Avancement linéaire pour le vendeur ────────────────────────────────────────
 const NEXT_ACTION_VENDEUR: Record<string, { label: string; statut?: string; approuver?: boolean; color: string }> = {
   EN_ATTENTE:     { label: 'Approuver',         approuver: true,             color: 'bg-emerald-600 hover:bg-emerald-700 text-white' },
   CONFIRMEE:      { label: 'Mettre en prépa.',  statut: 'EN_PREPARATION',    color: 'bg-orange-600 hover:bg-orange-700 text-white' },
@@ -61,32 +60,31 @@ const NEXT_ACTION_VENDEUR: Record<string, { label: string; statut?: string; appr
   EXPEDIEE:       { label: 'Marquer livrée',    statut: 'LIVREE',            color: 'bg-green-600 hover:bg-green-700 text-white' },
 }
 
-// Actions admin : changement direct de statut + annulation
+// ── Actions admin par statut (toutes transitions directes possibles) ───────────
+// Seuls les statuts de l'enum OrderStatus : EN_ATTENTE | CONFIRMEE | EN_PREPARATION | EXPEDIEE | LIVREE | ANNULEE
 const ADMIN_ACTIONS: Record<string, { label: string; statut: string; color: string }[]> = {
-  EN_ATTENTE:     [
-    { label: '✓ Confirmer',         statut: 'CONFIRMEE',      color: 'text-emerald-600 dark:text-emerald-400' },
-    { label: '✕ Annuler',           statut: 'ANNULEE',        color: 'text-red-600 dark:text-red-400' },
+  EN_ATTENTE: [
+    { label: '✓ Confirmer',          statut: 'CONFIRMEE',      color: 'text-emerald-600 dark:text-emerald-400' },
+    { label: '✕ Annuler',            statut: 'ANNULEE',        color: 'text-red-600    dark:text-red-400'     },
   ],
-  CONFIRMEE:      [
-    { label: '📦 Mettre en prépa.', statut: 'EN_PREPARATION', color: 'text-orange-600 dark:text-orange-400' },
-    { label: '✕ Annuler',           statut: 'ANNULEE',        color: 'text-red-600 dark:text-red-400' },
+  CONFIRMEE: [
+    { label: '📦 Mettre en prépa.',  statut: 'EN_PREPARATION', color: 'text-orange-600 dark:text-orange-400' },
+    { label: '✕ Annuler',            statut: 'ANNULEE',        color: 'text-red-600    dark:text-red-400'     },
   ],
   EN_PREPARATION: [
-    { label: '🚚 Marquer expédiée', statut: 'EXPEDIEE',       color: 'text-indigo-600 dark:text-indigo-400' },
-    { label: '✕ Annuler',           statut: 'ANNULEE',        color: 'text-red-600 dark:text-red-400' },
+    { label: '🚚 Marquer expédiée',  statut: 'EXPEDIEE',       color: 'text-indigo-600 dark:text-indigo-400' },
+    { label: '✕ Annuler',            statut: 'ANNULEE',        color: 'text-red-600    dark:text-red-400'     },
   ],
-  EXPEDIEE:       [
-    { label: '✓ Marquer livrée',    statut: 'LIVREE',         color: 'text-green-600 dark:text-green-400' },
-    { label: '↩ Retourner',         statut: 'RETOURNEE',      color: 'text-amber-600 dark:text-amber-400' },
+  EXPEDIEE: [
+    { label: '✓ Marquer livrée',     statut: 'LIVREE',         color: 'text-green-600  dark:text-green-400'  },
+    { label: '✕ Annuler',            statut: 'ANNULEE',        color: 'text-red-600    dark:text-red-400'     },
   ],
-  LIVREE:         [
-    { label: '↩ Retourner',         statut: 'RETOURNEE',      color: 'text-amber-600 dark:text-amber-400' },
+  LIVREE: [
+    { label: '↺ Remettre en attente', statut: 'EN_ATTENTE',    color: 'text-blue-600   dark:text-blue-400'   },
   ],
-  ANNULEE:        [
-    { label: '↺ Remettre en attente', statut: 'EN_ATTENTE',  color: 'text-blue-600 dark:text-blue-400' },
-  ],
-  RETOURNEE:      [
-    { label: '↺ Remettre en attente', statut: 'EN_ATTENTE',  color: 'text-blue-600 dark:text-blue-400' },
+  ANNULEE: [
+    { label: '↺ Remettre en attente', statut: 'EN_ATTENTE',    color: 'text-blue-600   dark:text-blue-400'   },
+    { label: '✓ Confirmer directement', statut: 'CONFIRMEE',   color: 'text-emerald-600 dark:text-emerald-400' },
   ],
 }
 
@@ -96,11 +94,11 @@ const STATUTS_FILTRE = ['', 'EN_ATTENTE', 'CONFIRMEE', 'EN_PREPARATION', 'EXPEDI
 function AdminActionsMenu({
   cmd,
   onAction,
-  loading,
+  isLoading,
 }: {
   cmd: Commande
   onAction: (statut: string) => void
-  loading: boolean
+  isLoading: boolean
 }) {
   const actions = ADMIN_ACTIONS[cmd.statut] ?? []
   const [open, setOpen] = useState(false)
@@ -114,30 +112,34 @@ function AdminActionsMenu({
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  if (actions.length === 0) return null
+  if (actions.length === 0) return <span className="text-xs text-stone-400 dark:text-stone-600 px-2">—</span>
 
   return (
     <div className="relative" ref={ref}>
       <button
         onClick={e => { e.stopPropagation(); setOpen(o => !o) }}
-        disabled={loading}
+        disabled={isLoading}
         className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-semibold transition-all active:scale-95 disabled:opacity-50
-          bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 whitespace-nowrap"
+          bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700
+          text-stone-700 dark:text-stone-200 whitespace-nowrap border border-stone-200 dark:border-stone-700"
       >
-        {loading
+        {isLoading
           ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
           : <MoreVertical className="w-3.5 h-3.5" />
         }
         Actions
-        <ChevronDown className="w-3 h-3" />
+        <ChevronDown className="w-3 h-3 opacity-60" />
       </button>
 
       {open && (
         <div
-          className="absolute right-0 top-full mt-1 z-50 min-w-44 rounded-xl border border-stone-200 dark:border-stone-700
-            bg-white dark:bg-stone-900 shadow-lg py-1 overflow-hidden"
+          className="absolute right-0 top-full mt-1.5 z-50 min-w-48 rounded-xl border border-stone-200 dark:border-stone-700
+            bg-white dark:bg-stone-900 shadow-xl py-1 overflow-hidden"
           onClick={e => e.stopPropagation()}
         >
+          <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500 border-b border-stone-100 dark:border-stone-800 mb-1">
+            Changer le statut
+          </p>
           {actions.map(a => (
             <button
               key={a.statut}
@@ -153,6 +155,7 @@ function AdminActionsMenu({
   )
 }
 
+// ── Composant principal ────────────────────────────────────────────────────────
 export default function DashboardCommandesView({
   commandes: initial,
   isAdmin,
@@ -184,7 +187,7 @@ export default function DashboardCommandesView({
     return matchSearch && matchStatut
   })
 
-  // Action vendeur (avancement linéaire)
+  // Action vendeur — avancement linéaire via /api/vendeur/commandes/[id]
   const handleVendeurAction = async (cmd: Commande) => {
     const action = NEXT_ACTION_VENDEUR[cmd.statut]
     if (!action) return
@@ -209,7 +212,7 @@ export default function DashboardCommandesView({
     }
   }
 
-  // Action admin (statut direct)
+  // Action admin — changement direct de statut via /api/admin/commandes/[id]
   const handleAdminAction = async (cmd: Commande, statut: string) => {
     setLoading(cmd.id)
     try {
@@ -221,7 +224,7 @@ export default function DashboardCommandesView({
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erreur')
       setCommandes(prev => prev.map(c => c.id === cmd.id ? { ...c, statut } : c))
-      showToast(`Commande mise à jour : ${STATUT_LABEL[statut] ?? statut}`, true)
+      showToast(`Statut → ${STATUT_LABEL[statut] ?? statut}`, true)
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Erreur', false)
     } finally {
@@ -234,24 +237,23 @@ export default function DashboardCommandesView({
 
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-4 right-4 z-100 text-sm px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 transition-all ${
-          toast.ok
-            ? 'bg-emerald-600 text-white'
-            : 'bg-red-600 text-white'
+        <div className={`fixed top-4 right-4 z-[100] text-sm px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 ${
+          toast.ok ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
         }`}>
-          {toast.ok ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <XCircle className="w-4 h-4 shrink-0" />}
+          {toast.ok
+            ? <CheckCircle2 className="w-4 h-4 shrink-0" />
+            : <XCircle className="w-4 h-4 shrink-0" />
+          }
           {toast.msg}
         </div>
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className={heading}>Commandes</h1>
-          <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">
-            {commandes.length} commande{commandes.length !== 1 ? 's' : ''}
-          </p>
-        </div>
+      <div>
+        <h1 className={heading}>Commandes</h1>
+        <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">
+          {commandes.length} commande{commandes.length !== 1 ? 's' : ''}
+        </p>
       </div>
 
       {/* Filtres */}
@@ -286,7 +288,7 @@ export default function DashboardCommandesView({
         </div>
       ) : (
         <div className={tableWrapper}>
-          {/* Header tableau — desktop */}
+          {/* Header desktop */}
           <div className={`hidden md:grid grid-cols-[1fr_1.5fr_1fr_1fr_1fr_1.5fr_auto] ${tableHead} border-b border-stone-100 dark:border-stone-800`}>
             <div className={tableTh}>Référence</div>
             <div className={tableTh}>Client</div>
@@ -299,11 +301,12 @@ export default function DashboardCommandesView({
 
           <div className="divide-y divide-stone-100 dark:divide-stone-800">
             {filtered.map(cmd => {
-              const StatusIcon = STATUT_ICON[cmd.statut] ?? Clock
+              const StatusIcon   = STATUT_ICON[cmd.statut] ?? Clock
               const vendeurAction = !isAdmin ? NEXT_ACTION_VENDEUR[cmd.statut] : null
-              const isExp      = expanded === cmd.id
-              const isLoading  = loading === cmd.id
-              const montant    = cmd.totalVendeur ?? cmd.total
+              const isExp        = expanded === cmd.id
+              const isLoading    = loading === cmd.id
+              const montant      = cmd.totalVendeur ?? cmd.total
+              const adresse      = cmd.adresse ?? cmd.adresseLivraison
 
               return (
                 <div key={cmd.id}>
@@ -312,10 +315,10 @@ export default function DashboardCommandesView({
                     className={`${tableRow} cursor-pointer`}
                     onClick={() => setExpanded(isExp ? null : cmd.id)}
                   >
-                    {/* Mobile layout */}
+                    {/* ── Mobile ── */}
                     <div className="md:hidden px-4 py-4 flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1 space-y-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono text-xs font-semibold text-stone-600 dark:text-stone-300">
                             #{cmd.id.slice(-8).toUpperCase()}
                           </span>
@@ -328,31 +331,27 @@ export default function DashboardCommandesView({
                           {cmd.user?.prenom} {cmd.user?.nom}
                         </p>
                         <p className="text-xs text-stone-400">
-                          {new Date(cmd.createdAt).toLocaleDateString('fr-DZ')} · {cmd.items.length} article{cmd.items.length !== 1 ? 's' : ''} · <span className="font-semibold text-stone-700 dark:text-stone-200">{Number(montant).toLocaleString('fr-DZ')} DA</span>
+                          {new Date(cmd.createdAt).toLocaleDateString('fr-DZ')} · {cmd.items.length} art. · <span className="font-semibold text-stone-700 dark:text-stone-200">{Number(montant).toLocaleString('fr-DZ')} DA</span>
                         </p>
                       </div>
-                      <div className="flex flex-col items-end gap-2 shrink-0">
+                      <div className="flex flex-col items-end gap-2 shrink-0" onClick={e => e.stopPropagation()}>
                         {isAdmin ? (
-                          <AdminActionsMenu
-                            cmd={cmd}
-                            onAction={(statut) => handleAdminAction(cmd, statut)}
-                            loading={isLoading}
-                          />
-                        ) : vendeurAction && (
+                          <AdminActionsMenu cmd={cmd} onAction={s => handleAdminAction(cmd, s)} isLoading={isLoading} />
+                        ) : vendeurAction ? (
                           <button
-                            onClick={e => { e.stopPropagation(); handleVendeurAction(cmd) }}
+                            onClick={() => handleVendeurAction(cmd)}
                             disabled={isLoading}
                             className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1 ${vendeurAction.color}`}
                           >
                             {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
                             {vendeurAction.label}
                           </button>
-                        )}
+                        ) : null}
                         {isExp ? <ChevronUp className="w-4 h-4 text-stone-400" /> : <ChevronDown className="w-4 h-4 text-stone-400" />}
                       </div>
                     </div>
 
-                    {/* Desktop layout */}
+                    {/* ── Desktop ── */}
                     <div className="hidden md:grid grid-cols-[1fr_1.5fr_1fr_1fr_1fr_1.5fr_auto] items-center">
                       <div className={tableTd}>
                         <div className="flex items-center gap-1.5">
@@ -386,36 +385,32 @@ export default function DashboardCommandesView({
                           {STATUT_LABEL[cmd.statut] ?? cmd.statut}
                         </span>
                       </div>
-                      <div className={tableTd}>
+                      <div className={`${tableTd}`} onClick={e => e.stopPropagation()}>
                         {isAdmin ? (
-                          <AdminActionsMenu
-                            cmd={cmd}
-                            onAction={(statut) => handleAdminAction(cmd, statut)}
-                            loading={isLoading}
-                          />
-                        ) : vendeurAction && (
+                          <AdminActionsMenu cmd={cmd} onAction={s => handleAdminAction(cmd, s)} isLoading={isLoading} />
+                        ) : vendeurAction ? (
                           <button
-                            onClick={e => { e.stopPropagation(); handleVendeurAction(cmd) }}
+                            onClick={() => handleVendeurAction(cmd)}
                             disabled={isLoading}
                             className={`text-xs px-3 py-2 rounded-xl font-semibold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1 whitespace-nowrap ${vendeurAction.color}`}
                           >
                             {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
                             {vendeurAction.label}
                           </button>
-                        )}
+                        ) : <span className="text-xs text-stone-400 px-2">—</span>}
                       </div>
                     </div>
                   </div>
 
-                  {/* Détail expandé */}
+                  {/* ── Détail expandé ── */}
                   {isExp && (
                     <div className="bg-stone-50 dark:bg-stone-800/40 border-t border-stone-100 dark:border-stone-800 px-5 py-4">
                       <div className="space-y-3">
                         {/* Infos client */}
                         <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-stone-500 dark:text-stone-400">
-                          {cmd.user?.email && <span>✉ {cmd.user.email}</span>}
+                          {cmd.user?.email     && <span>✉ {cmd.user.email}</span>}
                           {cmd.user?.telephone && <span>☎ {cmd.user.telephone}</span>}
-                          {cmd.adresseLivraison && <span>📍 {cmd.adresseLivraison}</span>}
+                          {adresse             && <span>📍 {adresse}</span>}
                         </div>
 
                         {/* Articles */}
@@ -458,8 +453,8 @@ export default function DashboardCommandesView({
                           ))}
                         </div>
 
-                        {/* Total + actions admin dans le détail (mobile) */}
-                        <div className="flex items-center justify-between pt-1 border-t border-stone-100 dark:border-stone-700">
+                        {/* Total */}
+                        <div className="flex items-center justify-between pt-2 border-t border-stone-200 dark:border-stone-700">
                           <span className="text-xs text-stone-400">Total commande</span>
                           <span className="text-sm font-bold text-stone-800 dark:text-stone-100">
                             {Number(cmd.total).toLocaleString('fr-DZ')} DA
