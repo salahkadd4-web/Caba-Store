@@ -114,11 +114,11 @@ function FooterContact() {
       <ul className="space-y-2.5 text-sm text-stone-400">
         <li className="flex items-center gap-2">
           <Mail className="w-4 h-4 text-orange-400 shrink-0" />
-          <a href="mailto:contact@caba-store.com" className="hover:text-orange-400 transition-colors">contact@caba-store.com</a>
+          <a href="mailto:contact@caba-store.com" className="hover:text-orange-400 transition-colors">cabastoredz31@gmail.com</a>
         </li>
         <li className="flex items-center gap-2">
           <Phone className="w-4 h-4 text-orange-400 shrink-0" />
-          <span>+213 X XX XX XX XX</span>
+          <span>+213 6 71 86 07 85</span>
         </li>
         <li className="flex items-center gap-2">
           <MapPin className="w-4 h-4 text-orange-400 shrink-0" />

@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { createPortal } from 'react-dom'
+import { useState } from 'react'
 import Image from 'next/image'
 import {
   ShoppingCart, Search, ChevronDown, ChevronUp,
   CheckCircle2, Truck, PackageCheck, Clock, XCircle,
-  Package, ChevronRight, Loader2, MoreVertical,
+  Package, ChevronRight, Loader2,
 } from 'lucide-react'
 import {
   heading, card, tableWrapper, tableHead, tableTh, tableTd, tableRow,
@@ -60,123 +59,16 @@ const NEXT_ACTION_VENDEUR: Record<string, { label: string; statut?: string; appr
   EXPEDIEE:       { label: 'Marquer livrée',    statut: 'LIVREE',         color: 'bg-green-600 hover:bg-green-700 text-white' },
 }
 
-// Actions admin — uniquement les statuts de l'enum OrderStatus
-const ADMIN_ACTIONS: Record<string, { label: string; statut?: string; approuver?: boolean; color: string }[]> = {
-  EN_ATTENTE: [
-    { label: '✓ Approuver ma part',       approuver: true,          color: 'text-emerald-600 dark:text-emerald-400' },
-    { label: '⚡ Confirmer directement',  statut: 'CONFIRMEE',      color: 'text-blue-600 dark:text-blue-400'       },
-    { label: '✕ Annuler',                 statut: 'ANNULEE',        color: 'text-red-600 dark:text-red-400'         },
-  ],
-  CONFIRMEE: [
-    { label: '📦 Mettre en prépa.',   statut: 'EN_PREPARATION', color: 'text-orange-600 dark:text-orange-400'  },
-    { label: '✕ Annuler',             statut: 'ANNULEE',        color: 'text-red-600 dark:text-red-400'         },
-  ],
-  EN_PREPARATION: [
-    { label: '🚚 Marquer expédiée',   statut: 'EXPEDIEE',       color: 'text-indigo-600 dark:text-indigo-400'  },
-    { label: '✕ Annuler',             statut: 'ANNULEE',        color: 'text-red-600 dark:text-red-400'         },
-  ],
-  EXPEDIEE: [
-    { label: '✓ Marquer livrée',      statut: 'LIVREE',         color: 'text-green-600 dark:text-green-400'    },
-    { label: '✕ Annuler',             statut: 'ANNULEE',        color: 'text-red-600 dark:text-red-400'         },
-  ],
-  LIVREE: [
-    { label: '↺ Remettre en attente', statut: 'EN_ATTENTE',     color: 'text-blue-600 dark:text-blue-400'      },
-  ],
-  ANNULEE: [
-    { label: '↺ Remettre en attente', statut: 'EN_ATTENTE',     color: 'text-blue-600 dark:text-blue-400'      },
-    { label: '✓ Confirmer directement', statut: 'CONFIRMEE',    color: 'text-emerald-600 dark:text-emerald-400' },
-  ],
+// Avancement linéaire pour l'admin — même mécanique que le vendeur
+const NEXT_ACTION_ADMIN: Record<string, { label: string; statut?: string; approuver?: boolean; color: string }> = {
+  EN_ATTENTE:     { label: 'Confirmer',          statut: 'CONFIRMEE',      color: 'bg-emerald-600 hover:bg-emerald-700 text-white' },
+  CONFIRMEE:      { label: 'Mettre en prépa.',   statut: 'EN_PREPARATION', color: 'bg-orange-600 hover:bg-orange-700 text-white'   },
+  EN_PREPARATION: { label: 'Marquer expédiée',   statut: 'EXPEDIEE',       color: 'bg-indigo-600 hover:bg-indigo-700 text-white'   },
+  EXPEDIEE:       { label: 'Marquer livrée',     statut: 'LIVREE',         color: 'bg-green-600 hover:bg-green-700 text-white'     },
 }
+
 
 const STATUTS_FILTRE = ['', 'EN_ATTENTE', 'CONFIRMEE', 'EN_PREPARATION', 'EXPEDIEE', 'LIVREE', 'ANNULEE']
-
-// ── Dropdown admin — rendu via portal pour échapper au overflow:hidden du tableWrapper ──
-function AdminActionsMenu({
-  cmd,
-  onAction,
-  isLoading,
-}: {
-  cmd: Commande
-  onAction: (statut?: string, approuver?: boolean) => void
-  isLoading: boolean
-}) {
-  const actions = ADMIN_ACTIONS[cmd.statut] ?? []
-  const [open, setOpen]       = useState(false)
-  const [pos,  setPos]        = useState<{ top: number; right: number } | null>(null)
-  const [mounted, setMounted] = useState(false)
-  const btnRef                = useRef<HTMLButtonElement>(null)
-
-  // Nécessaire pour éviter le rendu SSR de createPortal
-  useEffect(() => { setMounted(true) }, [])
-
-  // Fermer si clic ailleurs
-  useEffect(() => {
-    if (!open) return
-    const close = () => setOpen(false)
-    document.addEventListener('click', close)
-    return () => document.removeEventListener('click', close)
-  }, [open])
-
-  if (actions.length === 0) {
-    return <span className="text-xs text-stone-400 dark:text-stone-600 px-2">—</span>
-  }
-
-  const handleToggle = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (!open && btnRef.current) {
-      const r = btnRef.current.getBoundingClientRect()
-      setPos({ top: r.bottom + 6, right: window.innerWidth - r.right })
-    }
-    setOpen(o => !o)
-  }
-
-  return (
-    <div className="relative">
-      <button
-        ref={btnRef}
-        onClick={handleToggle}
-        disabled={isLoading}
-        className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-semibold transition-all
-          active:scale-95 disabled:opacity-50 whitespace-nowrap
-          bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700
-          text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-700"
-      >
-        {isLoading
-          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          : <MoreVertical className="w-3.5 h-3.5" />
-        }
-        Actions
-        <ChevronDown className="w-3 h-3 opacity-60" />
-      </button>
-
-      {/* Portal : rendu dans document.body pour échapper au overflow:hidden parent */}
-      {mounted && open && pos && createPortal(
-        <div
-          style={{ position: 'fixed', top: pos.top, right: pos.right, zIndex: 9999 }}
-          className="min-w-48 rounded-xl border border-stone-200 dark:border-stone-700
-            bg-white dark:bg-stone-900 shadow-2xl py-1 overflow-hidden"
-          onClick={e => e.stopPropagation()}
-        >
-          <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider
-            text-stone-400 dark:text-stone-500 border-b border-stone-100 dark:border-stone-800 mb-1">
-            Changer le statut
-          </p>
-          {actions.map(a => (
-            <button
-              key={a.statut}
-              onClick={() => { setOpen(false); onAction(a.statut, a.approuver) }}
-              className={`w-full text-left text-sm px-4 py-2.5 font-medium
-                hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors ${a.color}`}
-            >
-              {a.label}
-            </button>
-          ))}
-        </div>,
-        document.body
-      )}
-    </div>
-  )
-}
 
 // ── Composant principal ────────────────────────────────────────────────────────
 export default function DashboardCommandesView({
@@ -231,14 +123,15 @@ export default function DashboardCommandesView({
     }
   }
 
-  // Action admin — changement direct via /api/admin/commandes/[id]
-  const handleAdminAction = async (cmd: Commande, statut?: string, approuver?: boolean) => {
+  // Action admin — même mécanique que handleVendeurAction
+  const handleAdminAction = async (cmd: Commande) => {
+    const action = NEXT_ACTION_ADMIN[cmd.statut]
+    if (!action) return
     setLoading(cmd.id)
     try {
       const body: Record<string, unknown> = {}
-      if (approuver) body.approuver = true
-      if (statut)    body.statut    = statut
-
+      if (action.approuver) body.approuver = true
+      if (action.statut)    body.statut    = action.statut
       const res = await fetch(`/api/admin/commandes/${cmd.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -247,7 +140,7 @@ export default function DashboardCommandesView({
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erreur')
       setCommandes(prev => prev.map(c => c.id === cmd.id ? { ...c, ...data } : c))
-      showToast(data.message ?? (statut ? `Statut → ${STATUT_LABEL[statut] ?? statut}` : 'Action effectuée'), true)
+      showToast(data.message ?? 'Statut mis à jour', true)
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Erreur', false)
     } finally {
@@ -325,6 +218,7 @@ export default function DashboardCommandesView({
             {filtered.map(cmd => {
               const StatusIcon    = STATUT_ICON[cmd.statut] ?? Clock
               const vendeurAction = !isAdmin ? NEXT_ACTION_VENDEUR[cmd.statut] : null
+              const adminAction   = isAdmin  ? NEXT_ACTION_ADMIN[cmd.statut]   : null
               const isExp         = expanded === cmd.id
               const isLoading     = loading === cmd.id
               const montant       = cmd.totalVendeur ?? cmd.total
@@ -357,7 +251,16 @@ export default function DashboardCommandesView({
                       </div>
                       <div className="flex flex-col items-end gap-2 shrink-0" onClick={e => e.stopPropagation()}>
                         {isAdmin ? (
-                          <AdminActionsMenu cmd={cmd} onAction={(s, a) => handleAdminAction(cmd, s, a)} isLoading={isLoading} />
+                          adminAction ? (
+                            <button
+                              onClick={() => handleAdminAction(cmd)}
+                              disabled={isLoading}
+                              className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1 ${adminAction.color}`}
+                            >
+                              {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                              {adminAction.label}
+                            </button>
+                          ) : null
                         ) : vendeurAction ? (
                           <button
                             onClick={() => handleVendeurAction(cmd)}
@@ -408,7 +311,18 @@ export default function DashboardCommandesView({
                       </div>
                       <div className={tableTd} onClick={e => e.stopPropagation()}>
                         {isAdmin ? (
-                          <AdminActionsMenu cmd={cmd} onAction={(s, a) => handleAdminAction(cmd, s, a)} isLoading={isLoading} />
+                          adminAction ? (
+                            <button
+                              onClick={() => handleAdminAction(cmd)}
+                              disabled={isLoading}
+                              className={`text-xs px-3 py-2 rounded-xl font-semibold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1 whitespace-nowrap ${adminAction.color}`}
+                            >
+                              {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                              {adminAction.label}
+                            </button>
+                          ) : (
+                            <span className="text-xs text-stone-400 dark:text-stone-600 px-2">—</span>
+                          )
                         ) : vendeurAction ? (
                           <button
                             onClick={() => handleVendeurAction(cmd)}
