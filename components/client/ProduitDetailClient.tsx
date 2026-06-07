@@ -161,7 +161,7 @@ export default function ProduitDetailClient({
   // ═══════════════════════════════════════════
   if (isMobile) {
     return (
-      <div className="flex flex-col">
+      <div className="flex flex-col pb-52">
 
         {/* Galerie compacte 4:3 */}
         <div className="relative bg-stone-100 dark:bg-stone-800 rounded-2xl overflow-hidden mb-3" style={{ aspectRatio: '4/3' }}>
@@ -211,6 +211,11 @@ export default function ProduitDetailClient({
               Ajoutez <strong>{prochainPalier.minQte - totalQte}</strong> de plus &rarr; {prochainPalier.prix.toFixed(2)} DA/u.
             </p>
           )}
+        </div>
+
+        {/* Bouton vendeur */}
+        <div className="mb-4">
+          <VendeurButton produitId={produit.id} />
         </div>
 
         {/* Paliers dégressifs */}
@@ -355,11 +360,6 @@ export default function ProduitDetailClient({
             )}
           </>
         )}
-
-        {/* Bouton vendeur mobile */}
-        <VendeurButton produitId={produit.id} />
-
-        {/* Modal vendeur */}
 
         {/* ── BARRE STICKY MOBILE ── */}
         <div
