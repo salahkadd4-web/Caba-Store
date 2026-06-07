@@ -52,10 +52,29 @@ export default async function ProduitDetailPage({
         orderBy: { createdAt: 'asc' },
         include: { options: { orderBy: { createdAt: 'asc' } } },
       },
+      vendeur: {
+        include: {
+          user: { select: { nom: true, prenom: true, telephone: true, email: true, wilaya: true } },
+        },
+      },
     },
   })
 
   if (!produit || !produit.actif) notFound()
+
+  const vendeurInfo = produit.vendeur
+    ? {
+        id:          produit.vendeur.id,
+        nomBoutique: produit.vendeur.nomBoutique,
+        user: {
+          nom:       produit.vendeur.user.nom,
+          prenom:    produit.vendeur.user.prenom,
+          telephone: produit.vendeur.user.telephone,
+          email:     produit.vendeur.user.email,
+          wilaya:    produit.vendeur.user.wilaya,
+        },
+      }
+    : null
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 md:py-12 pb-52 md:pb-12">
@@ -101,6 +120,7 @@ export default async function ProduitDetailPage({
           typeOption:    produit.typeOption ?? null,
           variants:      produit.variants,
         }}
+        vendeurInfo={vendeurInfo}
       />
 
       {/* Produits similaires */}

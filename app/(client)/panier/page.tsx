@@ -8,6 +8,7 @@ import {
   Ruler, Package, ArrowLeft,
   Trash2, ShoppingBag, Tag, ChevronDown, ChevronUp,
   Pencil, Check, Loader2,
+  Store, Phone, Mail, MapPin, Info,
 } from 'lucide-react'
 import { getPrixUnitaire as getPrixUnitaireLib, parsePrixTiers } from '@/lib/prix'
 import QteInput from '@/components/client/QteInput'
@@ -22,6 +23,15 @@ type Variant = {
   options: VariantOption[]
 }
 
+type VendeurInfo = {
+  id: string
+  nomBoutique: string | null
+  user: {
+    nom: string | null; prenom: string | null
+    telephone: string | null; email: string | null; wilaya: string | null
+  }
+} | null
+
 type CartItem = {
   id: string
   quantite: number
@@ -34,6 +44,7 @@ type CartItem = {
     typeOption: string | null
     category: { nom: string }
     variants: Variant[]
+    vendeur: VendeurInfo
   }
 }
 
@@ -44,6 +55,12 @@ type ProductGroup = {
   items:   CartItem[]
 }
 
+type VendeurGroup = {
+  vendeurId:   string | null
+  vendeurInfo: VendeurInfo
+  products:    ProductGroup[]
+}
+
 /* ══════════════════════════════════════════
    HELPERS
 ══════════════════════════════════════════ */
@@ -51,16 +68,113 @@ function getPrixUnitaire(product: CartItem['product'], qte: number): number {
   return getPrixUnitaireLib(product.prixVariables, qte, product.prix)
 }
 
-function groupByProduct(items: CartItem[]): ProductGroup[] {
-  const map = new Map<string, ProductGroup>()
+function groupByVendeur(items: CartItem[]): VendeurGroup[] {
+  // 1. Grouper par produit
+  const productMap = new Map<string, ProductGroup>()
   for (const item of items) {
     const pid = item.product.id
-    if (!map.has(pid)) map.set(pid, { product: item.product, items: [] })
-    map.get(pid)!.items.push(item)
+    if (!productMap.has(pid)) productMap.set(pid, { product: item.product, items: [] })
+    productMap.get(pid)!.items.push(item)
   }
-  return [...map.values()]
+
+  // 2. Grouper les groupes-produit par vendeur
+  const vendeurMap = new Map<string, VendeurGroup>()
+  for (const pg of productMap.values()) {
+    const key = pg.product.vendeur?.id ?? '__admin__'
+    if (!vendeurMap.has(key)) {
+      vendeurMap.set(key, {
+        vendeurId:   pg.product.vendeur?.id ?? null,
+        vendeurInfo: pg.product.vendeur,
+        products:    [],
+      })
+    }
+    vendeurMap.get(key)!.products.push(pg)
+  }
+
+  return [...vendeurMap.values()]
 }
 
+/* ══════════════════════════════════════════
+   PANNEAU VENDEUR (HEADER DE SECTION)
+══════════════════════════════════════════ */
+function VendeurSectionHeader({
+  vendeurInfo,
+  productCount,
+}: {
+  vendeurInfo:  VendeurInfo
+  productCount: number
+}) {
+  const [open, setOpen] = useState(false)
+
+  const nomBoutique = vendeurInfo?.nomBoutique ?? 'Caba Store'
+  const isAdmin     = vendeurInfo === null
+
+  return (
+    <div className="bg-stone-50 dark:bg-stone-800/60 rounded-t-2xl border border-b-0 border-stone-200 dark:border-stone-700 overflow-hidden">
+      {/* Barre principale */}
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-stone-100 dark:hover:bg-stone-700/60 transition-colors text-left"
+      >
+        <div className="w-7 h-7 rounded-lg bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center shrink-0">
+          <Store className="w-3.5 h-3.5 text-orange-700 dark:text-orange-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 truncate">
+            {nomBoutique}
+          </p>
+          <p className="text-[11px] text-stone-400 dark:text-stone-500">
+            {isAdmin ? 'Plateforme officielle' : 'Vendeur partenaire'} · {productCount} produit{productCount > 1 ? 's' : ''}
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-[10px] text-orange-700 dark:text-orange-400 font-semibold flex items-center gap-0.5">
+            <Info className="w-3 h-3" /> Infos
+          </span>
+          {open ? <ChevronUp className="w-3.5 h-3.5 text-stone-400" /> : <ChevronDown className="w-3.5 h-3.5 text-stone-400" />}
+        </div>
+      </button>
+
+      {/* Panneau infos vendeur */}
+      {open && (
+        <div className="px-4 pb-3 pt-1 border-t border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900/60">
+          {isAdmin ? (
+            <p className="text-xs text-stone-500 dark:text-stone-400 py-1">
+              Ces produits sont vendus et expédiés directement par Caba Store.
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-3 py-1">
+              {vendeurInfo?.user.telephone && (
+                <a href={`tel:${vendeurInfo.user.telephone}`}
+                  className="flex items-center gap-1.5 text-xs text-stone-600 dark:text-stone-300 hover:text-orange-700 dark:hover:text-orange-400 transition">
+                  <Phone className="w-3.5 h-3.5 shrink-0 text-orange-700 dark:text-orange-400" />
+                  {vendeurInfo.user.telephone}
+                </a>
+              )}
+              {vendeurInfo?.user.email && (
+                <a href={`mailto:${vendeurInfo.user.email}`}
+                  className="flex items-center gap-1.5 text-xs text-stone-600 dark:text-stone-300 hover:text-orange-700 dark:hover:text-orange-400 transition">
+                  <Mail className="w-3.5 h-3.5 shrink-0 text-orange-700 dark:text-orange-400" />
+                  {vendeurInfo.user.email}
+                </a>
+              )}
+              {vendeurInfo?.user.wilaya && (
+                <span className="flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400">
+                  <MapPin className="w-3.5 h-3.5 shrink-0 text-orange-700 dark:text-orange-400" />
+                  {vendeurInfo.user.wilaya}
+                </span>
+              )}
+              {!vendeurInfo?.user.telephone && !vendeurInfo?.user.email && !vendeurInfo?.user.wilaya && (
+                <p className="text-xs text-stone-400">Aucune information de contact disponible.</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 /* ══════════════════════════════════════════
    PANNEAU ÉDITEUR
@@ -80,8 +194,6 @@ function ProductEditor({
   const typeOpt    = product.typeOption || 'Taille'
   const hasOptions = product.variants.some(v => v.options.length > 0)
   const isColor    = product.variants.some(v => v.couleur)
-
-  const totalQteGroupe = items.reduce((s, i) => s + i.quantite, 0)
 
   const [activeVId, setActiveVId] = useState<string>(
     items[0]?.variant?.id ?? product.variants[0]?.id ?? ''
@@ -317,7 +429,7 @@ function ProductCard({
   const prochainPalier = tiers.find(t => t.minQte > totalQte) ?? null
 
   return (
-    <div className={`bg-white dark:bg-stone-900 rounded-2xl border overflow-hidden transition-all duration-200 ${open ? 'border-orange-300 dark:border-orange-700/60 shadow-md shadow-orange-500/5' : 'border-stone-200 dark:border-stone-800 hover:shadow-sm'}`}>
+    <div className={`bg-white dark:bg-stone-900 rounded-b-none rounded-t-none border-x border-b overflow-hidden transition-all duration-200 ${open ? 'border-orange-300 dark:border-orange-700/60 shadow-md shadow-orange-500/5' : 'border-stone-200 dark:border-stone-800 hover:shadow-sm'}`}>
 
       {/* ── EN-TÊTE ── */}
       <div className="flex gap-3 p-4">
@@ -430,8 +542,8 @@ function ProductCard({
    PAGE PANIER
 ══════════════════════════════════════════ */
 export default function PanierPage() {
-  const [panier,  setPanier]  = useState<Cart | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [panier,   setPanier]   = useState<Cart | null>(null)
+  const [loading,  setLoading]  = useState(true)
   const [deleting, setDeleting] = useState(false)
 
   const fetchPanier = useCallback(async () => {
@@ -490,20 +602,27 @@ export default function PanierPage() {
     }
   }
 
-  const groups = panier ? groupByProduct(panier.items) : []
+  const vendeurGroups = panier ? groupByVendeur(panier.items) : []
 
-  const sousTotal = groups.reduce((s, g) => {
-    const qte   = g.items.reduce((a, i) => a + i.quantite, 0)
-    const prixU = getPrixUnitaire(g.product, qte)
-    return s + prixU * qte
+  const sousTotal = vendeurGroups.reduce((s, vg) => {
+    return s + vg.products.reduce((sv, g) => {
+      const qte   = g.items.reduce((a, i) => a + i.quantite, 0)
+      const prixU = getPrixUnitaire(g.product, qte)
+      return sv + prixU * qte
+    }, 0)
   }, 0)
-  const totalEconomies = groups.reduce((s, g) => {
-    const qte   = g.items.reduce((a, i) => a + i.quantite, 0)
-    const prixU = getPrixUnitaire(g.product, qte)
-    const base  = g.product.prix
-    return s + (prixU < base ? (base - prixU) * qte : 0)
+
+  const totalEconomies = vendeurGroups.reduce((s, vg) => {
+    return s + vg.products.reduce((sv, g) => {
+      const qte   = g.items.reduce((a, i) => a + i.quantite, 0)
+      const prixU = getPrixUnitaire(g.product, qte)
+      const base  = g.product.prix
+      return sv + (prixU < base ? (base - prixU) * qte : 0)
+    }, 0)
   }, 0)
+
   const totalArticles = panier?.items.reduce((s, i) => s + i.quantite, 0) ?? 0
+  const totalProduits = vendeurGroups.reduce((s, vg) => s + vg.products.length, 0)
 
   /* ── États de chargement / vide ── */
   if (loading) return (
@@ -545,7 +664,7 @@ export default function PanierPage() {
           <h1 className="text-2xl font-semibold tracking-tight text-stone-900 dark:text-stone-50 flex items-center gap-2">
             Mon panier
             <span className="text-base font-normal text-stone-400 ml-1">
-              ({groups.length} produit{groups.length > 1 ? 's' : ''} · {totalArticles} art.)
+              ({totalProduits} produit{totalProduits > 1 ? 's' : ''} · {totalArticles} art.)
             </span>
           </h1>
         </div>
@@ -558,17 +677,29 @@ export default function PanierPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* ── Cartes produits ── */}
-        <div className="lg:col-span-2 space-y-3">
-          {groups.map(group => (
-            <ProductCard
-              key={group.product.id}
-              group={group}
-              onUpdate={updateQuantite}
-              onDelete={supprimerItem}
-              onAddNew={ajouterItem}
-              onDeleteGroup={supprimerGroupe}
-            />
+        {/* ── Cartes produits groupées par vendeur ── */}
+        <div className="lg:col-span-2 space-y-4">
+          {vendeurGroups.map(vg => (
+            <div key={vg.vendeurId ?? '__admin__'} className="rounded-2xl overflow-hidden shadow-sm">
+              {/* Header vendeur */}
+              <VendeurSectionHeader
+                vendeurInfo={vg.vendeurInfo}
+                productCount={vg.products.length}
+              />
+              {/* Cartes produits */}
+              {vg.products.map((group, idx) => (
+                <div key={group.product.id}
+                  className={idx === vg.products.length - 1 ? 'rounded-b-2xl overflow-hidden' : ''}>
+                  <ProductCard
+                    group={group}
+                    onUpdate={updateQuantite}
+                    onDelete={supprimerItem}
+                    onAddNew={ajouterItem}
+                    onDeleteGroup={supprimerGroupe}
+                  />
+                </div>
+              ))}
+            </div>
           ))}
           <Link href="/produits"
             className="flex items-center gap-1.5 text-sm text-stone-400 hover:text-orange-700 dark:hover:text-orange-400 transition mt-1">
@@ -581,37 +712,46 @@ export default function PanierPage() {
           <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-5">
             <h2 className="font-semibold text-stone-800 dark:text-stone-100 mb-4">Résumé</h2>
 
-            <div className="space-y-2.5 mb-4 max-h-52 overflow-y-auto pr-1">
-              {groups.map(group => {
-                const qte   = group.items.reduce((s, i) => s + i.quantite, 0)
-                const prixU = getPrixUnitaire(group.product, qte)
-                return (
-                  <div key={group.product.id} className="space-y-0.5">
-                    <div className="flex justify-between items-start gap-2 text-xs">
-                      <span className="text-stone-700 dark:text-stone-300 font-medium flex-1 line-clamp-1">{group.product.nom}</span>
-                      <span className="text-stone-800 dark:text-stone-200 font-semibold shrink-0 tabular-nums">
-                        {(prixU * qte).toFixed(2)} DA
-                      </span>
-                    </div>
-                    {group.items.map(item => (
-                      <div key={item.id} className="flex justify-between text-[11px] text-stone-400 pl-2">
-                        <span className="flex items-center gap-1 flex-wrap">
-                          {item.variant?.couleur && (
-                            <span className="w-2.5 h-2.5 rounded-full border border-stone-300 inline-block shrink-0"
-                              style={{ backgroundColor: item.variant.couleur }} />
-                          )}
-                          {item.variant?.nom}
-                          {item.variantOption && ` / ${item.variantOption.valeur}`}
-                          {' '}×{item.quantite}
-                        </span>
-                        <span className="tabular-nums shrink-0">
-                          {(prixU * item.quantite).toFixed(2)} DA
-                        </span>
+            <div className="space-y-3 mb-4 max-h-64 overflow-y-auto pr-1">
+              {vendeurGroups.map(vg => (
+                <div key={vg.vendeurId ?? '__admin__'}>
+                  {/* Mini-header vendeur dans le résumé */}
+                  <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest flex items-center gap-1 mb-1.5">
+                    <Store className="w-3 h-3" />
+                    {vg.vendeurInfo?.nomBoutique ?? 'Caba Store'}
+                  </p>
+                  {vg.products.map(group => {
+                    const qte   = group.items.reduce((s, i) => s + i.quantite, 0)
+                    const prixU = getPrixUnitaire(group.product, qte)
+                    return (
+                      <div key={group.product.id} className="space-y-0.5 mb-1.5">
+                        <div className="flex justify-between items-start gap-2 text-xs">
+                          <span className="text-stone-700 dark:text-stone-300 font-medium flex-1 line-clamp-1">{group.product.nom}</span>
+                          <span className="text-stone-800 dark:text-stone-200 font-semibold shrink-0 tabular-nums">
+                            {(prixU * qte).toFixed(2)} DA
+                          </span>
+                        </div>
+                        {group.items.map(item => (
+                          <div key={item.id} className="flex justify-between text-[11px] text-stone-400 pl-2">
+                            <span className="flex items-center gap-1 flex-wrap">
+                              {item.variant?.couleur && (
+                                <span className="w-2.5 h-2.5 rounded-full border border-stone-300 inline-block shrink-0"
+                                  style={{ backgroundColor: item.variant.couleur }} />
+                              )}
+                              {item.variant?.nom}
+                              {item.variantOption && ` / ${item.variantOption.valeur}`}
+                              {' '}×{item.quantite}
+                            </span>
+                            <span className="tabular-nums shrink-0">
+                              {(prixU * item.quantite).toFixed(2)} DA
+                            </span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                )
-              })}
+                    )
+                  })}
+                </div>
+              ))}
             </div>
 
             <div className="border-t border-stone-100 dark:border-stone-800 pt-4 space-y-2.5">

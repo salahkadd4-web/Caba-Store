@@ -19,6 +19,15 @@ export async function GET() {
                   include: { options: { orderBy: { createdAt: 'asc' } } },
                   orderBy: { createdAt: 'asc' },
                 },
+                vendeur: {
+                  select: {
+                    id: true,
+                    nomBoutique: true,
+                    user: {
+                      select: { nom: true, prenom: true, telephone: true, email: true, wilaya: true },
+                    },
+                  },
+                },
               },
             },
             variant: { include: { options: { orderBy: { createdAt: 'asc' } } } },

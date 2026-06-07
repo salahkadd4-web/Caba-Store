@@ -9,6 +9,7 @@ import {
   Package, ShoppingBag, ShoppingCart, Smartphone, Truck,
   ChevronRight, TrendingDown, Ruler,
   Banknote, Landmark, ArrowLeftRight, Lock,
+  Store, Phone, Mail, MapPin as MapPinIcon, ChevronDown, ChevronUp, Info,
 } from 'lucide-react'
 import { getPrixUnitaire as getPrixUnitaireLib } from '@/lib/prix'
 import { FRAIS_EXPEDITION } from '@/lib/constants'
@@ -16,6 +17,15 @@ import { FRAIS_EXPEDITION } from '@/lib/constants'
 /* ── Types ── */
 type VariantOption = { id: string; valeur: string; stock: number }
 type Variant = { id: string; nom: string; couleur: string | null; stock: number; images: string[] }
+
+type VendeurInfo = {
+  id: string
+  nomBoutique: string | null
+  user: {
+    nom: string | null; prenom: string | null
+    telephone: string | null; email: string | null; wilaya: string | null
+  }
+} | null
 
 type CartItem = {
   id: string
@@ -29,57 +39,158 @@ type CartItem = {
     prixVariables: unknown
     images: string[]
     typeOption: string | null
+    vendeur: VendeurInfo
   }
 }
 
 type Cart = { id: string; items: CartItem[] }
 
-/* ── Helper local pour la signature (product + qte) ── */
+type VendeurGroup = {
+  vendeurId:   string | null
+  vendeurInfo: VendeurInfo
+  items:       CartItem[]
+}
+
+/* ── Helper prix ── */
 function getPrixUnitaire(product: CartItem['product'], quantite: number): number {
   return getPrixUnitaireLib(product.prixVariables, quantite, product.prix)
 }
 
-/* ── Modes de paiement avec icônes Lucide ── */
+/* ── Grouper les items par vendeur ── */
+function groupByVendeur(items: CartItem[]): VendeurGroup[] {
+  const map = new Map<string, VendeurGroup>()
+  for (const item of items) {
+    const key = item.product.vendeur?.id ?? '__admin__'
+    if (!map.has(key)) {
+      map.set(key, {
+        vendeurId:   item.product.vendeur?.id ?? null,
+        vendeurInfo: item.product.vendeur,
+        items:       [],
+      })
+    }
+    map.get(key)!.items.push(item)
+  }
+  return [...map.values()]
+}
+
+/* ── Modes de paiement ── */
 const MODES_PAIEMENT = [
-  {
-    label:     'Paiement à la livraison',
-    icon:      Banknote,
-    disabled:  false,
-    subtitle:  'Payez en espèces à la réception',
-  },
-  {
-    label:     'CCP',
-    icon:      Landmark,
-    disabled:  true,
-    subtitle:  'Prochainement disponible',
-  },
-  {
-    label:     'Dahabia',
-    icon:      CreditCard,
-    disabled:  true,
-    subtitle:  'Prochainement disponible',
-  },
-  {
-    label:     'Virement bancaire',
-    icon:      ArrowLeftRight,
-    disabled:  true,
-    subtitle:  'Prochainement disponible',
-  },
-  {
-    label:     'BaridiMob',
-    icon:      Smartphone,
-    disabled:  true,
-    subtitle:  'Prochainement disponible',
-  },
+  { label: 'Paiement à la livraison', icon: Banknote,       disabled: false, subtitle: 'Payez en espèces à la réception' },
+  { label: 'CCP',                      icon: Landmark,       disabled: true,  subtitle: 'Prochainement disponible' },
+  { label: 'Dahabia',                  icon: CreditCard,     disabled: true,  subtitle: 'Prochainement disponible' },
+  { label: 'Virement bancaire',        icon: ArrowLeftRight, disabled: true,  subtitle: 'Prochainement disponible' },
+  { label: 'BaridiMob',               icon: Smartphone,     disabled: true,  subtitle: 'Prochainement disponible' },
 ]
 
-// Constantes d'affichage dérivées de la source de vérité (lib/constants.ts)
 const METHODES_EXPEDITION = [
   { label: 'Livraison standard',      frais: FRAIS_EXPEDITION['Livraison standard'],      delai: '3–5 jours' },
   { label: 'Livraison express',       frais: FRAIS_EXPEDITION['Livraison express'],        delai: '1–2 jours' },
   { label: 'Retrait en point relais', frais: FRAIS_EXPEDITION['Retrait en point relais'],  delai: '2–4 jours' },
 ]
 
+/* ── Petit composant infos vendeur ── */
+function VendeurInfoBadge({ vendeurInfo }: { vendeurInfo: VendeurInfo }) {
+  const [open, setOpen] = useState(false)
+  const nomBoutique = vendeurInfo?.nomBoutique ?? 'Caba Store'
+  const isAdmin     = vendeurInfo === null
+
+  return (
+    <div className="mb-4 rounded-xl border border-stone-200 dark:border-stone-700 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-2.5 px-4 py-2.5 bg-stone-50 dark:bg-stone-800/60 hover:bg-stone-100 dark:hover:bg-stone-700/60 transition-colors text-left"
+      >
+        <div className="w-6 h-6 rounded-lg bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center shrink-0">
+          <Store className="w-3 h-3 text-orange-700 dark:text-orange-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-stone-700 dark:text-stone-200 truncate">{nomBoutique}</p>
+          <p className="text-[11px] text-stone-400">{isAdmin ? 'Plateforme officielle' : 'Vendeur partenaire'}</p>
+        </div>
+        <span className="flex items-center gap-0.5 text-[10px] text-orange-700 dark:text-orange-400 font-semibold shrink-0">
+          <Info className="w-3 h-3" /> Infos
+          {open ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
+        </span>
+      </button>
+      {open && (
+        <div className="px-4 py-2.5 border-t border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900/50">
+          {isAdmin ? (
+            <p className="text-xs text-stone-500">Expédié directement par Caba Store.</p>
+          ) : (
+            <div className="flex flex-wrap gap-3">
+              {vendeurInfo?.user.telephone && (
+                <a href={`tel:${vendeurInfo.user.telephone}`}
+                  className="flex items-center gap-1.5 text-xs text-stone-600 dark:text-stone-300 hover:text-orange-700 transition">
+                  <Phone className="w-3.5 h-3.5 text-orange-700 dark:text-orange-400" />
+                  {vendeurInfo.user.telephone}
+                </a>
+              )}
+              {vendeurInfo?.user.email && (
+                <a href={`mailto:${vendeurInfo.user.email}`}
+                  className="flex items-center gap-1.5 text-xs text-stone-600 dark:text-stone-300 hover:text-orange-700 transition">
+                  <Mail className="w-3.5 h-3.5 text-orange-700 dark:text-orange-400" />
+                  {vendeurInfo.user.email}
+                </a>
+              )}
+              {vendeurInfo?.user.wilaya && (
+                <span className="flex items-center gap-1.5 text-xs text-stone-500">
+                  <MapPinIcon className="w-3.5 h-3.5 text-orange-700 dark:text-orange-400" />
+                  {vendeurInfo.user.wilaya}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ── Sélecteur d'expédition par vendeur ── */
+function ExpeditionSelector({
+  vendeurKey,
+  selected,
+  onChange,
+}: {
+  vendeurKey: string
+  selected:   string
+  onChange:   (key: string, methode: string) => void
+}) {
+  return (
+    <div className="space-y-1.5 mt-3">
+      {METHODES_EXPEDITION.map(opt => (
+        <button key={opt.label} type="button" onClick={() => onChange(vendeurKey, opt.label)}
+          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border-2 text-sm transition-all ${
+            selected === opt.label
+              ? 'border-orange-700 bg-orange-50 dark:bg-orange-950/60'
+              : 'border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600'
+          }`}>
+          <div className="flex items-center gap-2.5 text-left">
+            <div className={`w-3.5 h-3.5 rounded-full border-2 shrink-0 flex items-center justify-center ${
+              selected === opt.label ? 'border-orange-700' : 'border-stone-300 dark:border-stone-600'
+            }`}>
+              {selected === opt.label && <div className="w-2 h-2 rounded-full bg-orange-700" />}
+            </div>
+            <div>
+              <p className={`font-medium text-xs ${selected === opt.label ? 'text-orange-700 dark:text-orange-400' : 'text-stone-700 dark:text-stone-300'}`}>
+                {opt.label}
+              </p>
+              <p className="text-[10px] text-stone-400">{opt.delai}</p>
+            </div>
+          </div>
+          <span className={`font-bold text-sm shrink-0 ${selected === opt.label ? 'text-orange-700 dark:text-orange-400' : 'text-stone-500 dark:text-stone-400'}`}>
+            {opt.frais} DA
+          </span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/* ════════════════════════════════════════════
+   PAGE PRINCIPALE
+════════════════════════════════════════════ */
 export default function NouvelleCommandePage() {
   const router = useRouter()
   const [panier,     setPanier]     = useState<Cart | null>(null)
@@ -88,9 +199,11 @@ export default function NouvelleCommandePage() {
   const [error,      setError]      = useState('')
   const [showModal,  setShowModal]  = useState(false)
 
-  const [adresse,           setAdresse]           = useState('')
-  const [modePaiement,      setModePaiement]       = useState(MODES_PAIEMENT[0].label)
-  const [methodeExpedition, setMethodeExpedition]  = useState(METHODES_EXPEDITION[0].label)
+  const [adresse,      setAdresse]      = useState('')
+  const [modePaiement, setModePaiement] = useState(MODES_PAIEMENT[0].label)
+
+  // Méthode d'expédition par vendeur (key = vendeurId ou '__admin__')
+  const [methodeParVendeur, setMethodeParVendeur] = useState<Record<string, string>>({})
 
   const [telephone,    setTelephone]    = useState('')
   const [hasTelephone, setHasTelephone] = useState(true)
@@ -99,39 +212,66 @@ export default function NouvelleCommandePage() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/panier').then((r) => r.json()),
-      fetch('/api/profil').then((r)  => r.json()),
+      fetch('/api/panier').then(r => r.json()),
+      fetch('/api/profil').then(r => r.json()),
     ])
       .then(([panierData, profilData]) => {
         setPanier(panierData)
         setHasTelephone(!!profilData.telephone)
         if (profilData.adresse) setAdresse(profilData.adresse)
+
+        // Initialiser la méthode d'expédition par défaut pour chaque vendeur
+        const defaultMethode = METHODES_EXPEDITION[0].label
+        const groupes = groupByVendeur((panierData as Cart).items ?? [])
+        const initial: Record<string, string> = {}
+        for (const g of groupes) {
+          initial[g.vendeurId ?? '__admin__'] = defaultMethode
+        }
+        setMethodeParVendeur(initial)
       })
       .catch(() => setError('Impossible de charger le panier. Veuillez réessayer.'))
       .finally(() => setLoading(false))
   }, [])
 
-  const selectedExpedition = METHODES_EXPEDITION.find(m => m.label === methodeExpedition) ?? METHODES_EXPEDITION[0]
+  const vendeurGroups = panier ? groupByVendeur(panier.items) : []
 
+  // Calcul des sous-totaux par vendeur
   const qteParProduit = new Map<string, number>()
   for (const item of panier?.items ?? []) {
     qteParProduit.set(item.product.id, (qteParProduit.get(item.product.id) ?? 0) + item.quantite)
   }
 
-  const lignesCalc = (panier?.items ?? []).map(item => {
-    const prixUnit  = getPrixUnitaire(item.product, qteParProduit.get(item.product.id) ?? item.quantite)
-    const prixBase  = item.product.prix
-    const estReduit = prixUnit < prixBase
-    return {
-      item, prixUnit, prixBase, estReduit,
-      sousLigne: prixUnit * item.quantite,
-      economie:  estReduit ? (prixBase - prixUnit) * item.quantite : 0,
-    }
+  type VendeurCalc = {
+    vendeurId: string | null
+    vendeurInfo: VendeurInfo
+    sousTotal: number
+    fraisLivraison: number
+    totalGroupe: number
+    methode: string
+    items: CartItem[]
+    economies: number
+  }
+
+  const vendeurCalcs: VendeurCalc[] = vendeurGroups.map(vg => {
+    const key         = vg.vendeurId ?? '__admin__'
+    const methode     = methodeParVendeur[key] ?? METHODES_EXPEDITION[0].label
+    const frais       = FRAIS_EXPEDITION[methode] ?? FRAIS_EXPEDITION['Livraison standard']
+    const sousTotal   = vg.items.reduce((s, item) => {
+      const prixU = getPrixUnitaire(item.product, qteParProduit.get(item.product.id) ?? item.quantite)
+      return s + prixU * item.quantite
+    }, 0)
+    const economies   = vg.items.reduce((s, item) => {
+      const prixU = getPrixUnitaire(item.product, qteParProduit.get(item.product.id) ?? item.quantite)
+      const base  = item.product.prix
+      return s + (prixU < base ? (base - prixU) * item.quantite : 0)
+    }, 0)
+    return { vendeurId: vg.vendeurId, vendeurInfo: vg.vendeurInfo, sousTotal, fraisLivraison: frais, totalGroupe: sousTotal + frais, methode, items: vg.items, economies }
   })
-  const sousTotal      = lignesCalc.reduce((s, l) => s + l.sousLigne, 0)
-  const totalEconomies = lignesCalc.reduce((s, l) => s + l.economie, 0)
-  const fraisLivraison = selectedExpedition.frais
-  const total          = sousTotal + fraisLivraison
+
+  const sousTotal       = vendeurCalcs.reduce((s, c) => s + c.sousTotal, 0)
+  const totalFrais      = vendeurCalcs.reduce((s, c) => s + c.fraisLivraison, 0)
+  const totalEconomies  = vendeurCalcs.reduce((s, c) => s + c.economies, 0)
+  const total           = sousTotal + totalFrais
 
   const handleSaveTelephone = async () => {
     setTelError('')
@@ -153,9 +293,14 @@ export default function NouvelleCommandePage() {
   const handleConfirmer = async () => {
     setError(''); setSubmitting(true); setShowModal(false)
     try {
+      const vendeurGroupes = vendeurCalcs.map(c => ({
+        vendeurId:        c.vendeurId,
+        methodeExpedition: c.methode,
+      }))
+
       const res = await fetch('/api/commandes', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adresse, modePaiement, methodeExpedition }),
+        body: JSON.stringify({ adresse, modePaiement, vendeurGroupes }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
@@ -241,7 +386,7 @@ export default function NouvelleCommandePage() {
                 className={inputCls} />
             </div>
 
-            {/* ── Mode de paiement ── */}
+            {/* Mode de paiement */}
             <div>
               <label className={labelCls}>
                 <CreditCard className="w-4 h-4 inline mr-1 text-orange-700" /> Mode de paiement *
@@ -251,66 +396,33 @@ export default function NouvelleCommandePage() {
                   const Icon      = m.icon
                   const isActive  = modePaiement === m.label
                   const isDisabled = m.disabled
-
                   return (
-                    <button
-                      key={m.label}
-                      type="button"
+                    <button key={m.label} type="button"
                       onClick={() => !isDisabled && setModePaiement(m.label)}
                       disabled={isDisabled}
-                      title={isDisabled ? m.subtitle : undefined}
-                      className={`
-                        relative flex flex-col items-start gap-1.5 px-3 py-3 rounded-xl border-2 text-left
-                        transition-all duration-200
-                        ${isDisabled
+                      className={`relative flex flex-col items-start gap-1.5 px-3 py-3 rounded-xl border-2 text-left transition-all duration-200 ${
+                        isDisabled
                           ? 'border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/40 opacity-50 cursor-not-allowed'
                           : isActive
                             ? 'border-orange-700 bg-orange-50 dark:bg-orange-950/60 shadow-sm shadow-orange-100 dark:shadow-orange-900'
                             : 'border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600 bg-white dark:bg-stone-900'
-                        }
-                      `}
-                    >
-                      {/* Icône + badge lock */}
+                      }`}>
                       <div className="flex items-center justify-between w-full">
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                          isDisabled
-                            ? 'bg-stone-100 dark:bg-stone-800'
-                            : isActive
-                              ? 'bg-orange-100 dark:bg-orange-900'
-                              : 'bg-stone-100 dark:bg-stone-800'
+                          isDisabled ? 'bg-stone-100 dark:bg-stone-800' : isActive ? 'bg-orange-100 dark:bg-orange-900' : 'bg-stone-100 dark:bg-stone-800'
                         }`}>
                           <Icon className={`w-4 h-4 ${
-                            isDisabled
-                              ? 'text-stone-400 dark:text-stone-600'
-                              : isActive
-                                ? 'text-orange-700 dark:text-orange-400'
-                                : 'text-stone-500 dark:text-stone-400'
+                            isDisabled ? 'text-stone-400 dark:text-stone-600' : isActive ? 'text-orange-700 dark:text-orange-400' : 'text-stone-500 dark:text-stone-400'
                           }`} />
                         </div>
-                        {isDisabled
-                          ? <Lock className="w-3 h-3 text-stone-400 dark:text-stone-600 shrink-0" />
-                          : isActive
-                            ? <Check className="w-3.5 h-3.5 text-orange-700 shrink-0" />
-                            : null
-                        }
+                        {isDisabled ? <Lock className="w-3 h-3 text-stone-400 dark:text-stone-600 shrink-0" />
+                          : isActive ? <Check className="w-3.5 h-3.5 text-orange-700 shrink-0" /> : null}
                       </div>
-
-                      {/* Label — toujours lisible, pas de truncate */}
                       <div>
                         <p className={`text-xs font-semibold leading-tight ${
-                          isDisabled
-                            ? 'text-stone-400 dark:text-stone-600'
-                            : isActive
-                              ? 'text-orange-700 dark:text-orange-400'
-                              : 'text-stone-700 dark:text-stone-300'
-                        }`}>
-                          {m.label}
-                        </p>
-                        {isDisabled && (
-                          <p className="text-[10px] text-stone-400 dark:text-stone-600 mt-0.5 leading-tight">
-                            Bientôt disponible
-                          </p>
-                        )}
+                          isDisabled ? 'text-stone-400 dark:text-stone-600' : isActive ? 'text-orange-700 dark:text-orange-400' : 'text-stone-700 dark:text-stone-300'
+                        }`}>{m.label}</p>
+                        {isDisabled && <p className="text-[10px] text-stone-400 dark:text-stone-600 mt-0.5 leading-tight">Bientôt disponible</p>}
                       </div>
                     </button>
                   )
@@ -318,35 +430,39 @@ export default function NouvelleCommandePage() {
               </div>
             </div>
 
-            {/* Méthode expédition */}
+            {/* ══ Livraison par vendeur ══ */}
             <div>
-              <label className={labelCls}><Truck className="w-4 h-4 inline mr-1 text-orange-700" /> Méthode d&apos;expédition *</label>
-              <div className="space-y-2">
-                {METHODES_EXPEDITION.map(opt => (
-                  <button key={opt.label} type="button" onClick={() => setMethodeExpedition(opt.label)}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 text-sm transition-all ${
-                      methodeExpedition === opt.label
-                        ? 'border-orange-700 bg-orange-50 dark:bg-orange-950/60'
-                        : 'border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600'
-                    }`}>
-                    <div className="flex items-center gap-3 text-left">
-                      <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
-                        methodeExpedition === opt.label ? 'border-orange-700' : 'border-stone-300 dark:border-stone-600'
-                      }`}>
-                        {methodeExpedition === opt.label && <div className="w-2 h-2 rounded-full bg-orange-700" />}
-                      </div>
-                      <div>
-                        <p className={`font-medium ${methodeExpedition === opt.label ? 'text-orange-700 dark:text-orange-400' : 'text-stone-700 dark:text-stone-300'}`}>
-                          {opt.label}
-                        </p>
-                        <p className="text-xs text-stone-400">{opt.delai}</p>
+              <label className={labelCls}>
+                <Truck className="w-4 h-4 inline mr-1 text-orange-700" /> Expédition par vendeur
+              </label>
+              <div className="space-y-4">
+                {vendeurCalcs.map(vc => {
+                  const key = vc.vendeurId ?? '__admin__'
+                  return (
+                    <div key={key} className="border border-stone-200 dark:border-stone-700 rounded-2xl overflow-hidden">
+                      {/* Header vendeur */}
+                      <VendeurInfoBadge vendeurInfo={vc.vendeurInfo} />
+
+                      {/* Sélecteur d'expédition */}
+                      <div className="px-3 pb-3">
+                        <ExpeditionSelector
+                          vendeurKey={key}
+                          selected={methodeParVendeur[key] ?? METHODES_EXPEDITION[0].label}
+                          onChange={(k, m) => setMethodeParVendeur(prev => ({ ...prev, [k]: m }))}
+                        />
+                        {/* Sous-total de ce groupe */}
+                        <div className="flex justify-between items-center mt-3 px-1 text-xs text-stone-500 dark:text-stone-400">
+                          <span>Articles ({vc.items.length})</span>
+                          <span className="tabular-nums">{vc.sousTotal.toFixed(2)} DA</span>
+                        </div>
+                        <div className="flex justify-between items-center px-1 text-xs font-semibold text-stone-700 dark:text-stone-300 mt-0.5">
+                          <span>Sous-total avec livraison</span>
+                          <span className="tabular-nums text-orange-700 dark:text-orange-400">{vc.totalGroupe.toFixed(2)} DA</span>
+                        </div>
                       </div>
                     </div>
-                    <span className={`font-bold shrink-0 ${methodeExpedition === opt.label ? 'text-orange-700 dark:text-orange-400' : 'text-stone-500 dark:text-stone-400'}`}>
-                      {opt.frais} DA
-                    </span>
-                  </button>
-                ))}
+                  )
+                })}
               </div>
             </div>
 
@@ -370,53 +486,78 @@ export default function NouvelleCommandePage() {
               Résumé ({panier.items.length} article{panier.items.length > 1 ? 's' : ''})
             </h2>
 
-            <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
-              {lignesCalc.map(({ item, prixUnit, prixBase, estReduit, sousLigne }) => {
-                const typeOpt = item.product.typeOption || 'Taille'
-                const img = item.variant?.images?.[0] ?? item.product.images?.[0]
+            {/* Détails par vendeur */}
+            <div className="space-y-4 max-h-80 overflow-y-auto pr-1">
+              {vendeurCalcs.map(vc => {
+                const key = vc.vendeurId ?? '__admin__'
                 return (
-                  <div key={item.id} className="flex gap-2.5 items-start">
-                    <div className="w-10 h-10 bg-stone-100 dark:bg-stone-800 rounded-lg overflow-hidden shrink-0">
-                      {img ? <Image src={img} alt={item.product.nom} width={40} height={40} className="w-full h-full object-cover" />
-                           : <div className="w-full h-full flex items-center justify-center"><Package className="w-4 h-4 text-stone-400" /></div>}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-stone-700 dark:text-stone-300 line-clamp-1">{item.product.nom}</p>
-                      {(item.variant || item.variantOption) && (
-                        <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                          {item.variant?.couleur && (
-                            <span className="w-2.5 h-2.5 rounded-full border border-stone-300 shrink-0 inline-block"
-                              style={{ backgroundColor: item.variant.couleur }} />
-                          )}
-                          {item.variant && <span className="text-[10px] text-stone-400">{item.variant.nom}</span>}
-                          {item.variantOption && (
-                            <>
-                              <ChevronRight className="w-2.5 h-2.5 text-stone-300 shrink-0" />
-                              <span className="text-[10px] text-stone-400 flex items-center gap-0.5">
-                                <Ruler className="w-2.5 h-2.5" />{typeOpt} {item.variantOption.valeur}
-                              </span>
-                            </>
-                          )}
-                        </div>
-                      )}
-                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        <span className="text-xs text-stone-400">×{item.quantite}</span>
-                        {estReduit ? (
-                          <>
-                            <span className="text-xs font-semibold text-green-700 dark:text-green-400">{prixUnit.toFixed(2)} DA/u.</span>
-                            <span className="text-[10px] text-stone-400 line-through">{prixBase.toFixed(2)}</span>
-                            <span className="text-[10px] bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 px-1 py-0.5 rounded-full font-bold flex items-center gap-0.5">
-                              <TrendingDown className="w-2.5 h-2.5" />−{Math.round((1 - prixUnit / prixBase) * 100)}%
+                  <div key={key}>
+                    <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest flex items-center gap-1 mb-2">
+                      <Store className="w-3 h-3" />
+                      {vc.vendeurInfo?.nomBoutique ?? 'Caba Store'}
+                    </p>
+                    <div className="space-y-2">
+                      {vc.items.map(item => {
+                        const prixUnit   = getPrixUnitaire(item.product, qteParProduit.get(item.product.id) ?? item.quantite)
+                        const prixBase   = item.product.prix
+                        const estReduit  = prixUnit < prixBase
+                        const sousLigne  = prixUnit * item.quantite
+                        const typeOpt    = item.product.typeOption || 'Taille'
+                        const img        = item.variant?.images?.[0] ?? item.product.images?.[0]
+                        return (
+                          <div key={item.id} className="flex gap-2.5 items-start">
+                            <div className="w-9 h-9 bg-stone-100 dark:bg-stone-800 rounded-lg overflow-hidden shrink-0">
+                              {img ? <Image src={img} alt={item.product.nom} width={36} height={36} className="w-full h-full object-cover" />
+                                   : <div className="w-full h-full flex items-center justify-center"><Package className="w-4 h-4 text-stone-400" /></div>}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium text-stone-700 dark:text-stone-300 line-clamp-1">{item.product.nom}</p>
+                              {(item.variant || item.variantOption) && (
+                                <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                                  {item.variant?.couleur && (
+                                    <span className="w-2.5 h-2.5 rounded-full border border-stone-300 shrink-0 inline-block"
+                                      style={{ backgroundColor: item.variant.couleur }} />
+                                  )}
+                                  {item.variant && <span className="text-[10px] text-stone-400">{item.variant.nom}</span>}
+                                  {item.variantOption && (
+                                    <>
+                                      <ChevronRight className="w-2.5 h-2.5 text-stone-300 shrink-0" />
+                                      <span className="text-[10px] text-stone-400 flex items-center gap-0.5">
+                                        <Ruler className="w-2.5 h-2.5" />{typeOpt} {item.variantOption.valeur}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                <span className="text-xs text-stone-400">×{item.quantite}</span>
+                                {estReduit ? (
+                                  <>
+                                    <span className="text-xs font-semibold text-green-700 dark:text-green-400">{prixUnit.toFixed(2)} DA/u.</span>
+                                    <span className="text-[10px] text-stone-400 line-through">{prixBase.toFixed(2)}</span>
+                                    <span className="text-[10px] bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 px-1 py-0.5 rounded-full font-bold flex items-center gap-0.5">
+                                      <TrendingDown className="w-2.5 h-2.5" />−{Math.round((1 - prixUnit / prixBase) * 100)}%
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="text-xs text-stone-500 dark:text-stone-400">{prixUnit.toFixed(2)} DA/u.</span>
+                                )}
+                              </div>
+                            </div>
+                            <span className="text-xs font-bold text-stone-800 dark:text-stone-200 shrink-0">
+                              {sousLigne.toFixed(2)} DA
                             </span>
-                          </>
-                        ) : (
-                          <span className="text-xs text-stone-500 dark:text-stone-400">{prixUnit.toFixed(2)} DA/u.</span>
-                        )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                    {/* Frais de ce vendeur */}
+                    <div className="mt-2 pt-2 border-t border-stone-100 dark:border-stone-800">
+                      <div className="flex justify-between text-xs text-stone-400">
+                        <span>Livraison ({vc.methode})</span>
+                        <span>{vc.fraisLivraison} DA</span>
                       </div>
                     </div>
-                    <span className="text-xs font-bold text-stone-800 dark:text-stone-200 shrink-0">
-                      {sousLigne.toFixed(2)} DA
-                    </span>
                   </div>
                 )
               })}
@@ -433,8 +574,8 @@ export default function NouvelleCommandePage() {
                 </div>
               )}
               <div className="flex justify-between text-sm text-stone-500 dark:text-stone-400">
-                <span>Livraison ({selectedExpedition.label})</span>
-                <span>{fraisLivraison} DA</span>
+                <span>Livraison totale ({vendeurCalcs.length} vendeur{vendeurCalcs.length > 1 ? 's' : ''})</span>
+                <span>{totalFrais} DA</span>
               </div>
               <div className="flex justify-between font-bold text-lg pt-1 border-t border-stone-100 dark:border-stone-800">
                 <span className="text-stone-800 dark:text-stone-100">Total</span>
@@ -451,22 +592,12 @@ export default function NouvelleCommandePage() {
           className="fixed inset-0 z-60 flex items-end sm:items-center justify-center bg-black/50 px-4"
           onClick={e => { if (e.target === e.currentTarget) setShowModal(false) }}
         >
-          <div className="
-            bg-white dark:bg-stone-900 rounded-t-3xl sm:rounded-2xl
-            shadow-2xl border border-stone-100 dark:border-stone-800
-            w-full max-w-md
-            max-h-[calc(100dvh-5rem)] sm:max-h-[90vh]
-            overflow-y-auto
-            pb-[calc(1.5rem+env(safe-area-inset-bottom))]
-            sm:pb-6
-          ">
-            {/* Drag handle (mobile) */}
+          <div className="bg-white dark:bg-stone-900 rounded-t-3xl sm:rounded-2xl shadow-2xl border border-stone-100 dark:border-stone-800 w-full max-w-md max-h-[calc(100dvh-5rem)] sm:max-h-[90vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
             <div className="flex justify-center pt-3 pb-1 sm:hidden">
               <div className="w-10 h-1 rounded-full bg-stone-200 dark:bg-stone-700" />
             </div>
 
             <div className="px-6 pt-4 pb-2">
-              {/* Header */}
               <div className="text-center mb-5">
                 <div className="w-14 h-14 bg-orange-50 dark:bg-orange-950/50 rounded-2xl flex items-center justify-center mx-auto mb-3">
                   <ShoppingBag className="w-7 h-7 text-orange-700 dark:text-orange-400" />
@@ -475,7 +606,7 @@ export default function NouvelleCommandePage() {
                 <p className="text-stone-400 text-sm mt-1">Vérifiez les détails avant de valider</p>
               </div>
 
-              {/* Détails */}
+              {/* Détails de livraison par vendeur */}
               <div className="space-y-2 mb-4">
                 <div className="bg-stone-50 dark:bg-stone-800 rounded-xl p-3">
                   <p className="text-xs text-stone-400 mb-1 flex items-center gap-1">
@@ -483,20 +614,25 @@ export default function NouvelleCommandePage() {
                   </p>
                   <p className="text-sm text-stone-800 dark:text-stone-200">{adresse}</p>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-stone-50 dark:bg-stone-800 rounded-xl p-3">
-                    <p className="text-xs text-stone-400 mb-1 flex items-center gap-1">
-                      <CreditCard className="w-3.5 h-3.5" /> Paiement
-                    </p>
-                    <p className="text-sm font-medium text-stone-800 dark:text-stone-200 leading-snug">{modePaiement}</p>
-                  </div>
-                  <div className="bg-stone-50 dark:bg-stone-800 rounded-xl p-3">
-                    <p className="text-xs text-stone-400 mb-1 flex items-center gap-1">
-                      <Truck className="w-3.5 h-3.5" /> Livraison
-                    </p>
-                    <p className="text-sm font-medium text-stone-800 dark:text-stone-200 leading-snug">{methodeExpedition}</p>
-                  </div>
+                <div className="bg-stone-50 dark:bg-stone-800 rounded-xl p-3">
+                  <p className="text-xs text-stone-400 mb-1 flex items-center gap-1">
+                    <CreditCard className="w-3.5 h-3.5" /> Paiement
+                  </p>
+                  <p className="text-sm font-medium text-stone-800 dark:text-stone-200">{modePaiement}</p>
                 </div>
+                {vendeurCalcs.map(vc => (
+                  <div key={vc.vendeurId ?? '__admin__'} className="bg-stone-50 dark:bg-stone-800 rounded-xl p-3">
+                    <p className="text-xs text-stone-400 mb-1 flex items-center gap-1">
+                      <Store className="w-3.5 h-3.5" /> {vc.vendeurInfo?.nomBoutique ?? 'Caba Store'}
+                    </p>
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm font-medium text-stone-700 dark:text-stone-300 flex items-center gap-1">
+                        <Truck className="w-3.5 h-3.5 text-orange-700" /> {vc.methode}
+                      </p>
+                      <p className="text-sm font-semibold text-orange-700 dark:text-orange-400">{vc.totalGroupe.toFixed(2)} DA</p>
+                    </div>
+                  </div>
+                ))}
               </div>
 
               {/* Totaux */}
@@ -510,7 +646,7 @@ export default function NouvelleCommandePage() {
                   </div>
                 )}
                 <div className="flex justify-between text-sm text-stone-500 dark:text-stone-400">
-                  <span>Livraison</span><span>{fraisLivraison} DA</span>
+                  <span>Livraison</span><span>{totalFrais} DA</span>
                 </div>
                 <div className="flex justify-between font-bold text-lg border-t border-stone-100 dark:border-stone-800 pt-2">
                   <span className="text-stone-800 dark:text-stone-100">Total</span>
@@ -518,7 +654,6 @@ export default function NouvelleCommandePage() {
                 </div>
               </div>
 
-              {/* Boutons */}
               <div className="flex gap-3">
                 <button onClick={() => setShowModal(false)}
                   className="flex-1 border-2 border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 font-semibold py-3 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800 transition">
