@@ -124,11 +124,11 @@ function CommandesContent() {
                     {commande.statut === 'LIVREE' && (
                       commande.retourDemande ? (
                         <span onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-stone-200 dark:border-stone-700 text-stone-400 dark:text-stone-500 cursor-default">
-                          <Check className="w-3.5 h-3.5" /> Retour demandé
+                          <Check className="w-3.5 h-3.5" /> Demande de retour déjà effectuée
                         </span>
                       ) : (
                         <Link href={`/retours`} onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition">
-                          ↩ Retour
+                          ↩ Réclamer
                         </Link>
                       )
                     )}

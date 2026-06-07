@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import {
   ShoppingCart, Search, ChevronDown, ChevronUp,
   CheckCircle2, Truck, PackageCheck, Clock, XCircle, RotateCcw,
-  Package, ChevronRight, Loader2,
+  Package, ChevronRight, Loader2, MoreVertical,
 } from 'lucide-react'
 import {
   heading, card, tableWrapper, tableHead, tableTh, tableTd, tableRow,
@@ -53,26 +53,105 @@ const STATUT_ICON: Record<string, React.ElementType> = {
   RETOURNEE:      RotateCcw,
 }
 
-// Actions possibles selon le statut courant (vendeur)
-const NEXT_ACTION: Record<string, { label: string; statut?: string; approuver?: boolean; color: string }> = {
+// Actions rapides (avancement linéaire) — vendeur
+const NEXT_ACTION_VENDEUR: Record<string, { label: string; statut?: string; approuver?: boolean; color: string }> = {
   EN_ATTENTE:     { label: 'Approuver',         approuver: true,             color: 'bg-emerald-600 hover:bg-emerald-700 text-white' },
   CONFIRMEE:      { label: 'Mettre en prépa.',  statut: 'EN_PREPARATION',    color: 'bg-orange-600 hover:bg-orange-700 text-white' },
   EN_PREPARATION: { label: 'Marquer expédiée',  statut: 'EXPEDIEE',          color: 'bg-indigo-600 hover:bg-indigo-700 text-white' },
   EXPEDIEE:       { label: 'Marquer livrée',    statut: 'LIVREE',            color: 'bg-green-600 hover:bg-green-700 text-white' },
 }
 
-// Actions pour l'admin (force le statut global directement via /api/admin/commandes)
-const NEXT_ACTION_ADMIN: Record<string, { label: string; statut?: string; approuver?: boolean; color: string }> = {
-  EN_ATTENTE:     { label: 'Confirmer',         statut: 'CONFIRMEE',         color: 'bg-emerald-600 hover:bg-emerald-700 text-white' },
-  CONFIRMEE:      { label: 'Mettre en prépa.',  statut: 'EN_PREPARATION',    color: 'bg-orange-600 hover:bg-orange-700 text-white' },
-  EN_PREPARATION: { label: 'Marquer expédiée',  statut: 'EXPEDIEE',          color: 'bg-indigo-600 hover:bg-indigo-700 text-white' },
-  EXPEDIEE:       { label: 'Marquer livrée',    statut: 'LIVREE',            color: 'bg-green-600 hover:bg-green-700 text-white' },
+// Actions admin : changement direct de statut + annulation
+const ADMIN_ACTIONS: Record<string, { label: string; statut: string; color: string }[]> = {
+  EN_ATTENTE:     [
+    { label: '✓ Confirmer',         statut: 'CONFIRMEE',      color: 'text-emerald-600 dark:text-emerald-400' },
+    { label: '✕ Annuler',           statut: 'ANNULEE',        color: 'text-red-600 dark:text-red-400' },
+  ],
+  CONFIRMEE:      [
+    { label: '📦 Mettre en prépa.', statut: 'EN_PREPARATION', color: 'text-orange-600 dark:text-orange-400' },
+    { label: '✕ Annuler',           statut: 'ANNULEE',        color: 'text-red-600 dark:text-red-400' },
+  ],
+  EN_PREPARATION: [
+    { label: '🚚 Marquer expédiée', statut: 'EXPEDIEE',       color: 'text-indigo-600 dark:text-indigo-400' },
+    { label: '✕ Annuler',           statut: 'ANNULEE',        color: 'text-red-600 dark:text-red-400' },
+  ],
+  EXPEDIEE:       [
+    { label: '✓ Marquer livrée',    statut: 'LIVREE',         color: 'text-green-600 dark:text-green-400' },
+    { label: '↩ Retourner',         statut: 'RETOURNEE',      color: 'text-amber-600 dark:text-amber-400' },
+  ],
+  LIVREE:         [
+    { label: '↩ Retourner',         statut: 'RETOURNEE',      color: 'text-amber-600 dark:text-amber-400' },
+  ],
+  ANNULEE:        [
+    { label: '↺ Remettre en attente', statut: 'EN_ATTENTE',  color: 'text-blue-600 dark:text-blue-400' },
+  ],
+  RETOURNEE:      [
+    { label: '↺ Remettre en attente', statut: 'EN_ATTENTE',  color: 'text-blue-600 dark:text-blue-400' },
+  ],
 }
 
-// Statuts où l'admin peut encore annuler la commande
-const ANNULABLE = ['EN_ATTENTE', 'CONFIRMEE', 'EN_PREPARATION', 'EXPEDIEE']
-
 const STATUTS_FILTRE = ['', 'EN_ATTENTE', 'CONFIRMEE', 'EN_PREPARATION', 'EXPEDIEE', 'LIVREE', 'ANNULEE']
+
+// ── Dropdown menu admin ────────────────────────────────────────────────────────
+function AdminActionsMenu({
+  cmd,
+  onAction,
+  loading,
+}: {
+  cmd: Commande
+  onAction: (statut: string) => void
+  loading: boolean
+}) {
+  const actions = ADMIN_ACTIONS[cmd.statut] ?? []
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  if (actions.length === 0) return null
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={e => { e.stopPropagation(); setOpen(o => !o) }}
+        disabled={loading}
+        className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-semibold transition-all active:scale-95 disabled:opacity-50
+          bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 whitespace-nowrap"
+      >
+        {loading
+          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          : <MoreVertical className="w-3.5 h-3.5" />
+        }
+        Actions
+        <ChevronDown className="w-3 h-3" />
+      </button>
+
+      {open && (
+        <div
+          className="absolute right-0 top-full mt-1 z-50 min-w-44 rounded-xl border border-stone-200 dark:border-stone-700
+            bg-white dark:bg-stone-900 shadow-lg py-1 overflow-hidden"
+          onClick={e => e.stopPropagation()}
+        >
+          {actions.map(a => (
+            <button
+              key={a.statut}
+              onClick={() => { setOpen(false); onAction(a.statut) }}
+              className={`w-full text-left text-sm px-4 py-2.5 font-medium hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors ${a.color}`}
+            >
+              {a.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function DashboardCommandesView({
   commandes: initial,
@@ -105,18 +184,16 @@ export default function DashboardCommandesView({
     return matchSearch && matchStatut
   })
 
-  const handleAction = async (cmd: Commande) => {
-    const action = isAdmin ? NEXT_ACTION_ADMIN[cmd.statut] : NEXT_ACTION[cmd.statut]
+  // Action vendeur (avancement linéaire)
+  const handleVendeurAction = async (cmd: Commande) => {
+    const action = NEXT_ACTION_VENDEUR[cmd.statut]
     if (!action) return
     setLoading(cmd.id)
     try {
       const body: Record<string, unknown> = {}
       if (action.approuver) body.approuver = true
       if (action.statut)    body.statut    = action.statut
-      const endpoint = isAdmin
-        ? `/api/admin/commandes/${cmd.id}`
-        : `/api/vendeur/commandes/${cmd.id}`
-      const res  = await fetch(endpoint, {
+      const res  = await fetch(`/api/vendeur/commandes/${cmd.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -132,20 +209,19 @@ export default function DashboardCommandesView({
     }
   }
 
-  const handleCancel = async (cmd: Commande) => {
-    if (!isAdmin) return
-    if (!window.confirm('Annuler définitivement cette commande ?')) return
+  // Action admin (statut direct)
+  const handleAdminAction = async (cmd: Commande, statut: string) => {
     setLoading(cmd.id)
     try {
       const res = await fetch(`/api/admin/commandes/${cmd.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ statut: 'ANNULEE' }),
+        body: JSON.stringify({ statut }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erreur')
-      setCommandes(prev => prev.map(c => c.id === cmd.id ? { ...c, statut: 'ANNULEE' } : c))
-      showToast('Commande annulée', true)
+      setCommandes(prev => prev.map(c => c.id === cmd.id ? { ...c, statut } : c))
+      showToast(`Commande mise à jour : ${STATUT_LABEL[statut] ?? statut}`, true)
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Erreur', false)
     } finally {
@@ -224,7 +300,7 @@ export default function DashboardCommandesView({
           <div className="divide-y divide-stone-100 dark:divide-stone-800">
             {filtered.map(cmd => {
               const StatusIcon = STATUT_ICON[cmd.statut] ?? Clock
-              const action     = isAdmin ? NEXT_ACTION_ADMIN[cmd.statut] : NEXT_ACTION[cmd.statut]
+              const vendeurAction = !isAdmin ? NEXT_ACTION_VENDEUR[cmd.statut] : null
               const isExp      = expanded === cmd.id
               const isLoading  = loading === cmd.id
               const montant    = cmd.totalVendeur ?? cmd.total
@@ -256,24 +332,20 @@ export default function DashboardCommandesView({
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-2 shrink-0">
-                        {action && (
+                        {isAdmin ? (
+                          <AdminActionsMenu
+                            cmd={cmd}
+                            onAction={(statut) => handleAdminAction(cmd, statut)}
+                            loading={isLoading}
+                          />
+                        ) : vendeurAction && (
                           <button
-                            onClick={e => { e.stopPropagation(); handleAction(cmd) }}
+                            onClick={e => { e.stopPropagation(); handleVendeurAction(cmd) }}
                             disabled={isLoading}
-                            className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1 ${action.color}`}
+                            className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1 ${vendeurAction.color}`}
                           >
                             {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-                            {action.label}
-                          </button>
-                        )}
-                        {isAdmin && ANNULABLE.includes(cmd.statut) && (
-                          <button
-                            onClick={e => { e.stopPropagation(); handleCancel(cmd) }}
-                            disabled={isLoading}
-                            className="text-xs px-3 py-1.5 rounded-lg font-semibold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white"
-                          >
-                            {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-                            Annuler
+                            {vendeurAction.label}
                           </button>
                         )}
                         {isExp ? <ChevronUp className="w-4 h-4 text-stone-400" /> : <ChevronDown className="w-4 h-4 text-stone-400" />}
@@ -314,25 +386,21 @@ export default function DashboardCommandesView({
                           {STATUT_LABEL[cmd.statut] ?? cmd.statut}
                         </span>
                       </div>
-                      <div className={`${tableTd} flex flex-col gap-1.5`}>
-                        {action && (
+                      <div className={tableTd}>
+                        {isAdmin ? (
+                          <AdminActionsMenu
+                            cmd={cmd}
+                            onAction={(statut) => handleAdminAction(cmd, statut)}
+                            loading={isLoading}
+                          />
+                        ) : vendeurAction && (
                           <button
-                            onClick={e => { e.stopPropagation(); handleAction(cmd) }}
+                            onClick={e => { e.stopPropagation(); handleVendeurAction(cmd) }}
                             disabled={isLoading}
-                            className={`text-xs px-3 py-2 rounded-xl font-semibold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1 whitespace-nowrap ${action.color}`}
+                            className={`text-xs px-3 py-2 rounded-xl font-semibold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1 whitespace-nowrap ${vendeurAction.color}`}
                           >
                             {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-                            {action.label}
-                          </button>
-                        )}
-                        {isAdmin && ANNULABLE.includes(cmd.statut) && (
-                          <button
-                            onClick={e => { e.stopPropagation(); handleCancel(cmd) }}
-                            disabled={isLoading}
-                            className="text-xs px-3 py-2 rounded-xl font-semibold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1 whitespace-nowrap bg-red-600 hover:bg-red-700 text-white"
-                          >
-                            {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-                            Annuler
+                            {vendeurAction.label}
                           </button>
                         )}
                       </div>
@@ -388,6 +456,14 @@ export default function DashboardCommandesView({
                               </div>
                             </div>
                           ))}
+                        </div>
+
+                        {/* Total + actions admin dans le détail (mobile) */}
+                        <div className="flex items-center justify-between pt-1 border-t border-stone-100 dark:border-stone-700">
+                          <span className="text-xs text-stone-400">Total commande</span>
+                          <span className="text-sm font-bold text-stone-800 dark:text-stone-100">
+                            {Number(cmd.total).toLocaleString('fr-DZ')} DA
+                          </span>
                         </div>
                       </div>
                     </div>
