@@ -61,10 +61,11 @@ const NEXT_ACTION_VENDEUR: Record<string, { label: string; statut?: string; appr
 }
 
 // Actions admin — uniquement les statuts de l'enum OrderStatus
-const ADMIN_ACTIONS: Record<string, { label: string; statut: string; color: string }[]> = {
+const ADMIN_ACTIONS: Record<string, { label: string; statut?: string; approuver?: boolean; color: string }[]> = {
   EN_ATTENTE: [
-    { label: '✓ Confirmer',           statut: 'CONFIRMEE',      color: 'text-emerald-600 dark:text-emerald-400' },
-    { label: '✕ Annuler',             statut: 'ANNULEE',        color: 'text-red-600 dark:text-red-400'         },
+    { label: '✓ Approuver ma part',       approuver: true,          color: 'text-emerald-600 dark:text-emerald-400' },
+    { label: '⚡ Confirmer directement',  statut: 'CONFIRMEE',      color: 'text-blue-600 dark:text-blue-400'       },
+    { label: '✕ Annuler',                 statut: 'ANNULEE',        color: 'text-red-600 dark:text-red-400'         },
   ],
   CONFIRMEE: [
     { label: '📦 Mettre en prépa.',   statut: 'EN_PREPARATION', color: 'text-orange-600 dark:text-orange-400'  },
@@ -96,7 +97,7 @@ function AdminActionsMenu({
   isLoading,
 }: {
   cmd: Commande
-  onAction: (statut: string) => void
+  onAction: (statut?: string, approuver?: boolean) => void
   isLoading: boolean
 }) {
   const actions = ADMIN_ACTIONS[cmd.statut] ?? []
@@ -163,7 +164,7 @@ function AdminActionsMenu({
           {actions.map(a => (
             <button
               key={a.statut}
-              onClick={() => { setOpen(false); onAction(a.statut) }}
+              onClick={() => { setOpen(false); onAction(a.statut, a.approuver) }}
               className={`w-full text-left text-sm px-4 py-2.5 font-medium
                 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors ${a.color}`}
             >
@@ -231,18 +232,22 @@ export default function DashboardCommandesView({
   }
 
   // Action admin — changement direct via /api/admin/commandes/[id]
-  const handleAdminAction = async (cmd: Commande, statut: string) => {
+  const handleAdminAction = async (cmd: Commande, statut?: string, approuver?: boolean) => {
     setLoading(cmd.id)
     try {
+      const body: Record<string, unknown> = {}
+      if (approuver) body.approuver = true
+      if (statut)    body.statut    = statut
+
       const res = await fetch(`/api/admin/commandes/${cmd.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ statut }),
+        body: JSON.stringify(body),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erreur')
-      setCommandes(prev => prev.map(c => c.id === cmd.id ? { ...c, statut } : c))
-      showToast(`Statut → ${STATUT_LABEL[statut] ?? statut}`, true)
+      setCommandes(prev => prev.map(c => c.id === cmd.id ? { ...c, ...data } : c))
+      showToast(data.message ?? (statut ? `Statut → ${STATUT_LABEL[statut] ?? statut}` : 'Action effectuée'), true)
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Erreur', false)
     } finally {
@@ -352,7 +357,7 @@ export default function DashboardCommandesView({
                       </div>
                       <div className="flex flex-col items-end gap-2 shrink-0" onClick={e => e.stopPropagation()}>
                         {isAdmin ? (
-                          <AdminActionsMenu cmd={cmd} onAction={s => handleAdminAction(cmd, s)} isLoading={isLoading} />
+                          <AdminActionsMenu cmd={cmd} onAction={(s, a) => handleAdminAction(cmd, s, a)} isLoading={isLoading} />
                         ) : vendeurAction ? (
                           <button
                             onClick={() => handleVendeurAction(cmd)}
@@ -403,7 +408,7 @@ export default function DashboardCommandesView({
                       </div>
                       <div className={tableTd} onClick={e => e.stopPropagation()}>
                         {isAdmin ? (
-                          <AdminActionsMenu cmd={cmd} onAction={s => handleAdminAction(cmd, s)} isLoading={isLoading} />
+                          <AdminActionsMenu cmd={cmd} onAction={(s, a) => handleAdminAction(cmd, s, a)} isLoading={isLoading} />
                         ) : vendeurAction ? (
                           <button
                             onClick={() => handleVendeurAction(cmd)}
