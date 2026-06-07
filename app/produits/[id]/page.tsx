@@ -142,7 +142,7 @@ export default async function ProduitDetailPage({
           typeOption:    produit.typeOption ?? null,
           variants:      produit.variants,
         }}
-        vendeurInfo={vendeurInfo}
+
       />
 
       {/* Produits similaires */}
