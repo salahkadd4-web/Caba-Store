@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
+import { useScrollLock } from '@/lib/hooks/useScrollLock'
 import { signOut } from 'next-auth/react'
 import VendeurDocumentsClient from './VendeurDocumentsClient'
 import { Ban, BarChart2, CreditCard, Loader2, Package, RefreshCw, ShoppingCart, Store, Tag, X } from 'lucide-react'
@@ -302,6 +303,8 @@ export default function VendeurLayoutClient({
   children,
 }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  useScrollLock(sidebarOpen)
 
   // ── Compte en attente ou suspendu ─────────────────
   if (statut === 'EN_ATTENTE' || statut === 'SUSPENDU') {

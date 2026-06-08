@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useScrollLock } from '@/lib/hooks/useScrollLock'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -154,6 +155,8 @@ export default function ProduitsSearch({
   const [loading,         setLoading]         = useState(false)
   const [categorieActive, setCategorieActive] = useState(initialCategorie ?? '')
   const [sidebarOpen,     setSidebarOpen]     = useState(false)
+
+  useScrollLock(sidebarOpen)
 
   const hasFilters = query.trim() !== '' || categorieActive !== ''
 

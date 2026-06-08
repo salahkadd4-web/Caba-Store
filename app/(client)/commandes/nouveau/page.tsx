@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useScrollLock } from '@/lib/hooks/useScrollLock'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -151,6 +152,8 @@ export default function NouvelleCommandePage() {
   const [hasTelephone, setHasTelephone] = useState(true)
   const [savingTel,    setSavingTel]    = useState(false)
   const [telError,     setTelError]     = useState('')
+
+  useScrollLock(showModal)
 
   useEffect(() => {
     Promise.all([

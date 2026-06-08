@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useScrollLock } from '@/lib/hooks/useScrollLock'
 import { Store, Phone, Mail, MapPin, ChevronRight } from 'lucide-react'
 
 type VendeurInfo = {
@@ -34,20 +35,17 @@ export default function VendeurButton({ produitId }: { produitId: string }) {
       .catch(() => setLoading(false))
   }, [produitId])
 
-  // Lock body scroll when sheet is open
+  useScrollLock(open)
+
+  // Reset sheet position on close
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-      // Reset sheet position on close
+    if (!open) {
       if (sheetRef.current) {
         sheetRef.current.style.transform = 'translateY(0)'
         sheetRef.current.style.transition = ''
       }
       dragY.current = 0
     }
-    return () => { document.body.style.overflow = '' }
   }, [open])
 
   const onDragStart = useCallback((clientY: number) => {

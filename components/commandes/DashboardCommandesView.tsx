@@ -28,6 +28,7 @@ export type Commande = {
   total: number
   adresse?: string | null
   adresseLivraison?: string | null   // alias de compatibilité
+  groupeId?: string | null           // Lien bureau de livraison (multi-vendeurs)
   user?: { nom: string | null; prenom: string | null; email: string | null; telephone?: string | null } | null
   items: OrderItem[]
   totalVendeur?: number
@@ -411,6 +412,11 @@ export default function DashboardCommandesView({
                           {cmd.user?.email     && <span>✉ {cmd.user.email}</span>}
                           {cmd.user?.telephone && <span>☎ {cmd.user.telephone}</span>}
                           {adresse             && <span>📍 {adresse}</span>}
+                          {cmd.groupeId        && (
+                            <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 font-medium">
+                              🏢 Groupe bureau · {cmd.groupeId.slice(0, 8)}…
+                            </span>
+                          )}
                         </div>
 
                         {/* Articles */}

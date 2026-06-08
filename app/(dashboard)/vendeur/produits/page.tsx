@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useScrollLock } from '@/lib/hooks/useScrollLock'
 import Image from 'next/image'
 import {
   Plus, Pencil, Trash2, TrendingDown, Palette, Package,
@@ -66,6 +67,8 @@ export default function VendeurProduitsPage() {
   const [filterCategory, setFilterCategory] = useState('')
   const fileRef    = useRef<HTMLInputElement>(null)
   const varFileRef = useRef<HTMLInputElement>(null)
+
+  useScrollLock(showForm)
 
   const fetchData = useCallback(async () => {
     setLoading(true)

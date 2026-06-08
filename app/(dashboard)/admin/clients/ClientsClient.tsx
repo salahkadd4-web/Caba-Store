@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useScrollLock } from '@/lib/hooks/useScrollLock'
 import Image from 'next/image'
 import { Calendar, Eye, Heart, Mail, Phone, Search, Trash2, X } from 'lucide-react'
 import {
@@ -46,6 +47,8 @@ export default function ClientsClient({ initialData }: { initialData: Client[] }
   const [deleteId,       setDeleteId]       = useState<string | null>(null)
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [loadingDetail,  setLoadingDetail]  = useState(false)
+
+  useScrollLock(!!selectedClient || deleteId !== null)
 
   const debouncedSearch = useDebounce(search, 350)
   const abortRef = useRef<AbortController | null>(null)

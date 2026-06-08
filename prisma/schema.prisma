@@ -191,6 +191,7 @@ model Order {
   createdAt            DateTime    @default(now())
   updatedAt            DateTime    @updatedAt
   userId               String
+  groupeId             String?
   fraisLivraison       Float       @default(700)
   methodeExpedition    String      @default("Livraison standard")
   modePaiement         String      @default("Paiement à la livraison")

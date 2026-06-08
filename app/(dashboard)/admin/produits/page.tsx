@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useScrollLock } from '@/lib/hooks/useScrollLock'
 import Image from 'next/image'
 import MultiImageUpload from '@/components/admin/MultiImageUpload'
 import {
@@ -58,6 +59,8 @@ export default function AdminProduitsPage() {
   const [filterCat,     setFilterCat]     = useState('')
   const [adminOnly,     setAdminOnly]     = useState(false)
   const [search,        setSearch]        = useState('')
+
+  useScrollLock(showModal)
 
   const fetchVendeurs = useCallback(async () => {
     const res = await fetch('/api/admin/vendeurs?statut=APPROUVE')

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { useScrollLock } from '@/lib/hooks/useScrollLock'
 import Image from 'next/image'
 import ImageUpload from '@/components/admin/ImageUpload'
 import { CheckCircle2, Pencil, Store, Tag, Trash2, XCircle } from 'lucide-react'
@@ -32,6 +33,8 @@ export default function CategoriesClient({ initialData }: { initialData: Categor
   const [deleteError, setDeleteError] = useState('')
   const [approvingId, setApprovingId] = useState<string | null>(null)
   const [toast,       setToast]       = useState<string | null>(null)
+
+  useScrollLock(showModal || deleteId !== null)
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000) }
 

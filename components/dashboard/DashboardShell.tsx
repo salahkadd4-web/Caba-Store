@@ -5,6 +5,7 @@ import CabaLogo from '@/components/CabaLogo'
 import { usePathname } from 'next/navigation'
 import { signOut }     from 'next-auth/react'
 import { useState }    from 'react'
+import { useScrollLock } from '@/lib/hooks/useScrollLock'
 import {
   BarChart2, CreditCard, LayoutDashboard, LogOut, Package, RefreshCw,
   Settings, ShoppingCart, Store, Tag, TrendingUp, Users, X,
@@ -298,6 +299,8 @@ export default function DashboardShell({
   children: React.ReactNode
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  useScrollLock(sidebarOpen)
 
   const navItems = role === 'ADMIN' ? adminNavItems : vendeurNavItems
 

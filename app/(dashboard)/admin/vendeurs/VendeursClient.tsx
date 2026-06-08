@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useScrollLock } from '@/lib/hooks/useScrollLock'
 import {
   Ban, Banknote, CheckCircle2, ClipboardList,
   CreditCard, Loader2, Package, Paperclip, Phone,
@@ -80,6 +81,8 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
   const [aboForm,      setAboForm]      = useState({ niveau: 'NIVEAU_3', periodicite: 'mensuel', methode: 'virement', reference: '', note: '' })
   const [savingAbo,    setSavingAbo]    = useState(false)
   const [aboMsg,       setAboMsg]       = useState<string | null>(null)
+
+  useScrollLock(!!selected || showDocModal)
 
   const showToast = (msg: string) => { setToastMsg(msg); setTimeout(() => setToastMsg(null), 3000) }
   const docStatutColor: Record<string, string> = {

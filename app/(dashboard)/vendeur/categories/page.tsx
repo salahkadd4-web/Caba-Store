@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useScrollLock } from '@/lib/hooks/useScrollLock'
 import { CheckCircle2, Loader2, Tag, X, XCircle } from 'lucide-react'
 import {
   heading, inputCls, btnPrimaryEmerald, btnSecondary,
@@ -26,6 +27,8 @@ export default function VendeurCategoriesPage() {
   const [saving,       setSaving]       = useState(false)
   const [error,        setError]        = useState<string | null>(null)
   const [success,      setSuccess]      = useState<string | null>(null)
+
+  useScrollLock(showForm)
 
   const fetchData = async () => {
     setLoading(true)

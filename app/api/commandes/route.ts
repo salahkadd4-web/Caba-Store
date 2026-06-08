@@ -3,8 +3,9 @@ import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
 import { getPrixUnitaire } from '@/lib/prix'
 import { FRAIS_EXPEDITION, METHODE_EXPEDITION_DEFAUT } from '@/lib/constants'
+import { randomUUID } from 'crypto'
 
-// GET — Récupérer les commandes de l'utilisateur
+// GET — Récupérer les commandes de l'utilisateur (groupées par groupeId côté client)
 export async function GET() {
   try {
     const token = await getAuthToken()
@@ -16,7 +17,12 @@ export async function GET() {
       include: {
         items: {
           include: {
-            product: { include: { category: { select: { nom: true } } } },
+            product: {
+              include: {
+                category: { select: { nom: true } },
+                vendeur:  { select: { id: true, nomBoutique: true } },
+              },
+            },
           },
         },
       },
@@ -83,7 +89,6 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Grouper les items du panier par vendeurId ──────────────────────────
-    // Clé : vendeurId (string) ou '__admin__' pour les produits sans vendeur
     const ADMIN_KEY = '__admin__'
     const itemsParVendeur = new Map<string, typeof panier.items>()
 
@@ -93,15 +98,10 @@ export async function POST(req: NextRequest) {
       itemsParVendeur.get(key)!.push(item)
     }
 
-    // ── Vérifier que chaque groupe commandé existe dans le panier ──────────
-    // (tolérance : si un vendeur du panier n'a pas de groupe dans le body
-    //  en mode legacy, on lui assigne la méthode par défaut)
     const groupesEffectifs: Array<{ vendeurId: string | null; methodeExpedition: string; items: typeof panier.items }> = []
 
     for (const [key, items] of itemsParVendeur) {
       const vendeurId = key === ADMIN_KEY ? null : key
-
-      // Trouver la méthode d'expédition voulue pour ce vendeur
       const groupe = vendeurGroupes.find(g =>
         (g.vendeurId === null && key === ADMIN_KEY) ||
         g.vendeurId === vendeurId
@@ -114,11 +114,11 @@ export async function POST(req: NextRequest) {
       groupesEffectifs.push({ vendeurId, methodeExpedition: methode, items })
     }
 
+    // Identifiant partagé pour toutes les commandes de ce panier.
+    // Permet au bureau de livraison de regrouper les colis multi-vendeurs.
+    const groupeId = groupesEffectifs.length > 1 ? randomUUID() : null
+
     // ── Transaction atomique ───────────────────────────────────────────────
-    // Pour chaque groupe on :
-    //   1. Décrémente les stocks (atomique, protection contre la survente)
-    //   2. Crée la commande avec les items du groupe
-    // Le vidage du panier se fait en fin de transaction.
     try {
       const commandeIds = await prisma.$transaction(async (tx) => {
         // Calcul de la quantité totale par produit (pour prix dégressifs)
@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
           qteParProduit.set(item.productId, (qteParProduit.get(item.productId) ?? 0) + item.quantite)
         }
 
-        // 1. Décrémenter les stocks (une seule passe pour tous les groupes)
+        // 1. Décrémenter les stocks
         for (const item of panier.items) {
           if (item.variantOptionId) {
             const r = await tx.variantOption.updateMany({
@@ -153,7 +153,6 @@ export async function POST(req: NextRequest) {
             if (r.count === 0) {
               throw new Error(`Stock insuffisant pour ${item.product.nom}`)
             }
-            // Désactiver si stock = 0
             await tx.product.updateMany({
               where: { id: item.productId, stock: 0 },
               data:  { actif: false },
@@ -180,6 +179,7 @@ export async function POST(req: NextRequest) {
               modePaiement:      modePaiement || 'Paiement à la livraison',
               methodeExpedition: groupe.methodeExpedition,
               fraisLivraison:    frais,
+              groupeId,            // ← lien entre toutes les commandes de ce panier
               items: {
                 create: groupe.items.map(item => ({
                   productId:           item.productId,

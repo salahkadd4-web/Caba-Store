@@ -83,6 +83,30 @@ export async function PATCH(
       )
     }
 
+    // ── Cas LIVREE : livrer tout le groupe si groupeId existe ──────────────
+    // Le bureau de livraison livre tous les colis du même panier en même temps.
+    if (statut === 'LIVREE') {
+      const orderRef = await prisma.order.findUnique({
+        where: { id },
+        select: { groupeId: true },
+      })
+
+      if (orderRef?.groupeId) {
+        // Livraison groupée : tous les colis du même panier sont livrés ensemble
+        await prisma.order.updateMany({
+          where: {
+            groupeId: orderRef.groupeId,
+            statut: { not: 'ANNULEE' },
+          },
+          data: { statut: 'LIVREE' },
+        })
+        return NextResponse.json({
+          message: `Groupe de livraison marqué comme livré (${orderRef.groupeId.slice(0, 8)}…)`,
+        })
+      }
+    }
+
+    // Mise à jour simple (pas de groupeId, ou statut ≠ LIVREE)
     const commande = await prisma.order.update({
       where: { id },
       data:  { statut },
