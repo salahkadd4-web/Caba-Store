@@ -71,24 +71,55 @@ export default function HomePage() {
       </section>
 
       {/* ══════════════════════════════════════════════════
-          HERO — Mobile (<md) : App-like
+          HERO — Mobile (<md) : Native App Header
       ══════════════════════════════════════════════════ */}
-      <section className="md:hidden bg-[#FAF7F2] dark:bg-stone-900 flex flex-col items-center justify-center pt-10 pb-6">
+      <section className="md:hidden">
 
-        {/* Logo centré grand */}
-        <div className="flex flex-col items-center justify-center px-8 w-full">
-          <CabaLogo className="w-full max-w-[320px] text-orange-700 dark:text-orange-400 drop-shadow-lg" />
+        {/* ── App Header Bar ── */}
+        <div className="flex items-center justify-between px-4 pt-4 pb-3 bg-stone-50 dark:bg-stone-950">
+          <div className="flex items-center gap-2">
+            <CabaLogo className="w-7 h-7 text-orange-700 dark:text-orange-400" />
+            <span className="text-base font-bold tracking-tight text-stone-900 dark:text-stone-50">Caba Store</span>
+          </div>
+          <span className="inline-flex items-center gap-1.5 bg-orange-50 dark:bg-orange-950/50 text-orange-700 dark:text-orange-400 text-[11px] font-semibold px-2.5 py-1 rounded-full border border-orange-200 dark:border-orange-800">
+            <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+            Livraison 48h
+          </span>
         </div>
 
-        {/* Bandeau trust compact */}
-        <div className="mt-8 w-full flex items-center justify-around px-4 py-3 bg-white dark:bg-stone-800/60 border-y border-stone-200 dark:border-stone-700">
+        {/* ── Hero Banner compact ── */}
+        <div className="mx-3 mb-3 rounded-2xl overflow-hidden relative" style={{background: 'linear-gradient(135deg, #c2410c 0%, #ea580c 50%, #d97706 100%)'}}>
+          <div className="absolute inset-0 opacity-[0.07]" style={{backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px'}} />
+          <div className="absolute -right-6 -top-6 w-36 h-36 rounded-full bg-white/10" />
+          <div className="absolute right-4 -bottom-4 w-20 h-20 rounded-full bg-white/10" />
+          <div className="relative px-5 py-5 flex items-center gap-4">
+            <div className="flex-1">
+              <p className="text-orange-200 text-[10px] font-bold uppercase tracking-[0.2em] mb-1">Bienvenue</p>
+              <h1 className="text-white text-[22px] font-bold leading-snug tracking-tight mb-3">
+                Vos produits<br />livrés chez vous
+              </h1>
+              <Link
+                href="/produits"
+                className="inline-flex items-center gap-1.5 bg-white text-orange-700 text-[13px] font-bold px-4 py-2.5 rounded-xl shadow-md active:scale-95 transition-transform"
+              >
+                Acheter maintenant
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </Link>
+            </div>
+            <CabaLogo className="shrink-0 w-20 h-20 text-white/15" />
+          </div>
+        </div>
+
+        {/* ── Trust Pills ── */}
+        <div className="flex gap-2 px-3 pb-2 overflow-x-auto scrollbar-hide">
           {TRUST_ITEMS_MOBILE.map(({ Icon, label }) => (
-            <div key={label} className="flex flex-col items-center gap-1">
-              <Icon className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-              <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium text-center leading-tight max-w-[64px]">{label}</span>
+            <div key={label} className="flex items-center gap-1.5 shrink-0 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-full px-3 py-1.5 shadow-sm">
+              <Icon className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400 shrink-0" />
+              <span className="text-[11px] font-semibold text-stone-600 dark:text-stone-300 whitespace-nowrap">{label}</span>
             </div>
           ))}
         </div>
+
       </section>
 
       {/* ══════════════════════════════════════════════════
@@ -354,7 +385,7 @@ function SectionHeader({
   return (
     <div className="text-center mb-8 md:mb-16">
       {logo && (
-        <CabaLogo className="w-10 h-10 md:w-16 md:h-16 text-orange-700 dark:text-orange-500 mx-auto mb-3 md:mb-4 opacity-80" />
+        <CabaLogo className="hidden md:block w-16 h-16 text-orange-700 dark:text-orange-500 mx-auto mb-4 opacity-80" />
       )}
       <p className="text-xs font-semibold uppercase tracking-[0.4em] text-orange-700 dark:text-orange-500 mb-3 md:mb-4 flex items-center justify-center gap-2">
         {eyebrow}
