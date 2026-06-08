@@ -160,17 +160,40 @@ function ProgressStepper({ statut }: { statut: string }) {
 
 // ─── Mini barre de progression (vendeur dans groupe) ─────────────────────────
 
+// ─── Mini stepper avec icônes (vendeur dans groupe) ───────────────────────────
+
 function MiniProgress({ statut }: { statut: string }) {
   const currentIndex = STATUT_ORDER.indexOf(statut)
   return (
-    <div className="flex items-center gap-0.5 my-2">
-      {STATUT_ORDER.map((_, i) => (
-        <div key={i} className={`h-1 flex-1 rounded-full ${
-          statut !== 'ANNULEE' && i <= currentIndex
-            ? i === currentIndex ? 'bg-orange-600' : 'bg-orange-300 dark:bg-orange-800'
-            : 'bg-stone-200 dark:bg-stone-700'
-        }`} />
-      ))}
+    <div className="flex items-center gap-1 my-2">
+      {STATUT_ORDER.map((s, i) => {
+        const cfg    = statutConfig[s]
+        const Icon   = cfg.icon
+        const done   = statut !== 'ANNULEE' && i <= currentIndex
+        const active = i === currentIndex && statut !== 'ANNULEE'
+        return (
+          <div key={s} className="flex items-center flex-1">
+            <div className="flex flex-col items-center flex-1">
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                done
+                  ? active
+                    ? 'bg-orange-700 text-white ring-2 ring-orange-200 dark:ring-orange-900'
+                    : 'bg-orange-200 dark:bg-orange-900 text-orange-700 dark:text-orange-400'
+                  : 'bg-stone-100 dark:bg-stone-800 text-stone-400'
+              }`}>
+                <Icon className="w-2.5 h-2.5" />
+              </div>
+            </div>
+            {i < STATUT_ORDER.length - 1 && (
+              <div className={`h-0.5 flex-1 mx-0.5 rounded-full ${
+                i < currentIndex && statut !== 'ANNULEE'
+                  ? 'bg-orange-400 dark:bg-orange-700'
+                  : 'bg-stone-100 dark:bg-stone-800'
+              }`} />
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
