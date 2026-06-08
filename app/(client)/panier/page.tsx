@@ -8,10 +8,11 @@ import {
   Ruler, Package, ArrowLeft,
   Trash2, ShoppingBag, Tag, ChevronDown, ChevronUp,
   Pencil, Check, Loader2,
-  Store, Phone, Mail, MapPin, Info,
+  Store,
 } from 'lucide-react'
 import { getPrixUnitaire as getPrixUnitaireLib, parsePrixTiers } from '@/lib/prix'
 import QteInput from '@/components/client/QteInput'
+import VendeurButton from '@/components/client/VendeurButton'
 
 /* ══════════════════════════════════════════
    TYPES
@@ -92,88 +93,6 @@ function groupByVendeur(items: CartItem[]): VendeurGroup[] {
   }
 
   return [...vendeurMap.values()]
-}
-
-/* ══════════════════════════════════════════
-   PANNEAU VENDEUR (HEADER DE SECTION)
-══════════════════════════════════════════ */
-function VendeurSectionHeader({
-  vendeurInfo,
-  productCount,
-}: {
-  vendeurInfo:  VendeurInfo
-  productCount: number
-}) {
-  const [open, setOpen] = useState(false)
-
-  const nomBoutique = vendeurInfo?.nomBoutique ?? 'Caba Store'
-  const isAdmin     = vendeurInfo === null
-
-  return (
-    <div className="bg-stone-50 dark:bg-stone-800/60 rounded-t-2xl border border-b-0 border-stone-200 dark:border-stone-700 overflow-hidden">
-      {/* Barre principale */}
-      <button
-        type="button"
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-2.5 px-4 py-3 hover:bg-stone-100 dark:hover:bg-stone-700/60 transition-colors text-left"
-      >
-        <div className="w-7 h-7 rounded-lg bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center shrink-0">
-          <Store className="w-3.5 h-3.5 text-orange-700 dark:text-orange-400" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 truncate">
-            {nomBoutique}
-          </p>
-          <p className="text-[11px] text-stone-400 dark:text-stone-500">
-            {isAdmin ? 'Plateforme officielle' : 'Vendeur partenaire'} · {productCount} produit{productCount > 1 ? 's' : ''}
-          </p>
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="text-[10px] text-orange-700 dark:text-orange-400 font-semibold flex items-center gap-0.5">
-            <Info className="w-3 h-3" /> Infos
-          </span>
-          {open ? <ChevronUp className="w-3.5 h-3.5 text-stone-400" /> : <ChevronDown className="w-3.5 h-3.5 text-stone-400" />}
-        </div>
-      </button>
-
-      {/* Panneau infos vendeur */}
-      {open && (
-        <div className="px-4 pb-3 pt-1 border-t border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900/60">
-          {isAdmin ? (
-            <p className="text-xs text-stone-500 dark:text-stone-400 py-1">
-              Ces produits sont vendus et expédiés directement par Caba Store.
-            </p>
-          ) : (
-            <div className="flex flex-wrap gap-3 py-1">
-              {vendeurInfo?.user.telephone && (
-                <a href={`tel:${vendeurInfo.user.telephone}`}
-                  className="flex items-center gap-1.5 text-xs text-stone-600 dark:text-stone-300 hover:text-orange-700 dark:hover:text-orange-400 transition">
-                  <Phone className="w-3.5 h-3.5 shrink-0 text-orange-700 dark:text-orange-400" />
-                  {vendeurInfo.user.telephone}
-                </a>
-              )}
-              {vendeurInfo?.user.email && (
-                <a href={`mailto:${vendeurInfo.user.email}`}
-                  className="flex items-center gap-1.5 text-xs text-stone-600 dark:text-stone-300 hover:text-orange-700 dark:hover:text-orange-400 transition">
-                  <Mail className="w-3.5 h-3.5 shrink-0 text-orange-700 dark:text-orange-400" />
-                  {vendeurInfo.user.email}
-                </a>
-              )}
-              {vendeurInfo?.user.wilaya && (
-                <span className="flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400">
-                  <MapPin className="w-3.5 h-3.5 shrink-0 text-orange-700 dark:text-orange-400" />
-                  {vendeurInfo.user.wilaya}
-                </span>
-              )}
-              {!vendeurInfo?.user.telephone && !vendeurInfo?.user.email && !vendeurInfo?.user.wilaya && (
-                <p className="text-xs text-stone-400">Aucune information de contact disponible.</p>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )
 }
 
 /* ══════════════════════════════════════════
@@ -681,11 +600,22 @@ export default function PanierPage() {
         <div className="lg:col-span-2 space-y-4">
           {vendeurGroups.map(vg => (
             <div key={vg.vendeurId ?? '__admin__'} className="rounded-2xl overflow-hidden shadow-sm">
-              {/* Header vendeur */}
-              <VendeurSectionHeader
-                vendeurInfo={vg.vendeurInfo}
-                productCount={vg.products.length}
-              />
+
+              {/* ── Header vendeur : VendeurButton + compteur ── */}
+              <div className="bg-stone-50 dark:bg-stone-800/60 border border-b-0 border-stone-200 dark:border-stone-700 rounded-t-2xl px-4 py-3">
+                <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
+                  <Store className="w-3 h-3" />
+                  {vg.products.length} produit{vg.products.length > 1 ? 's' : ''}
+                  {vg.vendeurId === null && (
+                    <span className="ml-1 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400 px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide">
+                      Officiel
+                    </span>
+                  )}
+                </p>
+                {/* ← VendeurButton : bottom-sheet avec infos et appel */}
+                <VendeurButton produitId={vg.products[0].product.id} />
+              </div>
+
               {/* Cartes produits */}
               {vg.products.map((group, idx) => (
                 <div key={group.product.id}
@@ -783,6 +713,19 @@ export default function PanierPage() {
                 <p className="text-xs font-semibold text-green-700 dark:text-green-400">Vous économisez !</p>
                 <p className="text-sm font-semibold text-green-800 dark:text-green-300">{totalEconomies.toFixed(2)} DA</p>
               </div>
+            </div>
+          )}
+
+          {/* Livraison calculée par vendeur — rappel */}
+          {vendeurGroups.length > 1 && (
+            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/50 rounded-xl px-4 py-3">
+              <p className="text-[11px] text-amber-700 dark:text-amber-400 font-semibold mb-1 flex items-center gap-1">
+                <Store className="w-3 h-3" />
+                {vendeurGroups.length} vendeurs dans votre panier
+              </p>
+              <p className="text-[11px] text-amber-600 dark:text-amber-500">
+                Les frais de livraison seront calculés séparément pour chaque vendeur à l&apos;étape suivante.
+              </p>
             </div>
           )}
 

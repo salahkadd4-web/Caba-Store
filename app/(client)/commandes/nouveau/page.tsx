@@ -9,10 +9,11 @@ import {
   Package, ShoppingBag, ShoppingCart, Smartphone, Truck,
   ChevronRight, TrendingDown, Ruler,
   Banknote, Landmark, ArrowLeftRight, Lock,
-  Store, Phone, Mail, MapPin as MapPinIcon, ChevronDown, ChevronUp, Info,
+  Store,
 } from 'lucide-react'
 import { getPrixUnitaire as getPrixUnitaireLib } from '@/lib/prix'
 import { FRAIS_EXPEDITION } from '@/lib/constants'
+import VendeurButton from '@/components/client/VendeurButton'
 
 /* ── Types ── */
 type VariantOption = { id: string; valeur: string; stock: number }
@@ -87,65 +88,6 @@ const METHODES_EXPEDITION = [
   { label: 'Livraison express',       frais: FRAIS_EXPEDITION['Livraison express'],        delai: '1–2 jours' },
   { label: 'Retrait en point relais', frais: FRAIS_EXPEDITION['Retrait en point relais'],  delai: '2–4 jours' },
 ]
-
-/* ── Petit composant infos vendeur ── */
-function VendeurInfoBadge({ vendeurInfo }: { vendeurInfo: VendeurInfo }) {
-  const [open, setOpen] = useState(false)
-  const nomBoutique = vendeurInfo?.nomBoutique ?? 'Caba Store'
-  const isAdmin     = vendeurInfo === null
-
-  return (
-    <div className="mb-4 rounded-xl border border-stone-200 dark:border-stone-700 overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-2.5 px-4 py-2.5 bg-stone-50 dark:bg-stone-800/60 hover:bg-stone-100 dark:hover:bg-stone-700/60 transition-colors text-left"
-      >
-        <div className="w-6 h-6 rounded-lg bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center shrink-0">
-          <Store className="w-3 h-3 text-orange-700 dark:text-orange-400" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-stone-700 dark:text-stone-200 truncate">{nomBoutique}</p>
-          <p className="text-[11px] text-stone-400">{isAdmin ? 'Plateforme officielle' : 'Vendeur partenaire'}</p>
-        </div>
-        <span className="flex items-center gap-0.5 text-[10px] text-orange-700 dark:text-orange-400 font-semibold shrink-0">
-          <Info className="w-3 h-3" /> Infos
-          {open ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
-        </span>
-      </button>
-      {open && (
-        <div className="px-4 py-2.5 border-t border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900/50">
-          {isAdmin ? (
-            <p className="text-xs text-stone-500">Expédié directement par Caba Store.</p>
-          ) : (
-            <div className="flex flex-wrap gap-3">
-              {vendeurInfo?.user.telephone && (
-                <a href={`tel:${vendeurInfo.user.telephone}`}
-                  className="flex items-center gap-1.5 text-xs text-stone-600 dark:text-stone-300 hover:text-orange-700 transition">
-                  <Phone className="w-3.5 h-3.5 text-orange-700 dark:text-orange-400" />
-                  {vendeurInfo.user.telephone}
-                </a>
-              )}
-              {vendeurInfo?.user.email && (
-                <a href={`mailto:${vendeurInfo.user.email}`}
-                  className="flex items-center gap-1.5 text-xs text-stone-600 dark:text-stone-300 hover:text-orange-700 transition">
-                  <Mail className="w-3.5 h-3.5 text-orange-700 dark:text-orange-400" />
-                  {vendeurInfo.user.email}
-                </a>
-              )}
-              {vendeurInfo?.user.wilaya && (
-                <span className="flex items-center gap-1.5 text-xs text-stone-500">
-                  <MapPinIcon className="w-3.5 h-3.5 text-orange-700 dark:text-orange-400" />
-                  {vendeurInfo.user.wilaya}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
 
 /* ── Sélecteur d'expédition par vendeur ── */
 function ExpeditionSelector({
@@ -434,14 +376,28 @@ export default function NouvelleCommandePage() {
             <div>
               <label className={labelCls}>
                 <Truck className="w-4 h-4 inline mr-1 text-orange-700" /> Expédition par vendeur
+                {vendeurCalcs.length > 1 && (
+                  <span className="ml-2 text-[10px] font-normal text-stone-400">
+                    ({vendeurCalcs.length} vendeurs · livraisons séparées)
+                  </span>
+                )}
               </label>
               <div className="space-y-4">
-                {vendeurCalcs.map(vc => {
+                {vendeurCalcs.map((vc, idx) => {
                   const key = vc.vendeurId ?? '__admin__'
                   return (
                     <div key={key} className="border border-stone-200 dark:border-stone-700 rounded-2xl overflow-hidden">
-                      {/* Header vendeur */}
-                      <VendeurInfoBadge vendeurInfo={vc.vendeurInfo} />
+
+                      {/* ── Header vendeur : VendeurButton ── */}
+                      <div className="px-3 pt-3 pb-2.5 border-b border-stone-100 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-800/30">
+                        {vendeurCalcs.length > 1 && (
+                          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+                            <Store className="w-3 h-3" /> Commande {idx + 1} / {vendeurCalcs.length}
+                          </p>
+                        )}
+                        {/* ← VendeurButton : bottom-sheet avec infos et appel */}
+                        <VendeurButton produitId={vc.items[0].product.id} />
+                      </div>
 
                       {/* Sélecteur d'expédition */}
                       <div className="px-3 pb-3">
@@ -603,7 +559,11 @@ export default function NouvelleCommandePage() {
                   <ShoppingBag className="w-7 h-7 text-orange-700 dark:text-orange-400" />
                 </div>
                 <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Confirmer la commande ?</h2>
-                <p className="text-stone-400 text-sm mt-1">Vérifiez les détails avant de valider</p>
+                <p className="text-stone-400 text-sm mt-1">
+                  {vendeurCalcs.length > 1
+                    ? `${vendeurCalcs.length} commandes séparées seront créées`
+                    : 'Vérifiez les détails avant de valider'}
+                </p>
               </div>
 
               {/* Détails de livraison par vendeur */}
