@@ -110,14 +110,22 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* ── Trust Pills ── */}
-        <div className="flex gap-2 px-3 pb-2 overflow-x-auto scrollbar-hide">
-          {TRUST_ITEMS_MOBILE.map(({ Icon, label }) => (
-            <div key={label} className="flex items-center gap-1.5 shrink-0 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-full px-3 py-1.5 shadow-sm">
-              <Icon className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400 shrink-0" />
-              <span className="text-[11px] font-semibold text-stone-600 dark:text-stone-300 whitespace-nowrap">{label}</span>
-            </div>
-          ))}
+        {/* ── Trust Pills — défilement infini vers la gauche (mobile) ── */}
+        <div className="overflow-hidden pb-2">
+          {/* La piste est dupliquée (×2) pour que la boucle soit invisible */}
+          <div className="trust-marquee-track flex gap-2 w-max">
+            {[...TRUST_ITEMS_MOBILE, ...TRUST_ITEMS_MOBILE].map(({ Icon, label }, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-1.5 shrink-0 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-full px-3 py-1.5 shadow-sm"
+              >
+                <Icon className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400 shrink-0" />
+                <span className="text-[11px] font-semibold text-stone-600 dark:text-stone-300 whitespace-nowrap">
+                  {label}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
 
       </section>

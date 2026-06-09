@@ -238,3 +238,15 @@ button[disabled] {
 .ptr-spin {
   animation: ptr-spin 0.75s linear infinite;
 }
+/* ── Trust pills — défilement en boucle (mobile) ── */
+@keyframes trust-marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.trust-marquee-track {
+  animation: trust-marquee 12s linear infinite;
+  will-change: transform;
+}
+.trust-marquee-track:hover {
+  animation-play-state: paused;
+}
