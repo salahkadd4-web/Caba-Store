@@ -246,7 +246,5 @@ button[disabled] {
 .trust-marquee-track {
   animation: trust-marquee 12s linear infinite;
   will-change: transform;
-}
-.trust-marquee-track:hover {
-  animation-play-state: paused;
+  pointer-events: none;
 }
