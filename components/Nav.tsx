@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import CabaLogo from '@/components/CabaLogo'
 import SearchBar from '@/components/client/SearchBar'
@@ -47,7 +47,44 @@ export default function Nav() {
   const [search,       setSearch]       = useState('')
   const [cartCount,    setCartCount]    = useState(0)
 
-  // ── Panier : count + écoute des mises à jour ──
+  // ── Hide / show on scroll ──────────────────────────────────────────────────
+  const [visible,  setVisible]  = useState(true)
+  const lastScrollY = useRef(0)
+  const ticking     = useRef(false)
+
+  useEffect(() => {
+    const onScroll = () => {
+      if (ticking.current) return
+      ticking.current = true
+      requestAnimationFrame(() => {
+        const currentY = window.scrollY
+        const delta    = currentY - lastScrollY.current
+
+        // Always show when near the top
+        if (currentY < 60) {
+          setVisible(true)
+        } else if (delta > 6) {
+          // Scrolling down → hide
+          setVisible(false)
+          setUserMenuOpen(false)
+        } else if (delta < -4) {
+          // Scrolling up → show
+          setVisible(true)
+        }
+
+        lastScrollY.current = currentY
+        ticking.current = false
+      })
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // Always show header when menu/dropdown is open
+  const headerVisible = visible || menuOpen || userMenuOpen
+
+  // ── Panier count ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!session) return
     const fetchCount = async () => {
@@ -79,10 +116,9 @@ export default function Nav() {
     return () => document.removeEventListener('mousedown', handle)
   }, [])
 
-  // Masquer sur les pages dashboard (admin/vendeur ont leur propre TopBar)
-  // et sur les pages d'authentification
-  if (pathname?.startsWith('/admin'))       return null
-  if (pathname?.startsWith('/vendeur'))     return null
+  // Route guards
+  if (pathname?.startsWith('/admin'))   return null
+  if (pathname?.startsWith('/vendeur')) return null
   if (pathname?.startsWith('/commandes') && (session?.user?.role === 'ADMIN' || session?.user?.role === 'VENDEUR')) return null
   if (pathname?.startsWith('/retours')   && (session?.user?.role === 'ADMIN' || session?.user?.role === 'VENDEUR')) return null
   const isAuthPage = pathname?.startsWith('/connexion') || pathname?.startsWith('/inscription')
@@ -114,12 +150,21 @@ export default function Nav() {
     <>
       <div className="h-16" />
 
-      <header className="bg-[#FAF7F2]/95 dark:bg-stone-900/95 backdrop-blur-sm fixed top-0 left-0 right-0 z-50 border-b border-stone-200 dark:border-stone-800">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center gap-4 md:gap-6">
+      <header
+        className={`
+          bg-[#FAF7F2]/95 dark:bg-stone-900/95 backdrop-blur-sm
+          fixed top-0 left-0 right-0 z-50
+          border-b border-stone-200 dark:border-stone-800
+          transition-transform duration-300 ease-in-out
+          ${headerVisible ? 'translate-y-0' : '-translate-y-full'}
+        `}
+      >
+        {/* ── Barre principale ── */}
+        <div className="max-w-7xl mx-auto px-3 md:px-6 py-3 flex items-center gap-2 md:gap-6">
 
           {/* Burger mobile */}
           <button
-            className="md:hidden text-stone-800 dark:text-stone-100"
+            className="md:hidden shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-stone-800 dark:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label="Menu"
           >
@@ -127,9 +172,9 @@ export default function Nav() {
           </button>
 
           {/* Logo */}
-          <Link href="/" className="shrink-0 flex items-center gap-2 group">
+          <Link href="/" className="shrink-0 flex items-center gap-1.5 group">
             <CabaLogo className="h-8 w-8 md:h-9 md:w-9 text-orange-700 dark:text-orange-400 transition-transform group-hover:scale-105" />
-            <span className="text-base md:text-lg font-semibold tracking-tight text-stone-800 dark:text-stone-100">
+            <span className="text-sm md:text-lg font-semibold tracking-tight text-stone-800 dark:text-stone-100">
               Caba<span className="text-orange-700 dark:text-orange-400">Store</span>
             </span>
           </Link>
@@ -157,50 +202,66 @@ export default function Nav() {
                 )
               })}
             </nav>
-            <div className="flex-1 max-w-sm flex items-center">
+            <div className="flex-1 max-w-sm">
               <SearchBar />
             </div>
           </div>
 
-          {/* Actions à droite (toutes tailles) */}
-          <div className="flex items-center gap-1.5 md:gap-2 shrink-0 ml-auto">
+          {/* ── Actions droite ── */}
+          <div className="flex items-center gap-1 md:gap-2 shrink-0 ml-auto">
 
-            {/* Pill Dashboard Admin */}
+            {/* Dashboard Admin — desktop uniquement */}
             {isAdmin && (
               <Link
                 href="/admin"
                 title="Dashboard admin"
-                aria-label="Dashboard admin"
-                className="flex items-center gap-1.5 text-sm font-medium text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900 px-2.5 md:px-3 py-2 rounded-full hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-all"
+                className="hidden md:flex items-center gap-1.5 text-sm font-medium text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900 px-3 py-2 rounded-full hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-all"
               >
                 <LayoutDashboard className="w-4 h-4" />
-                <span className="hidden md:inline">Dashboard</span>
+                <span>Dashboard</span>
               </Link>
             )}
 
-            {/* Pill Espace Vendeur */}
+            {/* Dashboard Admin — mobile : icône seule */}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                title="Dashboard admin"
+                className="md:hidden flex items-center justify-center w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 shrink-0"
+              >
+                <LayoutDashboard className="w-4 h-4" />
+              </Link>
+            )}
+
+            {/* Dashboard Vendeur — desktop */}
             {isVendeur && (
               <Link
                 href="/vendeur"
                 title="Dashboard vendeur"
-                aria-label="Dashboard vendeur"
-                className="flex items-center gap-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 px-2.5 md:px-3 py-2 rounded-full hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-all"
+                className="hidden md:flex items-center gap-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 px-3 py-2 rounded-full hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-all"
               >
                 <Store className="w-4 h-4" />
-                <span className="hidden md:inline">Dashboard</span>
+                <span>Dashboard</span>
               </Link>
             )}
 
-            {/* Raccourcis client connecté */}
+            {/* Dashboard Vendeur — mobile */}
+            {isVendeur && (
+              <Link
+                href="/vendeur"
+                title="Dashboard vendeur"
+                className="md:hidden flex items-center justify-center w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 shrink-0"
+              >
+                <Store className="w-4 h-4" />
+              </Link>
+            )}
+
+            {/* Raccourcis client — desktop seulement */}
             {isClient && (
-              <>
-                <IconLink href="/favoris" title="Mes favoris">
-                  <Heart className="w-4 h-4" />
-                </IconLink>
-                <IconLink href="/commandes" title="Mes commandes">
-                  <Package className="w-4 h-4" />
-                </IconLink>
-              </>
+              <div className="hidden md:flex items-center gap-1">
+                <IconLink href="/favoris"   title="Mes favoris"><Heart   className="w-4 h-4" /></IconLink>
+                <IconLink href="/commandes" title="Mes commandes"><Package className="w-4 h-4" /></IconLink>
+              </div>
             )}
 
             {/* Panier */}
@@ -208,33 +269,32 @@ export default function Nav() {
               <Link
                 href="/panier"
                 title="Mon panier"
-                aria-label="Mon panier"
-                className="relative flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-full bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 transition-all active:scale-95"
+                className="relative shrink-0 flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 transition-all active:scale-95"
               >
                 <ShoppingCart className="w-4 h-4 text-stone-700 dark:text-stone-200" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-4.5 h-4.5 bg-orange-700 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-md">
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-orange-700 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 shadow-md">
                     {cartCount > 99 ? '99+' : cartCount}
                   </span>
                 )}
               </Link>
             )}
 
-            {/* User menu ou bouton connexion */}
+            {/* User menu */}
             {status === 'loading' ? (
-              <div className="w-9 h-9 rounded-full bg-stone-100 dark:bg-stone-800 animate-pulse" />
+              <div className="w-8 h-8 rounded-full bg-stone-100 dark:bg-stone-800 animate-pulse shrink-0" />
             ) : session ? (
-              <div className="relative" ref={userMenuRef}>
+              <div className="relative shrink-0" ref={userMenuRef}>
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-1.5 md:gap-2 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-full pl-1 pr-2.5 md:pr-3 py-1 transition-colors"
+                  className="flex items-center gap-1 md:gap-1.5 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-full pl-0.5 pr-1.5 md:pr-2.5 py-0.5 transition-colors"
                 >
-                  <div className="w-7 h-7 rounded-full bg-orange-700 flex items-center justify-center">
+                  <div className="w-7 h-7 rounded-full bg-orange-700 flex items-center justify-center shrink-0">
                     <span className="text-white text-xs font-semibold">
                       {session.user?.name?.charAt(0)?.toUpperCase() || '?'}
                     </span>
                   </div>
-                  <span className="hidden sm:block text-xs text-stone-700 dark:text-stone-200 font-medium max-w-20 truncate">
+                  <span className="hidden md:block text-xs text-stone-700 dark:text-stone-200 font-medium max-w-[72px] truncate">
                     {session.user?.name?.split(' ')[0]}
                   </span>
                   <span className="text-stone-500 dark:text-stone-400">
@@ -264,33 +324,22 @@ export default function Nav() {
                         )
                       })}
                       {isVendeur && (
-                        <Link
-                          href="/vendeur"
-                          onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950 transition-colors"
-                        >
-                          <Store className="w-4 h-4" />
-                          <span>Dashboard vendeur</span>
+                        <Link href="/vendeur" onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950 transition-colors">
+                          <Store className="w-4 h-4" /><span>Dashboard vendeur</span>
                         </Link>
                       )}
                       {isAdmin && (
-                        <Link
-                          href="/admin"
-                          onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950 transition-colors"
-                        >
-                          <LayoutDashboard className="w-4 h-4" />
-                          <span>Dashboard admin</span>
+                        <Link href="/admin" onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950 transition-colors">
+                          <LayoutDashboard className="w-4 h-4" /><span>Dashboard admin</span>
                         </Link>
                       )}
                     </div>
                     <div className="border-t border-stone-100 dark:border-stone-800 py-1">
-                      <button
-                        onClick={handleSignOut}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        <span>Déconnexion</span>
+                      <button onClick={handleSignOut}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
+                        <LogOut className="w-4 h-4" /><span>Déconnexion</span>
                       </button>
                     </div>
                   </div>
@@ -299,7 +348,7 @@ export default function Nav() {
             ) : (
               <Link
                 href="/connexion"
-                className="bg-orange-700 hover:bg-orange-800 text-white text-sm font-medium px-4 md:px-5 py-2 md:py-2.5 rounded-full transition-colors shadow-sm"
+                className="shrink-0 bg-orange-700 hover:bg-orange-800 text-white text-xs md:text-sm font-semibold px-3 md:px-5 py-2 md:py-2.5 rounded-full transition-colors shadow-sm whitespace-nowrap"
               >
                 Connexion
               </Link>
@@ -307,9 +356,9 @@ export default function Nav() {
           </div>
         </div>
 
-        {/* Menu hamburger mobile (panneau dépliant) */}
+        {/* ── Menu hamburger (panneau mobile) ── */}
         {menuOpen && (
-          <div className="md:hidden bg-[#FAF7F2] dark:bg-stone-900 border-t border-stone-200 dark:border-stone-800 px-4 py-4 space-y-2">
+          <div className="md:hidden bg-[#FAF7F2] dark:bg-stone-900 border-t border-stone-200 dark:border-stone-800 px-4 py-4 space-y-1">
             <form onSubmit={handleSearch} className="relative mb-3">
               <input
                 type="text"
@@ -320,49 +369,44 @@ export default function Nav() {
               />
               <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-orange-700" aria-label="Rechercher">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8"/>
-                  <path d="m21 21-4.35-4.35"/>
+                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                 </svg>
               </button>
             </form>
+
             {navItems.map(item => {
               const active = isActive(item.href)
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMenuOpen(false)}
+                <Link key={item.href} href={item.href} onClick={() => setMenuOpen(false)}
                   className={`block px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
                     active
                       ? 'text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/30'
                       : 'text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
-                  }`}
-                >
+                  }`}>
                   {item.label}
                 </Link>
               )
             })}
+
             {session && userMenuItems.map(item => {
               const Icon = item.icon
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg"
-                >
-                  <Icon className="w-4 h-4" />
-                  {item.label}
+                <Link key={item.href} href={item.href} onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg">
+                  <Icon className="w-4 h-4" />{item.label}
                 </Link>
               )
             })}
+
             <div className="pt-3 border-t border-stone-200 dark:border-stone-800">
               {session ? (
-                <button onClick={handleSignOut} className="w-full text-left px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors">
+                <button onClick={handleSignOut}
+                  className="w-full text-left px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors">
                   Déconnexion
                 </button>
               ) : (
-                <Link href="/connexion" onClick={() => setMenuOpen(false)} className="inline-block bg-orange-700 hover:bg-orange-800 text-white text-sm font-medium px-5 py-2.5 rounded-full transition-colors">
+                <Link href="/connexion" onClick={() => setMenuOpen(false)}
+                  className="inline-block bg-orange-700 hover:bg-orange-800 text-white text-sm font-medium px-5 py-2.5 rounded-full transition-colors">
                   Connexion
                 </Link>
               )}
@@ -376,12 +420,8 @@ export default function Nav() {
 
 function IconLink({ href, title, children }: { href: string; title: string; children: React.ReactNode }) {
   return (
-    <Link
-      href={href}
-      title={title}
-      aria-label={title}
-      className="flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-full text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-orange-700 dark:hover:text-orange-400 transition-colors active:scale-95"
-    >
+    <Link href={href} title={title} aria-label={title}
+      className="flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-full text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-orange-700 dark:hover:text-orange-400 transition-colors active:scale-95">
       {children}
     </Link>
   )
