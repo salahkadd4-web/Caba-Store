@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
-
-const TARIFS = {
-  NIVEAU_1: { mensuel: 2500, annuel: 25000 },
-  NIVEAU_2: { mensuel: 2000, annuel: 20000 },
-  NIVEAU_3: { mensuel: 1500, annuel: 15000 },
-}
+import {
+  buildSellerInvoiceRecord,
+  createSellerInvoiceNote,
+  getSellerBillingBreakdown,
+  getSellerInvoiceNumber,
+  getPlainSellerInvoiceNote,
+  getSubscriptionAmount,
+} from '@/lib/seller-billing'
 
 const NIVEAU_TO_PRIORITE: Record<string, number> = {
   NIVEAU_0: 0, NIVEAU_1: 1, NIVEAU_2: 2, NIVEAU_3: 3,
@@ -26,7 +28,28 @@ export async function GET(
     where: { vendeurId: id },
     include: { paiements: { orderBy: { createdAt: 'desc' }, take: 10 } },
   })
-  return NextResponse.json(abonnement)
+  if (!abonnement) return NextResponse.json(null)
+
+  const billing = await getSellerBillingBreakdown(id, abonnement)
+  const invoices = abonnement.paiements.map((payment) => {
+    const invoice = buildSellerInvoiceRecord(payment, abonnement)
+    return {
+      ...invoice,
+      paymentDate: invoice.paymentDate.toISOString(),
+      periodStart: invoice.periodStart?.toISOString() ?? null,
+      periodEnd: invoice.periodEnd?.toISOString() ?? null,
+    }
+  })
+
+  return NextResponse.json({
+    ...abonnement,
+    billing,
+    paiements: abonnement.paiements.map((payment) => ({
+      ...payment,
+      note: getPlainSellerInvoiceNote(payment.note),
+    })),
+    invoices,
+  })
 }
 
 // POST — renouveler / changer de niveau + confirmer paiement
@@ -50,34 +73,94 @@ export async function POST(
 
   // Calculer nouvelle dateFin
   const base = abonnement.statut === 'EXPIRE' ? new Date() : new Date(abonnement.dateFin)
+  const dateDebut = new Date(base)
   const dateFin = new Date(base)
   if (periodicite === 'annuel') dateFin.setFullYear(dateFin.getFullYear() + 1)
   else dateFin.setMonth(dateFin.getMonth() + 1)
 
   const priorite = NIVEAU_TO_PRIORITE[niveau] ?? 3
+  const billing = await getSellerBillingBreakdown(id, {
+    niveau,
+    periodicite,
+    dateDebut,
+    dateFin,
+  })
+  const subscriptionAmount = getSubscriptionAmount(niveau, periodicite)
+  const totalDue = montant ?? billing.totalDue
 
-  await prisma.$transaction([
-    prisma.abonnement.update({
+  const paymentDate = new Date()
+  let paymentId = ''
+
+  await prisma.$transaction(async (tx) => {
+    await tx.abonnement.update({
       where: { id: abonnement.id },
-      data: { niveau, statut: 'ACTIF', dateFin, periodicite },
-    }),
-    prisma.vendeurProfile.update({
+      data: { niveau, statut: 'ACTIF', dateDebut, dateFin, periodicite, notifsSent: [] },
+    })
+
+    await tx.vendeurProfile.update({
       where: { id },
       data: { prioriteAffichage: priorite },
-    }),
-    prisma.paiement.create({
+    })
+
+    const createdPayment = await tx.paiement.create({
       data: {
         abonnementId: abonnement.id,
-        montant: montant ?? TARIFS[niveau as keyof typeof TARIFS][periodicite as 'mensuel' | 'annuel'],
+        montant: totalDue,
         methode,
         reference: reference || null,
-        note: note || null,
+        note: createSellerInvoiceNote({
+          version: 'seller_invoice_v1',
+          invoiceNumber: getSellerInvoiceNumber(`tmp_${abonnement.id}`, paymentDate),
+          sellerId: id,
+          level: niveau,
+          periodicite,
+          paymentId: '',
+          paidAt: paymentDate.toISOString(),
+          methode,
+          reference: reference || null,
+          adminNote: note || null,
+          ...billing,
+          subscriptionAmount,
+          totalDue,
+        }),
         confirmeParAdmin: true,
+        dateReglement: paymentDate,
       },
-    }),
-  ])
+    })
 
-  return NextResponse.json({ message: `Abonnement ${niveau} activé jusqu'au ${dateFin.toLocaleDateString('fr-DZ')}` })
+    paymentId = createdPayment.id
+
+    await tx.paiement.update({
+      where: { id: createdPayment.id },
+      data: {
+        note: createSellerInvoiceNote({
+          version: 'seller_invoice_v1',
+          invoiceNumber: getSellerInvoiceNumber(createdPayment.id, paymentDate),
+          sellerId: id,
+          level: niveau,
+          periodicite,
+          paymentId: createdPayment.id,
+          paidAt: paymentDate.toISOString(),
+          methode,
+          reference: reference || null,
+          adminNote: note || null,
+          ...billing,
+          subscriptionAmount,
+          totalDue,
+        }),
+      },
+    })
+  })
+
+  return NextResponse.json({
+    message: `Abonnement ${niveau} active jusqu'au ${dateFin.toLocaleDateString('fr-DZ')}`,
+    billing: {
+      ...billing,
+      subscriptionAmount,
+      totalDue,
+    },
+    paymentId,
+  })
 }
 
 // PATCH — changer niveau uniquement (sans paiement supplémentaire)

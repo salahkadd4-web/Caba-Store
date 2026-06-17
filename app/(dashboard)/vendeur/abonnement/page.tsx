@@ -1,13 +1,11 @@
 import { auth }     from '@/auth'
 import { redirect } from 'next/navigation'
 import { prisma }   from '@/lib/prisma'
-import { AlertTriangle, CheckCircle2, Clock, CreditCard, XCircle } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Clock, CreditCard, Percent, Receipt, XCircle } from 'lucide-react'
+import SellerInvoiceActions from '@/components/billing/SellerInvoiceActions'
+import { SELLER_SALE_FEE_RATE, SELLER_SUBSCRIPTION_PRICING, buildSellerInvoiceRecord, getPlainSellerInvoiceNote, getSellerBillingBreakdown } from '@/lib/seller-billing'
 
-const TARIFS = {
-  NIVEAU_1: { mensuel: 2500,  annuel: 25000, label: 'Niveau 1', desc: 'Priorité haute' },
-  NIVEAU_2: { mensuel: 2000,  annuel: 20000, label: 'Niveau 2', desc: 'Priorité moyenne' },
-  NIVEAU_3: { mensuel: 1500,  annuel: 15000, label: 'Niveau 3', desc: 'Priorité standard' },
-}
+const TARIFS = SELLER_SUBSCRIPTION_PRICING
 
 const NIVEAU_COLOR: Record<string, string> = {
   NIVEAU_1: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
@@ -32,6 +30,8 @@ export default async function VendeurAbonnementPage() {
   if (!profile) return null
 
   const abo = profile.abonnement
+  const billing = await getSellerBillingBreakdown(profile.id, abo)
+  const sellerName = profile.nomBoutique || `${session.user.name ?? 'Vendeur'}`
   const now = new Date()
   const joursRestants = abo
     ? Math.max(0, Math.ceil((new Date(abo.dateFin).getTime() - now.getTime()) / 86400000))
@@ -50,6 +50,14 @@ export default async function VendeurAbonnementPage() {
   const progressPct = abo && abo.statut !== 'EXPIRE'
     ? Math.min(100, (joursRestants / 365) * 100)
     : 0
+
+  const invoices = abo?.paiements.map((payment) => buildSellerInvoiceRecord(payment, {
+    vendeurId: profile.id,
+    niveau: abo.niveau,
+    periodicite: abo.periodicite,
+    dateDebut: abo.dateDebut,
+    dateFin: abo.dateFin,
+  })) ?? []
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -170,19 +178,118 @@ export default async function VendeurAbonnementPage() {
         </p>
       </div>
 
+      <div className="grid gap-3 md:grid-cols-3">
+        <div className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4">
+          <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400 text-xs uppercase tracking-[0.18em] mb-2">
+            <CreditCard className="w-3.5 h-3.5" /> Abonnement
+          </div>
+          <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{billing.subscriptionAmount.toLocaleString('fr-DZ')} DA</p>
+          <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">Montant du plan actif pour la periode en cours</p>
+        </div>
+        <div className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4">
+          <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400 text-xs uppercase tracking-[0.18em] mb-2">
+            <Percent className="w-3.5 h-3.5" /> Frais sur ventes
+          </div>
+          <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{billing.salesFee.toLocaleString('fr-DZ')} DA</p>
+          <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">{Math.round(SELLER_SALE_FEE_RATE * 100)}% sur {billing.grossSales.toLocaleString('fr-DZ')} DA de ventes livrees</p>
+        </div>
+        <div className="rounded-2xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 p-4">
+          <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 text-xs uppercase tracking-[0.18em] mb-2">
+            <Receipt className="w-3.5 h-3.5" /> Total a payer
+          </div>
+          <p className="text-2xl font-bold text-emerald-800 dark:text-emerald-200">{billing.totalDue.toLocaleString('fr-DZ')} DA</p>
+          <p className="text-xs text-emerald-700/80 dark:text-emerald-300/80 mt-1">Abonnement + frais de ventes pour la periode en cours</p>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5 space-y-4">
+        <div>
+          <h2 className="text-base font-bold text-stone-800 dark:text-stone-100">Detail de facturation</h2>
+          <p className="text-sm text-stone-500 dark:text-stone-400">
+            {billing.periodStart && billing.periodEnd
+              ? `Periode prise en compte : du ${new Date(billing.periodStart).toLocaleDateString('fr-DZ')} au ${new Date(billing.periodEnd).toLocaleDateString('fr-DZ')}`
+              : 'Les frais de ventes sont calcules sur les commandes livrees de la periode d abonnement en cours.'}
+          </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl bg-stone-50 dark:bg-stone-800/70 p-4">
+            <p className="text-xs text-stone-500 dark:text-stone-400 mb-1">Ventes livrees</p>
+            <p className="text-lg font-semibold text-stone-900 dark:text-stone-100">{billing.grossSales.toLocaleString('fr-DZ')} DA</p>
+            <p className="text-xs text-stone-400 mt-1">{billing.deliveredOrdersCount} commande(s) livree(s) · {billing.soldItemsCount} ligne(s) vendue(s)</p>
+          </div>
+          <div className="rounded-xl bg-stone-50 dark:bg-stone-800/70 p-4">
+            <p className="text-xs text-stone-500 dark:text-stone-400 mb-1">Formule de calcul</p>
+            <p className="text-sm text-stone-800 dark:text-stone-100 font-medium">{billing.subscriptionAmount.toLocaleString('fr-DZ')} DA + {billing.salesFee.toLocaleString('fr-DZ')} DA</p>
+            <p className="text-xs text-stone-400 mt-1">Abonnement selectionne + commission de {Math.round(SELLER_SALE_FEE_RATE * 100)}%</p>
+          </div>
+        </div>
+      </div>
+
       {/* Historique paiements */}
       {abo && abo.paiements.length > 0 && (
         <div>
-          <h2 className="text-base font-bold text-stone-700 dark:text-stone-200 mb-3">Historique des paiements</h2>
-          <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl divide-y divide-stone-100 dark:divide-stone-800 overflow-hidden">
-            {abo.paiements.map(p => (
-              <div key={p.id} className="flex justify-between items-center px-5 py-3.5 text-sm hover:bg-stone-50 dark:hover:bg-stone-800/40 transition">
-                <div>
-                  <span className="font-semibold text-stone-800 dark:text-stone-100">{p.montant.toLocaleString('fr-DZ')} DA</span>
-                  <span className="text-stone-400 ml-2 text-xs capitalize">{p.methode}</span>
-                  {p.reference && <span className="text-stone-400 ml-1 text-xs">· réf. {p.reference}</span>}
+          <h2 className="text-base font-bold text-stone-700 dark:text-stone-200 mb-3">Historique de facturation</h2>
+          <div className="space-y-3">
+            {invoices.map((invoice, idx) => (
+              <div key={invoice.paymentId} className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-4 md:p-5">
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div className="space-y-2 min-w-0">
+                    <div>
+                      <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">{invoice.invoiceNumber}</p>
+                      <p className="text-xs text-stone-400">Reglee le {new Date(invoice.paymentDate).toLocaleDateString('fr-DZ')} · {invoice.methode}</p>
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2 text-sm">
+                      <div className="rounded-xl bg-stone-50 dark:bg-stone-800/70 p-3">
+                        <p className="text-xs text-stone-500 dark:text-stone-400 mb-1">Periode</p>
+                        <p className="font-medium text-stone-800 dark:text-stone-100">
+                          {invoice.periodStart && invoice.periodEnd
+                            ? `${new Date(invoice.periodStart).toLocaleDateString('fr-DZ')} - ${new Date(invoice.periodEnd).toLocaleDateString('fr-DZ')}`
+                            : 'Non definie'}
+                        </p>
+                      </div>
+                      <div className="rounded-xl bg-stone-50 dark:bg-stone-800/70 p-3">
+                        <p className="text-xs text-stone-500 dark:text-stone-400 mb-1">Total facture</p>
+                        <p className="font-medium text-stone-800 dark:text-stone-100">{invoice.totalDue.toLocaleString('fr-DZ')} DA</p>
+                      </div>
+                      <div className="rounded-xl bg-stone-50 dark:bg-stone-800/70 p-3">
+                        <p className="text-xs text-stone-500 dark:text-stone-400 mb-1">Abonnement</p>
+                        <p className="font-medium text-stone-800 dark:text-stone-100">{invoice.subscriptionAmount.toLocaleString('fr-DZ')} DA</p>
+                      </div>
+                      <div className="rounded-xl bg-stone-50 dark:bg-stone-800/70 p-3">
+                        <p className="text-xs text-stone-500 dark:text-stone-400 mb-1">Frais ventes</p>
+                        <p className="font-medium text-stone-800 dark:text-stone-100">{invoice.salesFee.toLocaleString('fr-DZ')} DA</p>
+                      </div>
+                    </div>
+                    {(invoice.reference || invoice.adminNote || abo.paiements[idx]?.note) && (
+                      <p className="text-xs text-stone-500 dark:text-stone-400">
+                        {invoice.reference ? `Ref. ${invoice.reference}` : ''}
+                        {invoice.reference && (invoice.adminNote || abo.paiements[idx]?.note) ? ' · ' : ''}
+                        {invoice.adminNote || getPlainSellerInvoiceNote(abo.paiements[idx]?.note)}
+                      </p>
+                    )}
+                  </div>
+
+                  <SellerInvoiceActions invoice={{
+                    invoiceNumber: invoice.invoiceNumber,
+                    sellerName,
+                    levelLabel: TARIFS[invoice.level as keyof typeof TARIFS]?.label ?? invoice.level,
+                    periodiciteLabel: invoice.periodicite ?? 'Offert',
+                    paymentDateLabel: new Date(invoice.paymentDate).toLocaleDateString('fr-DZ'),
+                    periodLabel: invoice.periodStart && invoice.periodEnd
+                      ? `${new Date(invoice.periodStart).toLocaleDateString('fr-DZ')} - ${new Date(invoice.periodEnd).toLocaleDateString('fr-DZ')}`
+                      : 'Non definie',
+                    paymentMethodLabel: invoice.methode,
+                    reference: invoice.reference,
+                    adminNote: invoice.adminNote,
+                    grossSalesLabel: `${invoice.grossSales.toLocaleString('fr-DZ')} DA`,
+                    salesFeeLabel: `${invoice.salesFee.toLocaleString('fr-DZ')} DA`,
+                    subscriptionAmountLabel: `${invoice.subscriptionAmount.toLocaleString('fr-DZ')} DA`,
+                    totalDueLabel: `${invoice.totalDue.toLocaleString('fr-DZ')} DA`,
+                    deliveredOrdersCount: invoice.deliveredOrdersCount,
+                    soldItemsCount: invoice.soldItemsCount,
+                  }} />
                 </div>
-                <span className="text-stone-400 text-xs">{new Date(p.dateReglement).toLocaleDateString('fr-DZ')}</span>
               </div>
             ))}
           </div>

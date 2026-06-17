@@ -1,14 +1,15 @@
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+import { getSellerBillingBreakdown, SELLER_SALE_FEE_RATE } from '@/lib/seller-billing'
 
 export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, Package, ShoppingCart, TrendingUp, Store } from 'lucide-react'
+import { ArrowRight, Package, Percent, Receipt, ShoppingCart, TrendingUp, Store } from 'lucide-react'
 import {
-  card, cardSm, heading, subtext, kpiCard, kpiCardDark,
-  tableWrapper, tableHead, tableTh, tableTd, tableRow,
+  heading, subtext, kpiCard, kpiCardDark,
+  tableWrapper,
   statutOrderColor,
 } from '@/lib/dashboard-ui'
 
@@ -18,7 +19,7 @@ export default async function VendeurDashboard() {
 
   const vendeur = await prisma.vendeurProfile.findUnique({
     where:   { userId: session.user.id },
-    include: { documents: true },
+    include: { documents: true, abonnement: true },
   })
 
   // Le layout (vendeur/layout.tsx) bloque déjà les vendeurs non approuvés.
@@ -36,10 +37,14 @@ export default async function VendeurDashboard() {
     prisma.product.count({ where: { vendeurId: vid, actif: true } }),
     prisma.orderItem.count({ where: { product: { vendeurId: vid } } }),
     prisma.order.count({ where: { statut: 'EN_ATTENTE', items: { some: { product: { vendeurId: vid } } } } }),
-    prisma.orderItem.aggregate({
-      _sum: { prix: true },
-      where: { product: { vendeurId: vid }, order: { statut: 'LIVREE' } },
-    }),
+    prisma.$queryRaw<Array<{ total: number | null }>>`
+      SELECT COALESCE(SUM(oi.prix * oi.quantite), 0)::float AS total
+      FROM "OrderItem" oi
+      JOIN "Product" p ON p.id = oi."productId"
+      JOIN "Order" o ON o.id = oi."orderId"
+      WHERE p."vendeurId" = ${vid}
+        AND o.statut = 'LIVREE'
+    `,
     prisma.product.findMany({
       where:   { vendeurId: vid },
       select:  { id: true, nom: true, prix: true, images: true, _count: { select: { orderItems: true } } },
@@ -48,7 +53,8 @@ export default async function VendeurDashboard() {
     }),
   ])
 
-  const ca = caData._sum.prix ?? 0
+  const ca = caData[0]?.total ?? 0
+  const billing = await getSellerBillingBreakdown(vendeur.id, vendeur.abonnement ?? null)
 
   const dernieresCommandes = await prisma.order.findMany({
     where:   { items: { some: { product: { vendeurId: vid } } } },
@@ -70,6 +76,16 @@ export default async function VendeurDashboard() {
       href: '/commandes', label: 'Commandes', value: totalCommandes,
       sub: commandesEnAttente > 0 ? `${commandesEnAttente} en attente` : 'À jour',
       Icon: ShoppingCart, accent: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/40',
+    },
+    {
+      href: '/vendeur/abonnement', label: 'Commission ventes', value: `${billing.salesFee.toLocaleString('fr-DZ')} DA`,
+      sub: `${Math.round(SELLER_SALE_FEE_RATE * 100)}% sur ${billing.grossSales.toLocaleString('fr-DZ')} DA`,
+      Icon: Percent, accent: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/40',
+    },
+    {
+      href: '/vendeur/abonnement', label: 'Total a payer', value: `${billing.totalDue.toLocaleString('fr-DZ')} DA`,
+      sub: 'Abonnement + frais sur ventes',
+      Icon: Receipt, accent: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/40',
     },
   ]
 

@@ -42,15 +42,19 @@ export async function GET(req: NextRequest) {
     vendeurs.map(async (v) => {
       const [totalCommandes, chiffreAffaire] = await Promise.all([
         prisma.orderItem.count({ where: { product: { vendeurId: v.id } } }),
-        prisma.orderItem.aggregate({
-          _sum: { prix: true },
-          where: { product: { vendeurId: v.id }, order: { statut: 'LIVREE' } },
-        }),
+        prisma.$queryRaw<Array<{ total: number | null }>>`
+          SELECT COALESCE(SUM(oi.prix * oi.quantite), 0)::float AS total
+          FROM "OrderItem" oi
+          JOIN "Product" p ON p.id = oi."productId"
+          JOIN "Order" o ON o.id = oi."orderId"
+          WHERE p."vendeurId" = ${v.id}
+            AND o.statut = 'LIVREE'
+        `,
       ])
       return {
         ...v,
         totalCommandes,
-        chiffreAffaire: chiffreAffaire._sum.prix ?? 0,
+        chiffreAffaire: chiffreAffaire[0]?.total ?? 0,
       }
     })
   )

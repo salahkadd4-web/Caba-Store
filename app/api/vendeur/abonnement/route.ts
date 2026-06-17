@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import {
+  SELLER_SUBSCRIPTION_PRICING,
+  buildSellerInvoiceRecord,
+  getPlainSellerInvoiceNote,
+  getSellerBillingBreakdown,
+} from '@/lib/seller-billing'
 
 export async function GET() {
   const session = await auth()
@@ -25,14 +31,33 @@ export async function GET() {
   const joursRestants = Math.ceil(
     (new Date(abonnement.dateFin).getTime() - maintenant.getTime()) / (1000 * 60 * 60 * 24)
   )
+  const billing = await getSellerBillingBreakdown(profile.id, abonnement)
+  const invoices = abonnement.paiements.map((payment) => {
+    const invoice = buildSellerInvoiceRecord(payment, {
+      vendeurId: profile.id,
+      niveau: abonnement.niveau,
+      periodicite: abonnement.periodicite,
+      dateDebut: abonnement.dateDebut,
+      dateFin: abonnement.dateFin,
+    })
+
+    return {
+      ...invoice,
+      paymentDate: invoice.paymentDate.toISOString(),
+      periodStart: invoice.periodStart?.toISOString() ?? null,
+      periodEnd: invoice.periodEnd?.toISOString() ?? null,
+    }
+  })
 
   return NextResponse.json({
     ...abonnement,
     joursRestants: Math.max(0, joursRestants),
-    tarifs: {
-      NIVEAU_1: { mensuel: 2500, annuel: 25000 },
-      NIVEAU_2: { mensuel: 2000, annuel: 20000 },
-      NIVEAU_3: { mensuel: 1500, annuel: 15000 },
-    },
+    tarifs: SELLER_SUBSCRIPTION_PRICING,
+    billing,
+    paiements: abonnement.paiements.map((payment) => ({
+      ...payment,
+      note: getPlainSellerInvoiceNote(payment.note),
+    })),
+    invoices,
   })
 }

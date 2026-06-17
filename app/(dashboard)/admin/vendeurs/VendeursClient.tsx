@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import SellerInvoiceActions from '@/components/billing/SellerInvoiceActions'
 import { useScrollLock } from '@/lib/hooks/useScrollLock'
 import {
   Ban, Banknote, CheckCircle2, ClipboardList,
@@ -21,8 +22,33 @@ export interface Vendeur {
   _count: { products: number; categories: number }
 }
 interface Paiement { id: string; montant: number; methode: string; reference: string | null; dateReglement: string; note: string | null }
+interface BillingDetail {
+  rate: number
+  subscriptionAmount: number
+  grossSales: number
+  salesFee: number
+  totalDue: number
+  soldItemsCount: number
+  deliveredOrdersCount: number
+  periodStart: string | null
+  periodEnd: string | null
+}
+interface InvoiceDetail extends BillingDetail {
+  version: 'seller_invoice_v1'
+  invoiceNumber: string
+  sellerId: string
+  level: string
+  periodicite: string | null
+  paymentId: string
+  paidAt: string
+  methode: string
+  reference: string | null
+  adminNote: string | null
+  amount: number
+  paymentDate: string
+}
 interface AbonnementDetail {
-  id: string; niveau: string; statut: string; dateFin: string; periodicite: string | null; joursRestants: number; paiements: Paiement[]
+  id: string; niveau: string; statut: string; dateFin: string; periodicite: string | null; joursRestants: number; paiements: Paiement[]; billing: BillingDetail; invoices: InvoiceDetail[]
 }
 
 const statutConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
@@ -32,9 +58,9 @@ const statutConfig: Record<string, { label: string; color: string; icon: React.E
   PIECES_REQUISES: { label: 'Pièces requises', color: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',   icon: ClipboardList },
 }
 const NIVEAU_LABELS: Record<string, { label: string; color: string }> = {
-  NIVEAU_1: { label: 'Niveau 1 — 2500 DA', color: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300' },
-  NIVEAU_2: { label: 'Niveau 2 — 2000 DA', color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'         },
-  NIVEAU_3: { label: 'Niveau 3 — 1500 DA', color: 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300'     },
+  NIVEAU_1: { label: 'Niveau 1 — 5000 DA', color: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300' },
+  NIVEAU_2: { label: 'Niveau 2 — 4000 DA', color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'         },
+  NIVEAU_3: { label: 'Niveau 3 — 3000 DA', color: 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300'     },
 }
 const STATUT_ABO_LABELS: Record<string, { label: string; color: string }> = {
   GRATUIT:  { label: 'Gratuit (1 an)', color: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'     },
@@ -380,15 +406,52 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
                           </div>
                         ))}
                       </div>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-4">
+                          <p className="text-xs text-stone-500 mb-1">Abonnement</p>
+                          <p className="text-lg font-semibold text-stone-900 dark:text-white">{abonnement.billing.subscriptionAmount.toLocaleString('fr-DZ')} DA</p>
+                        </div>
+                        <div className="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-4">
+                          <p className="text-xs text-stone-500 mb-1">Frais ventes</p>
+                          <p className="text-lg font-semibold text-stone-900 dark:text-white">{abonnement.billing.salesFee.toLocaleString('fr-DZ')} DA</p>
+                          <p className="text-[11px] text-stone-400 mt-1">1% sur {abonnement.billing.grossSales.toLocaleString('fr-DZ')} DA</p>
+                        </div>
+                        <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 p-4">
+                          <p className="text-xs text-emerald-700 dark:text-emerald-300 mb-1">Total a payer</p>
+                          <p className="text-lg font-semibold text-emerald-800 dark:text-emerald-200">{abonnement.billing.totalDue.toLocaleString('fr-DZ')} DA</p>
+                        </div>
+                      </div>
+                      <div className="rounded-xl border border-stone-200 dark:border-stone-700 p-4 bg-stone-50 dark:bg-stone-800/50 text-sm space-y-2">
+                        <div className="flex justify-between gap-3">
+                          <span className="text-stone-500">Ventes livrees sur la periode</span>
+                          <span className="font-medium text-stone-800 dark:text-stone-100">{abonnement.billing.grossSales.toLocaleString('fr-DZ')} DA</span>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <span className="text-stone-500">Commandes livrees</span>
+                          <span className="font-medium text-stone-800 dark:text-stone-100">{abonnement.billing.deliveredOrdersCount}</span>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <span className="text-stone-500">Lignes vendues</span>
+                          <span className="font-medium text-stone-800 dark:text-stone-100">{abonnement.billing.soldItemsCount}</span>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <span className="text-stone-500">Periode facturee</span>
+                          <span className="font-medium text-stone-800 dark:text-stone-100 text-right">
+                            {abonnement.billing.periodStart && abonnement.billing.periodEnd
+                              ? `${new Date(abonnement.billing.periodStart).toLocaleDateString('fr-DZ')} - ${new Date(abonnement.billing.periodEnd).toLocaleDateString('fr-DZ')}`
+                              : 'Non definie'}
+                          </span>
+                        </div>
+                      </div>
                       <div className="border border-stone-200 dark:border-stone-700 rounded-xl p-4 space-y-3">
                         <p className="font-semibold text-sm text-stone-800 dark:text-stone-100">Confirmer un paiement / renouveler</p>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="text-xs text-stone-500 mb-1 block">Niveau</label>
                             <select value={aboForm.niveau} onChange={e => setAboForm(f => ({...f, niveau: e.target.value}))} className={selectField}>
-                              <option value="NIVEAU_1">Niveau 1 — 2500 DA/mois</option>
-                              <option value="NIVEAU_2">Niveau 2 — 2000 DA/mois</option>
-                              <option value="NIVEAU_3">Niveau 3 — 1500 DA/mois</option>
+                              <option value="NIVEAU_1">Niveau 1 — 5000 DA/mois</option>
+                              <option value="NIVEAU_2">Niveau 2 — 4000 DA/mois</option>
+                              <option value="NIVEAU_3">Niveau 3 — 3000 DA/mois</option>
                             </select>
                           </div>
                           <div>
@@ -423,17 +486,67 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
                       </div>
                       {abonnement.paiements.length > 0 && (
                         <div>
-                          <p className="font-semibold text-sm text-stone-800 dark:text-stone-100 mb-2">Historique des paiements</p>
+                          <p className="font-semibold text-sm text-stone-800 dark:text-stone-100 mb-2">Historique de facturation</p>
                           <div className="space-y-2">
-                            {abonnement.paiements.map(p => (
-                              <div key={p.id} className="flex justify-between items-center bg-stone-50 dark:bg-stone-800 rounded-xl px-3 py-2.5 text-sm">
-                                <div>
-                                  <span className="font-medium text-stone-900 dark:text-white">{p.montant.toLocaleString('fr-DZ')} DA</span>
-                                  <span className="text-stone-400 ml-2 text-xs capitalize">{p.methode}</span>
-                                  {p.reference && <span className="text-stone-400 ml-1 text-xs">· {p.reference}</span>}
-                                  {p.note && <p className="text-stone-400 text-xs mt-0.5">{p.note}</p>}
+                            {abonnement.invoices.map((invoice, index) => (
+                              <div key={invoice.paymentId} className="bg-stone-50 dark:bg-stone-800 rounded-xl px-3 py-3 text-sm space-y-3">
+                                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                                  <div className="space-y-2 min-w-0">
+                                    <div>
+                                      <p className="font-medium text-stone-900 dark:text-white">{invoice.invoiceNumber}</p>
+                                      <p className="text-stone-400 text-xs mt-0.5">{new Date(invoice.paymentDate).toLocaleDateString('fr-DZ')} · {invoice.methode}</p>
+                                    </div>
+                                    <div className="grid gap-2 sm:grid-cols-2">
+                                      <div>
+                                        <p className="text-[11px] text-stone-400 uppercase tracking-wide">Periode</p>
+                                        <p className="text-stone-700 dark:text-stone-200">
+                                          {invoice.periodStart && invoice.periodEnd
+                                            ? `${new Date(invoice.periodStart).toLocaleDateString('fr-DZ')} - ${new Date(invoice.periodEnd).toLocaleDateString('fr-DZ')}`
+                                            : 'Non definie'}
+                                        </p>
+                                      </div>
+                                      <div>
+                                        <p className="text-[11px] text-stone-400 uppercase tracking-wide">Total</p>
+                                        <p className="text-stone-700 dark:text-stone-200 font-medium">{invoice.totalDue.toLocaleString('fr-DZ')} DA</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-[11px] text-stone-400 uppercase tracking-wide">Abonnement</p>
+                                        <p className="text-stone-700 dark:text-stone-200">{invoice.subscriptionAmount.toLocaleString('fr-DZ')} DA</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-[11px] text-stone-400 uppercase tracking-wide">Frais ventes</p>
+                                        <p className="text-stone-700 dark:text-stone-200">{invoice.salesFee.toLocaleString('fr-DZ')} DA</p>
+                                      </div>
+                                    </div>
+                                    {(invoice.reference || invoice.adminNote || abonnement.paiements[index]?.note) && (
+                                      <p className="text-stone-400 text-xs mt-0.5">
+                                        {invoice.reference ? `Ref. ${invoice.reference}` : ''}
+                                        {invoice.reference && (invoice.adminNote || abonnement.paiements[index]?.note) ? ' · ' : ''}
+                                        {invoice.adminNote || abonnement.paiements[index]?.note}
+                                      </p>
+                                    )}
+                                  </div>
+
+                                  <SellerInvoiceActions invoice={{
+                                    invoiceNumber: invoice.invoiceNumber,
+                                    sellerName: selected.nomBoutique || `${selected.user.prenom} ${selected.user.nom}`,
+                                    levelLabel: NIVEAU_LABELS[invoice.level]?.label ?? invoice.level,
+                                    periodiciteLabel: invoice.periodicite ?? 'Offert',
+                                    paymentDateLabel: new Date(invoice.paymentDate).toLocaleDateString('fr-DZ'),
+                                    periodLabel: invoice.periodStart && invoice.periodEnd
+                                      ? `${new Date(invoice.periodStart).toLocaleDateString('fr-DZ')} - ${new Date(invoice.periodEnd).toLocaleDateString('fr-DZ')}`
+                                      : 'Non definie',
+                                    paymentMethodLabel: invoice.methode,
+                                    reference: invoice.reference,
+                                    adminNote: invoice.adminNote,
+                                    grossSalesLabel: `${invoice.grossSales.toLocaleString('fr-DZ')} DA`,
+                                    salesFeeLabel: `${invoice.salesFee.toLocaleString('fr-DZ')} DA`,
+                                    subscriptionAmountLabel: `${invoice.subscriptionAmount.toLocaleString('fr-DZ')} DA`,
+                                    totalDueLabel: `${invoice.totalDue.toLocaleString('fr-DZ')} DA`,
+                                    deliveredOrdersCount: invoice.deliveredOrdersCount,
+                                    soldItemsCount: invoice.soldItemsCount,
+                                  }} />
                                 </div>
-                                <span className="text-stone-400 text-xs shrink-0">{new Date(p.dateReglement).toLocaleDateString('fr-DZ')}</span>
                               </div>
                             ))}
                           </div>

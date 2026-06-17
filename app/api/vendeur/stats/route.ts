@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { getSellerBillingBreakdown } from '@/lib/seller-billing'
 
 // GET /api/vendeur/stats
 export async function GET() {
@@ -11,6 +12,7 @@ export async function GET() {
 
   const vendeur = await prisma.vendeurProfile.findUnique({
     where: { userId: session.user.id },
+    include: { abonnement: true },
   })
   if (!vendeur || vendeur.statut !== 'APPROUVE') {
     return NextResponse.json({ error: 'Compte non approuvé' }, { status: 403 })
@@ -32,10 +34,14 @@ export async function GET() {
     prisma.orderItem.count({ where: { product: { vendeurId: vid } } }),
     prisma.order.count({ where: { statut: 'EN_ATTENTE',  items: { some: { product: { vendeurId: vid } } } } }),
     prisma.order.count({ where: { statut: 'LIVREE',       items: { some: { product: { vendeurId: vid } } } } }),
-    prisma.orderItem.aggregate({
-      _sum: { prix: true },
-      where: { product: { vendeurId: vid }, order: { statut: 'LIVREE' } },
-    }),
+    prisma.$queryRaw<Array<{ total: number | null }>>`
+      SELECT COALESCE(SUM(oi.prix * oi.quantite), 0)::float AS total
+      FROM "OrderItem" oi
+      JOIN "Product" p ON p.id = oi."productId"
+      JOIN "Order" o ON o.id = oi."orderId"
+      WHERE p."vendeurId" = ${vid}
+        AND o.statut = 'LIVREE'
+    `,
     // Top 5 produits par ventes
     prisma.product.findMany({
       where: { vendeurId: vid },
@@ -57,7 +63,8 @@ export async function GET() {
     }),
   ])
 
-  const chiffreAffaire = caData._sum.prix ?? 0
+  const chiffreAffaire = caData[0]?.total ?? 0
+  const billing = await getSellerBillingBreakdown(vid, vendeur.abonnement ?? null)
 
   // 5 produits les moins vendus (avec au moins 1 vente)
   const flop5Produits = await prisma.product.findMany({
@@ -77,6 +84,7 @@ export async function GET() {
     commandesEnAttente,
     commandesLivrees,
     chiffreAffaire,
+    billing,
     top5Produits,
     flop5Produits,
   })
