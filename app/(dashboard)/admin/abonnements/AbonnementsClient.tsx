@@ -164,7 +164,7 @@ export default function AbonnementsClient({ initialData }: { initialData: Abonne
                         </span>
                       </td>
                       <td className={`${tableTd} text-right`}>
-                        <Link href={`/admin/vendeurs?id=${r.vendeurId}`}
+                        <Link href={`/admin/vendeurs?id=${r.vendeurId}&tab=abonnement`}
                           className="inline-flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400 hover:underline whitespace-nowrap">
                           <CreditCard className="w-3 h-3" /> Gérer
                         </Link>

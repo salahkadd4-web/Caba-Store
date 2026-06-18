@@ -1,5 +1,6 @@
 'use client'
 
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import SellerInvoiceActions from '@/components/billing/SellerInvoiceActions'
 import { useScrollLock } from '@/lib/hooks/useScrollLock'
@@ -87,6 +88,9 @@ const inputField  = `w-full rounded-xl border border-stone-200 dark:border-stone
 const selectField = `w-full rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 py-2 text-sm text-stone-700 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-orange-400 transition`
 
 export default function VendeursClient({ initialData }: { initialData: Vendeur[] }) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [vendeurs,     setVendeurs]     = useState<Vendeur[]>(initialData)
   const [searching,    setSearching]    = useState(false)
   const [filterStatut, setFilterStatut] = useState('')
@@ -141,10 +145,18 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
     if (res.ok) setVendeurs(await res.json())
   }, [])
 
-  const fetchDetail = async (id: string) => {
+  const clearSelectionQuery = useCallback(() => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete('id')
+    params.delete('tab')
+    const query = params.toString()
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+  }, [pathname, router, searchParams])
+
+  const fetchDetail = useCallback(async (id: string, tab: 'infos' | 'abonnement' = 'infos') => {
     const res = await fetch(`/api/admin/vendeurs/${id}`)
-    if (res.ok) { setSelected(await res.json()); setOnglet('infos'); setAbonnement(null) }
-  }
+    if (res.ok) { setSelected(await res.json()); setOnglet(tab); setAbonnement(null) }
+  }, [])
 
   const fetchAbonnement = useCallback(async (vendeurId: string) => {
     setLoadingAbo(true)
@@ -157,6 +169,20 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
   }, [])
 
   useEffect(() => { if (selected && onglet === 'abonnement') fetchAbonnement(selected.id) }, [selected, onglet, fetchAbonnement])
+
+  useEffect(() => {
+    const selectedId = searchParams.get('id')
+    if (!selectedId) return
+
+    const requestedTab = searchParams.get('tab') === 'abonnement' ? 'abonnement' : 'infos'
+
+    if (selected?.id === selectedId) {
+      if (onglet !== requestedTab) setOnglet(requestedTab)
+      return
+    }
+
+    fetchDetail(selectedId, requestedTab)
+  }, [fetchDetail, onglet, searchParams, selected])
 
   const doAction = async (id: string, action: string, extra: object = {}) => {
     setSaving(true)
@@ -272,7 +298,7 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
 
       {/* Panel détail vendeur */}
       {selected && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={e => { if (e.target === e.currentTarget) setSelected(null) }}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={e => { if (e.target === e.currentTarget) { setSelected(null); clearSelectionQuery() } }}>
           <div className="bg-[#FAF7F2] dark:bg-stone-900 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] overflow-y-auto border border-stone-200 dark:border-stone-800">
             <div className="sticky top-0 bg-[#FAF7F2] dark:bg-stone-900 z-10 border-b border-stone-200 dark:border-stone-800">
               <div className="flex items-center justify-between p-5">
@@ -283,7 +309,7 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
                     {statutConfig[selected.statut]?.label}
                   </span>
                 </div>
-                <button onClick={() => setSelected(null)} className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 dark:hover:bg-stone-800 transition"><X className="w-4 h-4" /></button>
+                <button onClick={() => { setSelected(null); clearSelectionQuery() }} className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 dark:hover:bg-stone-800 transition"><X className="w-4 h-4" /></button>
               </div>
               <div className="flex border-t border-stone-200 dark:border-stone-800">
                 {(['infos', 'abonnement'] as const).map(tab => (
