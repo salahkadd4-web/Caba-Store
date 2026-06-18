@@ -262,9 +262,9 @@ export default async function AdminStatsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {stats.statsAbonnements.map(a => {
             const cfg = {
-              NIVEAU_1: { label: 'Niveau 1', tarif: '2 500 DA/mois', border: 'border-purple-300 dark:border-purple-700', badge: 'bg-purple-600 text-white' },
-              NIVEAU_2: { label: 'Niveau 2', tarif: '2 000 DA/mois', border: 'border-blue-300 dark:border-blue-700',     badge: 'bg-blue-500 text-white'   },
-              NIVEAU_3: { label: 'Niveau 3', tarif: '1 500 DA/mois', border: 'border-stone-300 dark:border-stone-600',   badge: 'bg-stone-500 text-white'  },
+              NIVEAU_1: { label: 'Niveau 1', tarif: '3 000 DA/mois', border: 'border-purple-300 dark:border-purple-700', badge: 'bg-purple-600 text-white' },
+              NIVEAU_2: { label: 'Niveau 2', tarif: '4 000 DA/mois', border: 'border-blue-300 dark:border-blue-700',     badge: 'bg-blue-500 text-white'   },
+              NIVEAU_3: { label: 'Niveau 3', tarif: '5 000 DA/mois', border: 'border-stone-300 dark:border-stone-600',   badge: 'bg-stone-500 text-white'  },
             }[a.niveau]!
             const tauxActif = a.total > 0 ? Math.round(((a.actif + a.gratuit) / a.total) * 100) : 0
             return (

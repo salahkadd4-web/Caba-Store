@@ -126,12 +126,12 @@ export default function ThemeToggle() {
       {/* ── DESKTOP — même coin que le Header (bottom-right) ── */}
       <div
         ref={desktopRef}
-        className="hidden md:flex fixed bottom-6 right-6 z-50 flex-col items-end gap-2"
+        className="hidden md:block fixed bottom-6 right-6 z-50"
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
       >
         {/* Options flottantes */}
-        <div className={`flex flex-col items-end gap-1.5 transition-all duration-200 origin-bottom
+        <div className={`absolute bottom-full right-0 mb-2 flex flex-col items-end gap-1.5 transition-all duration-200 origin-bottom-right
           ${open ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-2 pointer-events-none'}`}
         >
           {options.map(opt => {
