@@ -1,4 +1,4 @@
-// middleware.ts
+// proxy.ts
 // ⚠️  On importe UNIQUEMENT authConfig (sans Prisma ni bcryptjs)
 //     pour rester compatible avec l'Edge Runtime.
 //     Le fichier auth.ts complet est réservé aux API routes / Server Components.
@@ -131,9 +131,11 @@ export default auth((req: NextAuthRequest) => {
     }
   }
 
-  // ── Routes /commandes et /retours : session requise, tous rôles autorisés ──
+  // ── Routes /commandes, /retours (dashboard) et /mes-commandes, /mes-retours
+  //    (boutique) : session requise, tous rôles autorisés ──
   const isSharedRoute =
-    pathname.startsWith('/commandes') || pathname.startsWith('/retours')
+    pathname.startsWith('/commandes')     || pathname.startsWith('/retours') ||
+    pathname.startsWith('/mes-commandes') || pathname.startsWith('/mes-retours')
 
   if (isSharedRoute && !session?.user) {
     return NextResponse.redirect(new URL('/connexion', req.url))
@@ -184,6 +186,10 @@ export const config = {
     '/retours',
     '/retours/:path*',
     // Routes client protégées
+    '/mes-commandes',
+    '/mes-commandes/:path*',
+    '/mes-retours',
+    '/mes-retours/:path*',
     '/panier',
     '/panier/:path*',
     '/favoris',

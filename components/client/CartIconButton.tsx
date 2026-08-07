@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { useEtatProduit } from '@/components/client/EtatProduitsProvider'
 
 function broadcastCartUpdate() {
   window.dispatchEvent(new CustomEvent('cart-updated'))
@@ -13,31 +14,12 @@ function broadcastCartUpdate() {
 
 export default function CartIconButton({ produitId, stock }: { produitId: string; stock: number }) {
   const { data: session } = useSession()
-  const router   = useRouter()
-  const [inCart,     setInCart]     = useState(false)
-  const [cartItemId, setCartItemId] = useState<string | null>(null)
-  const [loading,    setLoading]    = useState(false)
-  const abortRef = useRef<AbortController | null>(null)
+  const router = useRouter()
+  const { etat, setEtat } = useEtatProduit(produitId)
+  const [loading, setLoading] = useState(false)
 
-  // ── Vérification initiale ciblée (évite de charger tout le panier) ──
-  useEffect(() => {
-    if (!session) return
-
-    abortRef.current?.abort()
-    abortRef.current = new AbortController()
-
-    fetch(`/api/panier/check?productId=${produitId}`, { signal: abortRef.current.signal })
-      .then(r => r.ok ? r.json() : null)
-      .then((data: { inCart: boolean; cartItemId: string | null } | null) => {
-        if (data !== null) {
-          setInCart(data.inCart)
-          setCartItemId(data.cartItemId)
-        }
-      })
-      .catch(() => { /* AbortError ignorée */ })
-
-    return () => { abortRef.current?.abort() }
-  }, [session, produitId])
+  const inCart     = !!etat?.inCart
+  const cartItemId = etat?.cartItemId ?? null
 
   const handleToggle = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -50,8 +32,7 @@ export default function CartIconButton({ produitId, stock }: { produitId: string
       if (inCart && cartItemId) {
         const res = await fetch(`/api/panier/${cartItemId}`, { method: 'DELETE' })
         if (res.ok) {
-          setInCart(false)
-          setCartItemId(null)
+          setEtat({ isFavori: etat?.isFavori ?? false, inCart: false, cartItemId: null })
           broadcastCartUpdate()
         }
       } else {
@@ -64,8 +45,7 @@ export default function CartIconButton({ produitId, stock }: { produitId: string
         const data = await res.json()
         // Le POST retourne maintenant l'id du cartItem créé
         if (data.cartItemId) {
-          setInCart(true)
-          setCartItemId(data.cartItemId)
+          setEtat({ isFavori: etat?.isFavori ?? false, inCart: true, cartItemId: data.cartItemId })
         }
         broadcastCartUpdate()
       }

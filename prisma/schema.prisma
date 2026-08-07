@@ -207,7 +207,7 @@ model ReturnRequest {
   orderId           String              @unique
   flowmerceClaimId  String?
   status            ReturnRequestStatus @default(PENDING)
-  reason            String
+  reason            String?
   description       String?
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt

@@ -19,11 +19,11 @@ const navItems = [
 ]
 
 const userMenuItems = [
-  { href: '/profil',    label: 'Mon Profil',    icon: User },
-  { href: '/favoris',   label: 'Mes Favoris',   icon: Heart },
-  { href: '/panier',    label: 'Mon Panier',    icon: ShoppingCart },
-  { href: '/commandes', label: 'Mes Commandes', icon: Package },
-  { href: '/retours',   label: 'Mes Retours',   icon: RefreshCw },
+  { href: '/profil',        label: 'Mon Profil',    icon: User },
+  { href: '/favoris',       label: 'Mes Favoris',   icon: Heart },
+  { href: '/panier',        label: 'Mon Panier',    icon: ShoppingCart },
+  { href: '/mes-commandes', label: 'Mes Commandes', icon: Package },
+  { href: '/mes-retours',   label: 'Mes Retours',   icon: RefreshCw },
 ]
 
 function ChevronDown({ open }: { open: boolean }) {
@@ -259,8 +259,8 @@ export default function Nav() {
             {/* Raccourcis client — desktop seulement */}
             {isClient && (
               <div className="hidden md:flex items-center gap-1">
-                <IconLink href="/favoris"   title="Mes favoris"><Heart   className="w-4 h-4" /></IconLink>
-                <IconLink href="/commandes" title="Mes commandes"><Package className="w-4 h-4" /></IconLink>
+                <IconLink href="/favoris"       title="Mes favoris"><Heart   className="w-4 h-4" /></IconLink>
+                <IconLink href="/mes-commandes" title="Mes commandes"><Package className="w-4 h-4" /></IconLink>
               </div>
             )}
 

@@ -1,5 +1,5 @@
 {
-  "buildCommand": "prisma generate && prisma db push --accept-data-loss && next build",
+  "buildCommand": "prisma generate && prisma migrate deploy && next build",
   "crons": [
     {
       "path": "/api/cron/check-abonnements",

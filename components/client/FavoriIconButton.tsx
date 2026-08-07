@@ -1,30 +1,17 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { useEtatProduit } from '@/components/client/EtatProduitsProvider'
 
 export default function FavoriIconButton({ produitId }: { produitId: string }) {
   const { data: session } = useSession()
-  const router   = useRouter()
-  const [isFavori, setIsFavori] = useState(false)
-  const [loading,  setLoading]  = useState(false)
-  const abortRef = useRef<AbortController | null>(null)
+  const router = useRouter()
+  const { etat, setEtat } = useEtatProduit(produitId)
+  const [loading, setLoading] = useState(false)
 
-  // ── Vérification initiale ciblée (évite de charger toute la liste) ──
-  useEffect(() => {
-    if (!session) return
-
-    abortRef.current?.abort()
-    abortRef.current = new AbortController()
-
-    fetch(`/api/favoris?productId=${produitId}`, { signal: abortRef.current.signal })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data !== null) setIsFavori(!!data.isFavori) })
-      .catch(() => { /* AbortError ignorée */ })
-
-    return () => { abortRef.current?.abort() }
-  }, [session, produitId])
+  const isFavori = !!etat?.isFavori
 
   const handleToggle = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -33,13 +20,15 @@ export default function FavoriIconButton({ produitId }: { produitId: string }) {
 
     setLoading(true)
     try {
-      const res  = await fetch('/api/favoris', {
+      const res = await fetch('/api/favoris', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ produitId }),
       })
       const data = await res.json()
-      setIsFavori(data.isFavori)
+      if (data?.isFavori !== undefined) {
+        setEtat({ isFavori: data.isFavori, inCart: etat?.inCart ?? false, cartItemId: etat?.cartItemId ?? null })
+      }
     } catch {
       console.error('Erreur favoris')
     } finally {

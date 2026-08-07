@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { auth } from "@/auth";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import SessionProvider from "@/components/client/SessionProvider";
+import { EtatProduitsProvider } from "@/components/client/EtatProduitsProvider";
 import Nav from "@/components/Nav";
 import ThemeToggle from "@/components/ThemeToggle";
 import BottomNav from "@/components/BottomNav";
@@ -50,7 +51,8 @@ export default async function RootLayout({
       <body className={`${geistSans.variable} font-sans text-stone-900 dark:text-stone-100 transition-colors duration-300`}>
         <ThemeProvider>
           <SessionProvider session={session}>
-            <AndroidBackButton />
+            <EtatProduitsProvider>
+              <AndroidBackButton />
             <Nav />
             <PullToRefresh>
               <MainWrapper>{children}</MainWrapper>
@@ -58,6 +60,7 @@ export default async function RootLayout({
             <BottomNav />
             <FooterWrapper><Footer /></FooterWrapper>
             <ThemeToggle />
+            </EtatProduitsProvider>
           </SessionProvider>
         </ThemeProvider>
       </body>

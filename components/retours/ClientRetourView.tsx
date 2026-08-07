@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import {
-  Banknote, Check, CheckCircle2, Loader2, Package,
-  RefreshCw, Wrench, XCircle, AlertCircle, Info,
-} from 'lucide-react'
+import { Check, CheckCircle2, Package, AlertCircle, Loader2, Send } from 'lucide-react'
+import type { ReturnForm, ReturnAnswer, ReturnPrefill } from '@/lib/flowmerce-types'
+import FlowmerceReturnForm, { type FlowmerceReturnFormHandle } from './flowmerce/FlowmerceReturnForm'
+import ReturnConfirmation from './flowmerce/ReturnConfirmation'
 
 type OrderItem = {
   id: string
@@ -26,24 +26,7 @@ type Order = {
   items: OrderItem[]
 }
 
-const REASONS = [
-  { label: 'Produit défectueux',             icon: AlertCircle },
-  { label: 'Produit contrefait',              icon: XCircle },
-  { label: 'Produit endommagé livraison',     icon: Package },
-  { label: "Changement d'avis",              icon: RefreshCw },
-  { label: 'Panne après utilisation',         icon: Wrench },
-  { label: 'Mauvaise taille',                 icon: Info },
-  { label: 'Allergie/Réaction',               icon: AlertCircle },
-  { label: 'Ne correspond pas',               icon: XCircle },
-  { label: 'Erreur de commande vendeur',      icon: Package },
-  { label: 'Pièces manquantes',               icon: Package },
-]
-
-const RESOLUTIONS = [
-  { value: 'REFUND',   label: 'Remboursement', icon: Banknote,   desc: 'Recevoir le montant payé' },
-  { value: 'EXCHANGE', label: 'Échange',        icon: RefreshCw,  desc: 'Recevoir un produit de remplacement' },
-  { value: 'REPAIR',   label: 'Réparation',     icon: Wrench,     desc: 'Faire réparer le produit' },
-]
+type Profil = { nom: string; prenom: string; email: string | null; telephone: string | null }
 
 const STEPS = ['Commande', 'Article', 'Motif', 'Confirmation']
 
@@ -83,70 +66,95 @@ function chipLabel(item: OrderItem): string {
 }
 
 function RetourContent({ orderId: preOrderId }: { orderId: string }) {
-
   const [step,          setStep]          = useState(0)
   const [commandes,     setCommandes]     = useState<Order[]>([])
   const [loading,       setLoading]       = useState(true)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
-  const [reason,        setReason]        = useState('')
-  const [resolution,    setResolution]    = useState<'REFUND' | 'EXCHANGE' | 'REPAIR' | ''>('')
-  const [description,   setDescription]  = useState('')
+  const [profil,        setProfil]        = useState<Profil | null>(null)
+  const [submission,    setSubmission]    = useState<{ form: ReturnForm; answers: ReturnAnswer } | null>(null)
   const [submitting,    setSubmitting]    = useState(false)
-  const [result,        setResult]        = useState<{ success?: boolean; claimId?: string; status?: 'PENDING' | 'APPROVED' | 'REJECTED'; error?: string } | null>(null)
+  const [submitError,   setSubmitError]   = useState<string | null>(null)
+  const [result,        setResult]        = useState<{ success?: boolean; claimId?: string; status?: string; error?: string } | null>(null)
+
+  const formRef = useRef<FlowmerceReturnFormHandle>(null)
 
   useEffect(() => {
     fetch('/api/commandes/')
       .then(async r => {
         const data = await r.json()
         if (!r.ok || !Array.isArray(data)) return
-        const livrees = (data as Order[]).filter(c => c.statut === 'LIVREE' && !c.retourDemande)
-        setCommandes(livrees)
-        const pre = livrees.find(c => c.id === preOrderId) ?? null
+        const eligibles = (data as Order[]).filter(c => c.statut !== 'ANNULEE' && !c.retourDemande)
+        setCommandes(eligibles)
+        const pre = eligibles.find(c => c.id === preOrderId) ?? null
         if (pre) { setSelectedOrder(pre); setStep(1) }
       })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [preOrderId])
 
+  // Profil client — sert à préremplir nom/email/téléphone sans les redemander.
+  useEffect(() => {
+    fetch('/api/profil')
+      .then(async r => (r.ok ? r.json() : null))
+      .then(setProfil)
+      .catch(() => {})
+  }, [])
+
   const selectedItem = selectedOrder?.items.find(i => i.id === selectedItemId) ?? null
 
-  const buildApiPayload = () => {
-    if (!selectedItem) return { productName: '', description: '' }
-    const label       = chipLabel(selectedItem)
-    const detail      = `${selectedItem.product.nom}${label !== 'Sans variante' ? ` (${label})` : ''} ×1`
-    const productName = selectedItem.product.nom
-    const finalDesc   = description ? `${description}\n\nArticle retourné : ${detail}` : `Article retourné : ${detail}`
-    return { productName, description: finalDesc }
+  // Valeurs déjà connues → masquées dans FlowmerceReturnForm, affichées en
+  // lecture seule dans le récapitulatif.
+  const prefill: ReturnPrefill = selectedOrder && selectedItem
+    ? {
+        order_id:       selectedOrder.id,
+        order_date:     selectedOrder.createdAt,
+        product_name:   selectedItem.product.nom,
+        customer_name:  profil ? `${profil.prenom} ${profil.nom}`.trim() : undefined,
+        customer_email: profil?.email ?? undefined,
+        customer_phone: profil?.telephone ?? undefined,
+      }
+    : {}
+
+  const handleNext = () => {
+    if (step === 2) {
+      const res = formRef.current?.validateAndGet()
+      if (!res) return
+      setSubmission(res)
+      setStep(3)
+      return
+    }
+    setStep(s => Math.min(s + 1, 3))
   }
 
-  const handleSubmit = async () => {
-    if (!selectedOrder || !selectedItem || !reason || !resolution) return
+  const handleConfirmSubmit = async () => {
+    if (!selectedOrder || !selectedItem || !submission) return
     setSubmitting(true)
-    const { productName, description: desc } = buildApiPayload()
+    setSubmitError(null)
     try {
-      const res  = await fetch('/api/retours/submit', {
+      const res = await fetch('/api/retours/submit', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ orderId: selectedOrder.id, orderItemId: selectedItem.id, productName, reason, resolution, description: desc }),
+        body:    JSON.stringify({ orderId: selectedOrder.id, productId: selectedItem.product.id, answers: submission.answers }),
       })
-      const data = await res.json()
-      setResult(res.ok ? { success: true, ...data } : { error: data.error })
+      const data = await res.json().catch(() => ({})) as { claimId?: string; status?: string; error?: string }
+
+      if (!res.ok) {
+        setSubmitError(data.error ?? 'Erreur lors de l\u2019envoi de la demande')
+        return
+      }
+      setResult({ success: true, claimId: data.claimId, status: data.status })
     } catch {
-      setResult({ error: 'Erreur réseau, réessayez.' })
+      setSubmitError('Erreur réseau, réessayez.')
     } finally {
       setSubmitting(false)
     }
   }
 
-  const canNext = [!!selectedOrder, !!selectedItemId, !!reason && !!resolution][step] ?? true
-  const next    = () => setStep(s => Math.min(s + 1, 3))
-  const prev    = () => setStep(s => Math.max(s - 1, 0))
-
   if (result?.success) {
     const statusLabel =
-      result.status === 'APPROVED' ? { text: 'Approuvée', color: 'text-green-600 dark:text-green-400' }
-      : result.status === 'REJECTED' ? { text: 'Refusée', color: 'text-red-600 dark:text-red-400' }
+      result.status?.toUpperCase() === 'APPROVED' ? { text: 'Approuvée', color: 'text-green-600 dark:text-green-400' }
+      : result.status?.toUpperCase() === 'REJECTED' ? { text: 'Refusée', color: 'text-red-600 dark:text-red-400' }
       : { text: 'En attente de traitement', color: 'text-amber-600 dark:text-amber-400' }
     return (
       <div className="max-w-lg mx-auto px-4 py-16 text-center">
@@ -158,25 +166,11 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
             <p className={`font-bold ${statusLabel.color}`}>{statusLabel.text}</p>
             {result.claimId && <p className="text-xs font-mono text-stone-400">Réf. {result.claimId}</p>}
           </div>
-          <Link href="/commandes" className="inline-block px-6 py-2.5 bg-orange-700 text-white text-sm font-semibold rounded-xl hover:bg-orange-800 transition">← Mes commandes</Link>
+          <Link href="/mes-commandes" className="inline-block px-6 py-2.5 bg-orange-700 text-white text-sm font-semibold rounded-xl hover:bg-orange-800 transition">← Mes commandes</Link>
         </div>
       </div>
     )
   }
-
-  if (result?.error) return (
-    <div className="max-w-lg mx-auto px-4 py-16 text-center">
-      <div className="bg-red-50 dark:bg-red-950 rounded-2xl p-8 border border-red-200 dark:border-red-800">
-        <XCircle className="w-14 h-14 text-red-500 mx-auto mb-3" />
-        <h2 className="text-xl font-bold text-red-800 dark:text-red-300 mb-2">Erreur</h2>
-        <p className="text-sm text-red-700 dark:text-red-400 mb-6">{result.error}</p>
-        <div className="flex gap-3 justify-center">
-          <button onClick={() => setResult(null)} className="px-5 py-2 bg-stone-900 dark:bg-white text-white dark:text-black rounded-xl text-sm font-semibold hover:opacity-80 transition">Réessayer</button>
-          <Link href="/commandes" className="px-5 py-2 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 rounded-xl text-sm font-semibold hover:bg-stone-50 dark:hover:bg-stone-800 transition">Mes commandes</Link>
-        </div>
-      </div>
-    </div>
-  )
 
   if (loading) return (
     <div className="max-w-xl mx-auto px-4 py-20 text-center text-stone-400">
@@ -188,16 +182,16 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
   if (commandes.length === 0) return (
     <div className="max-w-lg mx-auto px-4 py-16 text-center">
       <Package className="w-16 h-16 mx-auto mb-4 text-stone-300 dark:text-stone-600" />
-      <h2 className="text-xl font-bold text-stone-800 dark:text-stone-100 mb-2">Aucune commande livrée</h2>
-      <p className="text-sm text-stone-500 mb-6">Les retours sont disponibles uniquement pour les commandes livrées.</p>
-      <Link href="/commandes" className="text-orange-700 dark:text-orange-500 text-sm font-medium hover:underline">← Mes commandes</Link>
+      <h2 className="text-xl font-bold text-stone-800 dark:text-stone-100 mb-2">Aucune commande éligible</h2>
+      <p className="text-sm text-stone-500 mb-6">Les retours sont soumis à la politique de Flowmerce.</p>
+      <Link href="/mes-commandes" className="text-orange-700 dark:text-orange-500 text-sm font-medium hover:underline">← Mes commandes</Link>
     </div>
   )
 
   return (
     <div className="max-w-xl mx-auto px-4 py-10">
       <div className="mb-6">
-        <Link href="/commandes" className="text-sm text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 flex items-center gap-1 mb-4">← Retour</Link>
+        <Link href="/mes-commandes" className="text-sm text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 flex items-center gap-1 mb-4">← Retour</Link>
         <h1 className="text-2xl font-bold text-stone-800 dark:text-stone-100">Demande de retour</h1>
       </div>
 
@@ -210,7 +204,7 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
           <div className="space-y-2">
             {commandes.map(c => (
               <label key={c.id} className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${selectedOrder?.id === c.id ? 'border-orange-700 bg-orange-50 dark:bg-orange-950/60' : 'border-stone-100 dark:border-stone-800 hover:border-stone-200 dark:hover:border-stone-700'}`}>
-                <input type="radio" name="order" checked={selectedOrder?.id === c.id} onChange={() => { setSelectedOrder(c); setSelectedItemId(null); setReason(''); setResolution(''); setDescription('') }} className="accent-orange-700 shrink-0" />
+                <input type="radio" name="order" checked={selectedOrder?.id === c.id} onChange={() => { setSelectedOrder(c); setSelectedItemId(null); setResult(null) }} className="accent-orange-700 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-stone-800 dark:text-stone-100">#{c.id.slice(-8).toUpperCase()}</p>
                   <p className="text-xs text-stone-500 mt-0.5">
@@ -219,7 +213,7 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
                     {' · '}{c.total.toFixed(2)} DA
                   </p>
                 </div>
-                <span className="text-xs bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full font-medium shrink-0">Livrée</span>
+                <span className="text-xs bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full font-medium shrink-0">{c.statut}</span>
               </label>
             ))}
           </div>
@@ -230,8 +224,8 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
       {step === 1 && selectedOrder && (
         <div className="space-y-3">
           <div className="bg-orange-50 dark:bg-orange-950/40 border border-orange-100 dark:border-orange-900 rounded-xl px-4 py-2.5 flex items-start gap-2">
-            <Info className="w-4 h-4 text-orange-700 dark:text-orange-500 shrink-0 mt-0.5" />
-            <p className="text-xs text-orange-700 dark:text-orange-500 leading-relaxed">Sélectionnez l&apos;article que vous souhaitez retourner. Une seule demande par article est possible.</p>
+            <AlertCircle className="w-4 h-4 text-orange-700 dark:text-orange-500 shrink-0 mt-0.5" />
+            <p className="text-xs text-orange-700 dark:text-orange-500 leading-relaxed">Sélectionnez l&apos;article à retourner. Une seule demande par commande est possible.</p>
           </div>
           <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-100 dark:border-stone-800 overflow-hidden">
             {selectedOrder.items.map((item, idx) => {
@@ -259,119 +253,48 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
               )
             })}
           </div>
-          {selectedItem && (
-            <div className="flex items-center gap-2.5 bg-orange-50 dark:bg-orange-950/50 border border-orange-200 dark:border-orange-800 rounded-xl px-4 py-3">
-              <Check className="w-4 h-4 text-orange-700 dark:text-orange-500 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-orange-700 dark:text-orange-400 truncate">
-                  {selectedItem.product.nom}
-                  {chipLabel(selectedItem) !== 'Sans variante' && <span className="font-normal ml-1 text-orange-600 dark:text-orange-500">· {chipLabel(selectedItem)}</span>}
-                </p>
-                <p className="text-[11px] text-orange-600 dark:text-orange-500 mt-0.5">Quantité retournée : 1</p>
-              </div>
-              <p className="text-sm font-bold text-orange-700 dark:text-orange-400 shrink-0">{selectedItem.prix.toFixed(2)} DA</p>
-            </div>
-          )}
         </div>
       )}
 
-      {/* Étape 2 — Motif + résolution */}
-      {step === 2 && (
-        <div className="space-y-4">
-          <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-100 dark:border-stone-800 p-5">
-            <p className="text-sm font-semibold text-stone-700 dark:text-stone-200 mb-3">Motif du retour</p>
-            <div className="grid grid-cols-2 gap-2">
-              {REASONS.map(r => (
-                <label key={r.label} className={`flex items-start gap-2 p-3 rounded-xl border-2 cursor-pointer text-sm transition-all ${reason === r.label ? 'border-orange-700 bg-orange-50 dark:bg-orange-950/60 text-orange-700 dark:text-orange-400 font-semibold' : 'border-stone-100 dark:border-stone-800 text-stone-600 dark:text-stone-400 hover:border-stone-200 dark:hover:border-stone-700'}`}>
-                  <input type="radio" name="reason" checked={reason === r.label} onChange={() => setReason(r.label)} className="sr-only" />
-                  <r.icon className="w-4 h-4 shrink-0 mt-0.5 text-stone-500" />
-                  <span className="leading-tight">{r.label}</span>
-                  {reason === r.label && <Check className="w-3.5 h-3.5 ml-auto shrink-0 text-orange-700 mt-0.5" />}
-                </label>
-              ))}
-            </div>
-            {!reason && <p className="text-xs text-orange-500 dark:text-orange-400 flex items-center gap-1 mt-2"><AlertCircle className="w-3.5 h-3.5" /> Sélectionnez un motif pour continuer</p>}
-          </div>
-          <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-100 dark:border-stone-800 p-5">
-            <p className="text-sm font-semibold text-stone-700 dark:text-stone-200 mb-3">Résolution souhaitée</p>
-            <div className="grid grid-cols-3 gap-3">
-              {RESOLUTIONS.map(res => {
-                const Icon = res.icon
-                return (
-                  <label key={res.value} className={`flex flex-col items-center text-center p-4 rounded-xl border-2 cursor-pointer transition-all ${resolution === res.value ? 'border-orange-700 bg-orange-50 dark:bg-orange-950/60 shadow-sm' : 'border-stone-100 dark:border-stone-800 hover:border-stone-200 dark:hover:border-stone-700'}`}>
-                    <input type="radio" name="resolution" checked={resolution === res.value} onChange={() => setResolution(res.value as typeof resolution)} className="sr-only" />
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${resolution === res.value ? 'bg-orange-100 dark:bg-orange-950' : 'bg-stone-100 dark:bg-stone-800'}`}>
-                      <Icon className={`w-5 h-5 ${resolution === res.value ? 'text-orange-700 dark:text-orange-500' : 'text-stone-500'}`} />
-                    </div>
-                    <span className={`text-xs font-bold ${resolution === res.value ? 'text-orange-700 dark:text-orange-400' : 'text-stone-700 dark:text-stone-200'}`}>{res.label}</span>
-                    <span className="text-[10px] text-stone-400 mt-0.5 leading-tight">{res.desc}</span>
-                    {resolution === res.value && <Check className="w-3.5 h-3.5 text-orange-700 mt-1.5" />}
-                  </label>
-                )
-              })}
-            </div>
-          </div>
-          <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-100 dark:border-stone-800 p-5">
-            <p className="text-sm font-semibold text-stone-700 dark:text-stone-200 mb-1.5">Détails <span className="font-normal text-stone-400">(optionnel)</span></p>
-            <textarea value={description} onChange={e => setDescription(e.target.value)} maxLength={1000} rows={3} placeholder="Décrivez le problème en détails…" className="w-full text-sm border border-stone-200 dark:border-stone-700 rounded-xl px-3 py-2.5 bg-white dark:bg-stone-800 text-stone-800 dark:text-stone-100 placeholder-stone-400 resize-none focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-700 transition" />
-            <p className="text-[10px] text-stone-400 mt-1">{description.length}/1000</p>
-          </div>
+      {/* Étape 2 — Formulaire dynamique Flowmerce (2-3 champs visibles seulement) */}
+      {step === 2 && selectedOrder && selectedItem && (
+        <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-100 dark:border-stone-800 p-5">
+          <FlowmerceReturnForm ref={formRef} prefill={prefill} />
         </div>
       )}
 
-      {/* Étape 3 — Récapitulatif */}
-      {step === 3 && selectedOrder && selectedItem && (
-        <div className="space-y-4">
-          <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-100 dark:border-stone-800 overflow-hidden">
-            <div className="px-5 py-3 border-b border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/50">
-              <p className="text-sm font-bold text-stone-700 dark:text-stone-200">Article à retourner</p>
-            </div>
-            <div className="flex items-center gap-3 px-5 py-4">
-              <div className="relative w-14 h-14 bg-stone-100 dark:bg-stone-800 rounded-xl overflow-hidden shrink-0 flex items-center justify-center">
-                {selectedItem.product.images?.[0]
-                  ? <Image src={selectedItem.product.images[0]} alt="" fill sizes="56px" className="object-cover" />
-                  : <Package className="w-6 h-6 text-stone-400" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 line-clamp-1">{selectedItem.product.nom}</p>
-                {chipLabel(selectedItem) !== 'Sans variante' && <p className="text-xs text-stone-500 mt-0.5">{chipLabel(selectedItem)}</p>}
-                <p className="text-xs text-stone-400 mt-1">Quantité retournée : 1</p>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-base font-bold text-orange-700 dark:text-orange-400">{selectedItem.prix.toFixed(2)} DA</p>
-                <p className="text-[10px] text-stone-400">potentiel</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-100 dark:border-stone-800 p-5">
-            {[['Commande', `#${selectedOrder.id.slice(-8).toUpperCase()}`], ['Motif', reason], ['Résolution', RESOLUTIONS.find(r => r.value === resolution)?.label ?? resolution]].map(([k, v]) => (
-              <div key={k} className="flex justify-between items-center py-2.5 border-b border-stone-50 dark:border-stone-800 last:border-0">
-                <span className="text-xs text-stone-400 shrink-0">{k}</span>
-                <span className="text-sm font-semibold text-stone-800 dark:text-stone-100 text-right ml-4">{v}</span>
-              </div>
-            ))}
-            {description && (
-              <div className="bg-stone-50 dark:bg-stone-800 rounded-xl p-3 mt-2">
-                <p className="text-xs text-stone-400 mb-1">Détails</p>
-                <p className="text-sm text-stone-700 dark:text-stone-300 line-clamp-3">{description}</p>
-              </div>
-            )}
-          </div>
-          <p className="text-xs text-stone-400 text-center">Vous recevrez une notification dès qu&apos;une décision est rendue.</p>
+      {/* Étape 3 — Confirmation : récapitulatif complet */}
+      {step === 3 && submission && (
+        <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-100 dark:border-stone-800 p-5">
+          <ReturnConfirmation form={submission.form} answers={submission.answers} error={submitError} />
         </div>
       )}
 
       {/* Navigation */}
       <div className="flex gap-3 mt-6">
         {step > 0 && (
-          <button type="button" onClick={prev} className="flex-1 border-2 border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 text-sm font-semibold py-3.5 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800 transition">← Précédent</button>
+          <button type="button" onClick={() => setStep(s => Math.max(s - 1, 0))} disabled={submitting} className="flex-1 border-2 border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 text-sm font-semibold py-3.5 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800 transition disabled:opacity-40">
+            ← Précédent
+          </button>
         )}
         {step < 3 && (
-          <button type="button" onClick={next} disabled={!canNext} className="flex-1 bg-orange-700 hover:bg-orange-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold py-3.5 rounded-xl transition flex items-center justify-center gap-2">Suivant →</button>
+          <button
+            type="button"
+            onClick={handleNext}
+            disabled={step === 0 ? !selectedOrder : step === 1 ? !selectedItemId : false}
+            className="flex-1 bg-orange-700 hover:bg-orange-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold py-3.5 rounded-xl transition flex items-center justify-center gap-2"
+          >
+            Suivant →
+          </button>
         )}
         {step === 3 && (
-          <button type="button" onClick={handleSubmit} disabled={submitting} className="flex-1 bg-orange-700 hover:bg-orange-800 disabled:opacity-50 text-white text-sm font-semibold py-3.5 rounded-xl transition flex items-center justify-center gap-2">
-            {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Envoi en cours…</> : '↩ Confirmer le retour'}
+          <button
+            type="button"
+            onClick={handleConfirmSubmit}
+            disabled={submitting}
+            className="flex-1 bg-orange-700 hover:bg-orange-800 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold py-3.5 rounded-xl transition flex items-center justify-center gap-2"
+          >
+            {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Envoi en cours…</> : <><Send className="w-4 h-4" /> Confirmer et envoyer</>}
           </button>
         )}
       </div>

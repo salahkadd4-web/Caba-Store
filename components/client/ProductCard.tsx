@@ -13,6 +13,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { Children, Fragment } from 'react'
 import { Banknote, Package } from 'lucide-react'
 import FavoriIconButton from '@/components/client/FavoriIconButton'
 import CartIconButton from '@/components/client/CartIconButton'
@@ -128,9 +129,11 @@ export default function ProductCard({
         {/* ── Badges gauche ── */}
         {(badges || hasTiers) && (
           <div className="absolute top-2 left-2 flex flex-col gap-1">
-            {badges}
+            {Children.map(badges, (child, i) => (
+              <Fragment key={`badge-${i}`}>{child}</Fragment>
+            ))}
             {hasTiers && (
-              <span className="inline-flex items-center gap-1 text-[10px] bg-orange-700 text-white font-bold px-1.5 py-0.5 rounded-full shadow">
+              <span key="degressif" className="inline-flex items-center gap-1 text-[10px] bg-orange-700 text-white font-bold px-1.5 py-0.5 rounded-full shadow">
                 <Banknote className="w-3 h-3" />
                 dégressif
               </span>

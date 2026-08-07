@@ -15,9 +15,9 @@ const accountLinks = [
 ]
 
 const supportLinks = [
-  { href: '/retours',     label: 'Retours' },
-  { href: '/commandes',   label: 'Mes commandes' },
-  { href: '/favoris',     label: 'Mes favoris' },
+  { href: '/mes-retours',   label: 'Retours' },
+  { href: '/mes-commandes', label: 'Mes commandes' },
+  { href: '/favoris',       label: 'Mes favoris' },
 ]
 
 export default async function Footer() {

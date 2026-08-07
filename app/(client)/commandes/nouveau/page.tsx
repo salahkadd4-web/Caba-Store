@@ -249,7 +249,7 @@ export default function NouvelleCommandePage() {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
-      router.push('/commandes?success=true')
+      router.push('/mes-commandes?success=true')
     } catch { setError('Erreur serveur, veuillez réessayer') } finally { setSubmitting(false) }
   }
 

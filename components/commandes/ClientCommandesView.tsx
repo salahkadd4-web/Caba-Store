@@ -445,7 +445,7 @@ function GroupeCard({ groupe }: { groupe: CommandeGroupe }) {
                   </span>
                 ) : (
                   <Link
-                    href="/retours"
+                    href="/mes-retours"
                     className="flex items-center gap-1 text-[11px] font-semibold px-3 py-1.5 rounded-xl border border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition"
                   >
                     ↩ Réclamer un retour
