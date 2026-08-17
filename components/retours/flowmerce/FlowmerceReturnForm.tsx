@@ -12,7 +12,7 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react'
 import { AlertTriangle, Loader2, PackageX } from 'lucide-react'
 import type { ReturnForm, ReturnAnswer, ReturnPrefill } from '@/lib/flowmerce-types'
-import { SUPPORTED_FORM_VERSIONS, flattenFields } from '@/lib/flowmerce-types'
+import { ENGINE_VERSION, flattenFields } from '@/lib/flowmerce-types'
 import { validateForm } from '@/lib/flowmerce-validation'
 import DynamicField, { type UploadFn } from './DynamicField'
 
@@ -52,7 +52,7 @@ const FlowmerceReturnForm = forwardRef<FlowmerceReturnFormHandle, FlowmerceRetur
 
         const form = data.form
 
-        if (!SUPPORTED_FORM_VERSIONS.includes(form.version as typeof SUPPORTED_FORM_VERSIONS[number])) {
+        if (form.min_compatible_version > ENGINE_VERSION) {
           return { kind: 'incompatible', version: form.version }
         }
 

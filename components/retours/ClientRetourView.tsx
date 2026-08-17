@@ -23,10 +23,13 @@ type Order = {
   total: number
   createdAt: string
   retourDemande: boolean
+  modePaiement: string
+  methodeExpedition: string
+  fraisLivraison: number
   items: OrderItem[]
 }
 
-type Profil = { nom: string; prenom: string; email: string | null; telephone: string | null }
+type Profil = { nom: string; prenom: string; email: string | null; telephone: string | null; age: number | null; genre: 'HOMME' | 'FEMME' | null; wilaya: string | null }
 
 const STEPS = ['Commande', 'Article', 'Motif', 'Confirmation']
 
@@ -107,12 +110,22 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
   // lecture seule dans le récapitulatif.
   const prefill: ReturnPrefill = selectedOrder && selectedItem
     ? {
-        order_id:       selectedOrder.id,
-        order_date:     selectedOrder.createdAt,
-        product_name:   selectedItem.product.nom,
-        customer_name:  profil ? `${profil.prenom} ${profil.nom}`.trim() : undefined,
-        customer_email: profil?.email ?? undefined,
-        customer_phone: profil?.telephone ?? undefined,
+        order_id:         selectedOrder.id,
+        order_date:       selectedOrder.createdAt,
+        product_name:     selectedItem.product.nom,
+        customer_name:    profil ? `${profil.prenom} ${profil.nom}`.trim() : undefined,
+        customer_email:   profil?.email ?? undefined,
+        customer_phone:   profil?.telephone ?? undefined,
+        product_price:    selectedItem.prix,
+        order_quantity:   selectedItem.quantite,
+        order_total:      selectedOrder.total,
+        payment_method:   selectedOrder.modePaiement,
+        shipping_method:  selectedOrder.methodeExpedition,
+        shipping_cost:    selectedOrder.fraisLivraison,
+        product_category: selectedItem.product.category?.nom ?? undefined,
+        customer_gender:  profil?.genre === 'HOMME' ? 'Male' : profil?.genre === 'FEMME' ? 'Female' : undefined,
+        customer_age:     profil?.age ?? undefined,
+        customer_wilaya:  profil?.wilaya ?? undefined,
       }
     : {}
 

@@ -94,6 +94,8 @@ export interface ReturnForm {
   /** Version du formulaire — utilisée pour détecter les versions incompatibles. */
   version: number
   /** Titre affiché en haut du formulaire. */
+  /** Version de moteur la plus ancienne capable de rendre ce formulaire, renvoyée par Flowmerce. */
+  min_compatible_version: number
   title: string
   /** Description / instructions affichées sous le titre. */
   description?: string
@@ -143,7 +145,7 @@ export interface FlowmerceApiError {
 }
 
 /** Versions de formulaire supportées par le moteur Caba Store. */
-export const SUPPORTED_FORM_VERSIONS = [1] as const
+export const ENGINE_VERSION = 1
 
 /** Délai de cache (ms) de la définition du formulaire côté serveur. */
 export const RETURN_FORM_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
