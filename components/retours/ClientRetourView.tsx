@@ -272,7 +272,6 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
       {/* Étape 2 — Formulaire dynamique Flowmerce (2-3 champs visibles seulement) */}
       {step === 2 && selectedOrder && selectedItem && (
         <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-100 dark:border-stone-800 p-5">
-          <FlowmerceReturnForm ref={formRef} prefill={prefill} />
           <FlowmerceReturnForm ref={formRef} prefill={prefill} onValidityChange={setFormValid} />
        </div>
       )}
