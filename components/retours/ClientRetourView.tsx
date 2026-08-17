@@ -105,7 +105,7 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
   }, [])
 
   const selectedItem = selectedOrder?.items.find(i => i.id === selectedItemId) ?? null
-
+  const [formValid, setFormValid] = useState(false)
   // Valeurs déjà connues → masquées dans FlowmerceReturnForm, affichées en
   // lecture seule dans le récapitulatif.
   const prefill: ReturnPrefill = selectedOrder && selectedItem
@@ -273,7 +273,8 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
       {step === 2 && selectedOrder && selectedItem && (
         <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-100 dark:border-stone-800 p-5">
           <FlowmerceReturnForm ref={formRef} prefill={prefill} />
-        </div>
+          <FlowmerceReturnForm ref={formRef} prefill={prefill} onValidityChange={setFormValid} />
+       </div>
       )}
 
       {/* Étape 3 — Confirmation : récapitulatif complet */}
@@ -294,7 +295,7 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
           <button
             type="button"
             onClick={handleNext}
-            disabled={step === 0 ? !selectedOrder : step === 1 ? !selectedItemId : false}
+            disabled={step === 0 ? !selectedOrder : step === 1 ? !selectedItemId : step === 2 ? !formValid : false}
             className="flex-1 bg-orange-700 hover:bg-orange-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold py-3.5 rounded-xl transition flex items-center justify-center gap-2"
           >
             Suivant →

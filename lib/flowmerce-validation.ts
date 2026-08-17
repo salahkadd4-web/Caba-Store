@@ -60,6 +60,12 @@ export function validateFileSelection(field: ReturnField, file: File): string | 
 export function validateField(field: ReturnField, value: AnswerValue): string | null {
   const rules: ReturnFieldValidation = field.validation ?? {}
   const required = rules.required ?? field.required ?? false
+  // Case à cocher simple (booléenne, sans options) : "requis" veut dire cochée.
+  // `false` est une valeur présente mais insuffisante pour un consentement.
+  if (field.type === 'checkbox' && (field.options?.length ?? 0) === 0) {
+    return required && value !== true ? 'Ce champ est requis' : null
+  }
+
 
   if (!isPresent(value)) {
     return required ? 'Ce champ est requis' : null

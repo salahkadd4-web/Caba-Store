@@ -32,10 +32,12 @@ export interface FlowmerceReturnFormHandle {
 interface FlowmerceReturnFormProps {
   /** Réponses déjà connues (commande, client, produit) — masquées à l'écran. */
   prefill: ReturnPrefill
+  /** Appelé à chaque changement de réponse : true si tous les champs requis sont valides. */
+  onValidityChange?: (valid: boolean) => void
 }
 
 const FlowmerceReturnForm = forwardRef<FlowmerceReturnFormHandle, FlowmerceReturnFormProps>(
-  function FlowmerceReturnForm({ prefill }, ref) {
+  function FlowmerceReturnForm({ prefill, onValidityChange }, ref) {
     const [loadState, setLoadState] = useState<LoadState>({ kind: 'loading' })
     const [answers,   setAnswers]   = useState<ReturnAnswer>({})
     const [errors,    setErrors]    = useState<Record<string, string>>({})
@@ -91,6 +93,14 @@ const FlowmerceReturnForm = forwardRef<FlowmerceReturnFormHandle, FlowmerceRetur
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [prefill, loadState.kind])
+
+
+    // ── Notifie le parent de la validité courante à chaque changement ─────────
+    useEffect(() => {
+      if (loadState.kind !== 'ready') return
+      const currentErrors = validateForm(flattenFields(loadState.form), answers)
+      onValidityChange?.(Object.keys(currentErrors).length === 0)
+    }, [loadState, answers, onValidityChange])
 
     const handleRetry = () => {
       setLoadState({ kind: 'loading' })
