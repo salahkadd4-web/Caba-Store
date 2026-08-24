@@ -16,6 +16,8 @@ import type {
   ReturnForm,
   ReturnSubmission,
   ReturnSubmissionResult,
+  ReportRefusalPayload,
+  ReportRefusalResult,
 } from '@/lib/flowmerce-types'
 import { RETURN_FORM_CACHE_TTL_MS } from '@/lib/flowmerce-types'
 
@@ -154,4 +156,67 @@ export async function submitReturn(payload: ReturnSubmission): Promise<ReturnSub
   }
 
   return { claimId, status: data?.status }
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+//  3. SIGNALER UN REFUS À LA LIVRAISON — POST /api/fraud/report-refusal
+//  Flowmerce vérifie côté serveur que ce vendeur (identifié par la clé API)
+//  a bien une trace de cette commande (Claim ou ReturnSession) avant
+//  d'accepter le signalement — impossible de signaler un client jamais vu.
+//  Idempotent chez Flowmerce sur (vendorId, orderId) : un second appel pour
+//  la même commande renvoie alreadyReported: true plutôt qu'une erreur.
+// ═════════════════════════════════════════════════════════════════════════
+
+const REFUSAL_TIMEOUT_MS = 10_000
+
+export async function reportDeliveryRefusal(
+  payload: ReportRefusalPayload,
+): Promise<ReportRefusalResult> {
+  requireConfig()
+
+  if (!payload.customerEmail && !payload.customerPhone) {
+    throw new FlowmerceError(
+      'customer_email ou customer_phone requis pour signaler un refus',
+      422,
+      { retryable: false },
+    )
+  }
+
+  let res: Response
+  try {
+    res = await fetch(`${FLOWMERCE_API_URL}/api/fraud/report-refusal`, {
+      method:  'POST',
+      headers: baseHeaders(),
+      body:    JSON.stringify({
+        order_id:       payload.orderId,
+        customer_email: payload.customerEmail,
+        customer_phone: payload.customerPhone,
+        refusal_reason: payload.reason,
+      }),
+      signal: AbortSignal.timeout(REFUSAL_TIMEOUT_MS),
+    })
+  } catch (err) {
+    throw new FlowmerceError(
+      'Service Flowmerce indisponible',
+      503,
+      { code: (err as Error)?.name === 'TimeoutError' ? 'TIMEOUT' : 'NETWORK', retryable: true },
+    )
+  }
+
+  if (!res.ok) throw await toError(res, 'Erreur lors du signalement du refus à la livraison')
+
+  const data = await parseJson<{
+    ok?: boolean
+    alreadyReported?: boolean
+    newFraudScore?: number
+    distinctVendors?: number
+    totalRefusals?: number
+  }>(res)
+
+  return {
+    alreadyReported: data?.alreadyReported ?? false,
+    newFraudScore:   data?.newFraudScore,
+    distinctVendors: data?.distinctVendors,
+    totalRefusals:   data?.totalRefusals,
+  }
 }

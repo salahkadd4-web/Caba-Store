@@ -154,3 +154,20 @@ export const RETURN_FORM_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
  *  champs ne sont pas affichés à l'utilisateur, ils sont injectés directement
  *  dans les réponses envoyées à Flowmerce. */
 export type ReturnPrefill = Partial<Record<string, unknown>>
+
+/** Payload envoyé à Flowmerce — POST /api/fraud/report-refusal.
+ *  email OU phone doit être fourni (contrôlé côté Flowmerce). */
+export interface ReportRefusalPayload {
+  orderId: string
+  customerEmail?: string
+  customerPhone?: string
+  reason?: string
+}
+
+/** Résultat renvoyé par Flowmerce après un signalement de refus. */
+export interface ReportRefusalResult {
+  alreadyReported: boolean
+  newFraudScore?: number
+  distinctVendors?: number
+  totalRefusals?: number
+}

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Check, CheckCircle2, Package, AlertCircle, Loader2, Send } from 'lucide-react'
 import type { ReturnForm, ReturnAnswer, ReturnPrefill } from '@/lib/flowmerce-types'
+import { mapPaymentMethod } from '@/lib/flowmerce-mapping'
 import FlowmerceReturnForm, { type FlowmerceReturnFormHandle } from './flowmerce/FlowmerceReturnForm'
 import ReturnConfirmation from './flowmerce/ReturnConfirmation'
 
@@ -119,7 +120,12 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
         product_price:    selectedItem.prix,
         order_quantity:   selectedItem.quantite,
         order_total:      selectedOrder.total,
-        payment_method:   selectedOrder.modePaiement,
+        // Flowmerce n'accepte que ses valeurs d'enum (Cash on Delivery / Card /
+        // CCP / Bank Transfer) pour ce champ select — modePaiement est un
+        // libellé libre côté Caba Store, d'où la traduction. Si aucune
+        // correspondance fiable n'est trouvée, on omet le champ : il n'est
+        // jamais requis (source: 'merchant').
+        payment_method:   mapPaymentMethod(selectedOrder.modePaiement),
         shipping_method:  selectedOrder.methodeExpedition,
         shipping_cost:    selectedOrder.fraisLivraison,
         product_category: selectedItem.product.category?.nom ?? undefined,

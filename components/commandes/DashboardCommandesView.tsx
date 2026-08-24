@@ -5,13 +5,14 @@ import Image from 'next/image'
 import {
   ShoppingCart, Search, ChevronDown, ChevronUp,
   CheckCircle2, Truck, PackageCheck, Clock, XCircle, RotateCcw,
-  Package, ChevronRight, Loader2, MoreVertical,
+  Package, ChevronRight, Loader2, MoreVertical, AlertTriangle,
 } from 'lucide-react'
 import {
   heading, card, tableWrapper, tableHead, tableTh, tableTd, tableRow,
   selectCls, inputCls,
   statutOrderColor,
 } from '@/lib/dashboard-ui'
+import RefusLivraisonModal from './RefusLivraisonModal'
 
 type OrderItem = {
   id: string
@@ -33,6 +34,9 @@ export type Commande = {
   items: OrderItem[]
   totalVendeur?: number
   approbationsVendeurs?: Record<string, boolean> | null
+  // Fonctionnalité "refusalReport" — un refus n'est signalable qu'une fois
+  // (l'API Flowmerce est idempotente, mais l'UI reflète l'état localement).
+  refusLivraisonSignale?: boolean
 }
 
 const STATUT_LABEL: Record<string, string> = {
@@ -95,13 +99,16 @@ const STATUTS_FILTRE = ['', 'EN_ATTENTE', 'CONFIRMEE', 'EN_PREPARATION', 'EXPEDI
 function AdminActionsMenu({
   cmd,
   onAction,
+  onOpenRefus,
   isLoading,
 }: {
   cmd: Commande
   onAction: (statut: string) => void
+  onOpenRefus: () => void
   isLoading: boolean
 }) {
   const actions = ADMIN_ACTIONS[cmd.statut] ?? []
+  const canReportRefus = cmd.statut === 'EXPEDIEE' && !cmd.refusLivraisonSignale
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -113,7 +120,9 @@ function AdminActionsMenu({
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  if (actions.length === 0) return <span className="text-xs text-stone-400 dark:text-stone-600 px-2">—</span>
+  if (actions.length === 0 && !canReportRefus) {
+    return <span className="text-xs text-stone-400 dark:text-stone-600 px-2">—</span>
+  }
 
   return (
     <div className="relative" ref={ref}>
@@ -138,18 +147,30 @@ function AdminActionsMenu({
             bg-white dark:bg-stone-900 shadow-xl py-1 overflow-hidden"
           onClick={e => e.stopPropagation()}
         >
-          <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500 border-b border-stone-100 dark:border-stone-800 mb-1">
-            Changer le statut
-          </p>
-          {actions.map(a => (
+          {actions.length > 0 && (
+            <>
+              <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500 border-b border-stone-100 dark:border-stone-800 mb-1">
+                Changer le statut
+              </p>
+              {actions.map(a => (
+                <button
+                  key={a.statut}
+                  onClick={() => { setOpen(false); onAction(a.statut) }}
+                  className={`w-full text-left text-sm px-4 py-2.5 font-medium hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors ${a.color}`}
+                >
+                  {a.label}
+                </button>
+              ))}
+            </>
+          )}
+          {canReportRefus && (
             <button
-              key={a.statut}
-              onClick={() => { setOpen(false); onAction(a.statut) }}
-              className={`w-full text-left text-sm px-4 py-2.5 font-medium hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors ${a.color}`}
+              onClick={() => { setOpen(false); onOpenRefus() }}
+              className="w-full text-left text-sm px-4 py-2.5 font-medium hover:bg-red-50 dark:hover:bg-red-950 transition-colors text-red-600 dark:text-red-400 border-t border-stone-100 dark:border-stone-800"
             >
-              {a.label}
+              🚫 Signaler un refus à la livraison
             </button>
-          ))}
+          )}
         </div>
       )}
     </div>
@@ -170,6 +191,7 @@ export default function DashboardCommandesView({
   const [expanded,  setExpanded]  = useState<string | null>(null)
   const [loading,   setLoading]   = useState<string | null>(null)
   const [toast,     setToast]     = useState<{ msg: string; ok: boolean } | null>(null)
+  const [refusCmd,  setRefusCmd]  = useState<Commande | null>(null)
 
   const showToast = (msg: string, ok: boolean) => {
     setToast({ msg, ok })
@@ -233,8 +255,26 @@ export default function DashboardCommandesView({
     }
   }
 
+  // Fonctionnalité "refusalReport" — signalement à Flowmerce, commun admin/vendeur
+  // (seule l'URL appelée par la modale diffère selon isAdmin).
+  const handleRefusReported = (cmd: Commande, message: string) => {
+    setCommandes(prev => prev.map(c => c.id === cmd.id ? { ...c, refusLivraisonSignale: true } : c))
+    setRefusCmd(null)
+    showToast(message, true)
+  }
+
   return (
     <div className="space-y-5">
+
+      {/* Modale refusalReport */}
+      {refusCmd && (
+        <RefusLivraisonModal
+          cmd={refusCmd}
+          isAdmin={isAdmin}
+          onClose={() => setRefusCmd(null)}
+          onReported={msg => handleRefusReported(refusCmd, msg)}
+        />
+      )}
 
       {/* Toast */}
       {toast && (
@@ -304,6 +344,7 @@ export default function DashboardCommandesView({
             {filtered.map(cmd => {
               const StatusIcon   = STATUT_ICON[cmd.statut] ?? Clock
               const vendeurAction = !isAdmin ? NEXT_ACTION_VENDEUR[cmd.statut] : null
+              const canReportRefus = !isAdmin && cmd.statut === 'EXPEDIEE' && !cmd.refusLivraisonSignale
               const isExp        = expanded === cmd.id
               const isLoading    = loading === cmd.id
               const montant      = cmd.totalVendeur ?? cmd.total
@@ -337,16 +378,27 @@ export default function DashboardCommandesView({
                       </div>
                       <div className="flex flex-col items-end gap-2 shrink-0" onClick={e => e.stopPropagation()}>
                         {isAdmin ? (
-                          <AdminActionsMenu cmd={cmd} onAction={s => handleAdminAction(cmd, s)} isLoading={isLoading} />
+                          <AdminActionsMenu cmd={cmd} onAction={s => handleAdminAction(cmd, s)} onOpenRefus={() => setRefusCmd(cmd)} isLoading={isLoading} />
                         ) : vendeurAction ? (
-                          <button
-                            onClick={() => handleVendeurAction(cmd)}
-                            disabled={isLoading}
-                            className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1 ${vendeurAction.color}`}
-                          >
-                            {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-                            {vendeurAction.label}
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => handleVendeurAction(cmd)}
+                              disabled={isLoading}
+                              className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1 ${vendeurAction.color}`}
+                            >
+                              {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                              {vendeurAction.label}
+                            </button>
+                            {canReportRefus && (
+                              <button
+                                onClick={() => setRefusCmd(cmd)}
+                                title="Signaler un refus à la livraison"
+                                className="p-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+                              >
+                                <AlertTriangle className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                         ) : null}
                         {isExp ? <ChevronUp className="w-4 h-4 text-stone-400" /> : <ChevronDown className="w-4 h-4 text-stone-400" />}
                       </div>
@@ -388,16 +440,27 @@ export default function DashboardCommandesView({
                       </div>
                       <div className={`${tableTd}`} onClick={e => e.stopPropagation()}>
                         {isAdmin ? (
-                          <AdminActionsMenu cmd={cmd} onAction={s => handleAdminAction(cmd, s)} isLoading={isLoading} />
+                          <AdminActionsMenu cmd={cmd} onAction={s => handleAdminAction(cmd, s)} onOpenRefus={() => setRefusCmd(cmd)} isLoading={isLoading} />
                         ) : vendeurAction ? (
-                          <button
-                            onClick={() => handleVendeurAction(cmd)}
-                            disabled={isLoading}
-                            className={`text-xs px-3 py-2 rounded-xl font-semibold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1 whitespace-nowrap ${vendeurAction.color}`}
-                          >
-                            {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-                            {vendeurAction.label}
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => handleVendeurAction(cmd)}
+                              disabled={isLoading}
+                              className={`text-xs px-3 py-2 rounded-xl font-semibold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1 whitespace-nowrap ${vendeurAction.color}`}
+                            >
+                              {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                              {vendeurAction.label}
+                            </button>
+                            {canReportRefus && (
+                              <button
+                                onClick={() => setRefusCmd(cmd)}
+                                title="Signaler un refus à la livraison"
+                                className="p-2 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+                              >
+                                <AlertTriangle className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                         ) : <span className="text-xs text-stone-400 px-2">—</span>}
                       </div>
                     </div>
