@@ -37,6 +37,12 @@ const common: typeof fr = {
   male: 'ذكر',
   female: 'أنثى',
   language: 'اللغة',
+  photo: {
+    addTitle: 'إضافة صورة',
+    takePhoto: 'التقاط صورة',
+    chooseFromGallery: 'اختيار من المعرض',
+    chooseFile: 'اختيار ملف',
+  },
   products: (n: number) => (n === 1 ? 'منتج' : n === 2 ? 'منتجان' : n >= 3 && n <= 10 ? 'منتجات' : 'منتج'),
   items: (n: number) => (n === 1 ? 'سلعة' : n === 2 ? 'سلعتان' : n >= 3 && n <= 10 ? 'سلع' : 'سلعة'),
 }

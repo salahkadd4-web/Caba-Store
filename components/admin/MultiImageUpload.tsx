@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
 import { useI18n } from '@/components/I18nProvider'
+import { usePhotoPicker } from '@/components/PhotoPicker'
 import { FolderOpen, X } from 'lucide-react'
 
 interface MultiImageUploadProps {
@@ -15,12 +16,8 @@ export default function MultiImageUpload({ values, onChange, label }: MultiImage
   const { t } = useI18n()
   const u = t.pm.upload
   const [uploading, setUploading] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    if (files.length === 0) return
-
+  const handleFiles = async (files: File[]) => {
     setUploading(true)
     try {
       const uploadedUrls: string[] = []
@@ -48,6 +45,8 @@ export default function MultiImageUpload({ values, onChange, label }: MultiImage
     }
   }
 
+  const { open, picker } = usePhotoPicker({ onFiles: handleFiles, multiple: true })
+
   const removeImage = (index: number) => {
     const newValues = values.filter((_, i) => i !== index)
     onChange(newValues)
@@ -55,7 +54,7 @@ export default function MultiImageUpload({ values, onChange, label }: MultiImage
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label ?? u.images}</label>
+      <label className="block text-xs font-medium text-stone-600 dark:text-stone-300 mb-1.5">{label ?? u.images}</label>
 
       {/* Images existantes */}
       {values.length > 0 && (
@@ -68,7 +67,7 @@ export default function MultiImageUpload({ values, onChange, label }: MultiImage
                   alt={`image ${index + 1}`}
                   fill
                   sizes="(max-width: 768px) 33vw, 200px"
-                  className="object-cover rounded-lg border"
+                  className="object-cover rounded-lg border border-stone-200 dark:border-stone-700"
                 />
               </div>
               <button
@@ -83,24 +82,17 @@ export default function MultiImageUpload({ values, onChange, label }: MultiImage
 
       {/* Zone upload */}
       <div
-        onClick={() => inputRef.current?.click()}
-        className="border-2 border-dashed border-gray-300 hover:border-purple-400 rounded-xl p-4 cursor-pointer transition-colors text-center"
+        onClick={open}
+        className="border-2 border-dashed border-stone-300 dark:border-stone-600 hover:border-orange-400 rounded-xl p-4 cursor-pointer transition-colors text-center flex flex-col items-center text-stone-400"
       >
-        <p className="text-2xl mb-1"><FolderOpen className="w-6 h-6" /></p>
-        <p className="text-sm text-gray-500">
+        <FolderOpen className="w-6 h-6 mb-1" />
+        <p className="text-sm text-stone-500 dark:text-stone-400">
           {uploading ? u.uploading : u.clickToAdd}
         </p>
-        <p className="text-xs text-gray-400 mt-1">{u.multipleAllowed}</p>
+        <p className="text-xs text-stone-400 mt-1">{u.multipleAllowed}</p>
       </div>
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        onChange={handleFileChange}
-        className="hidden"
-      />
+      {picker}
     </div>
   )
 }

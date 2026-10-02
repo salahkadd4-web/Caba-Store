@@ -35,6 +35,12 @@ const common = {
   male: 'Homme',
   female: 'Femme',
   language: 'Langue',
+  photo: {
+    addTitle: 'Ajouter une photo',
+    takePhoto: 'Prendre une photo',
+    chooseFromGallery: 'Choisir dans la galerie',
+    chooseFile: 'Choisir un fichier',
+  },
   products: (n: number): string => (n > 1 ? 'produits' : 'produit'),
   items: (n: number): string => (n > 1 ? 'articles' : 'article'),
 }

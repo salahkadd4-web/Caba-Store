@@ -8,6 +8,7 @@ import {
   modalOverlay, modalBox, loadingPage, card,
 } from '@/lib/dashboard-ui'
 import { useI18n } from '@/components/I18nProvider'
+import ImageUpload from '@/components/admin/ImageUpload'
 import { tr } from '@/lib/i18n'
 
 interface Category { id: string; nom: string; statut: string; createdAt: string }
@@ -29,6 +30,7 @@ export default function VendeurCategoriesPage() {
   const [showForm,     setShowForm]     = useState(false)
   const [nom,          setNom]          = useState('')
   const [description,  setDescription]  = useState('')
+  const [image,        setImage]        = useState('')
   const [saving,       setSaving]       = useState(false)
   const [error,        setError]        = useState<string | null>(null)
   const [success,      setSuccess]      = useState<string | null>(null)
@@ -57,12 +59,12 @@ export default function VendeurCategoriesPage() {
       const res  = await fetch('/api/vendeur/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nom, description }),
+        body: JSON.stringify({ nom, description, image }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || c_.error)
       setSuccess(data.message)
-      setNom(''); setDescription('')
+      setNom(''); setDescription(''); setImage('')
       setShowForm(false)
       fetchData()
     } catch (e) {
@@ -205,6 +207,7 @@ export default function VendeurCategoriesPage() {
                   placeholder={c_.descriptionOptional}
                 />
               </div>
+              <ImageUpload value={image} onChange={setImage} label={`${c_.image} ${t.common.optional}`} />
             </div>
 
             <div className="flex gap-3 p-5 border-t border-stone-200 dark:border-stone-800">

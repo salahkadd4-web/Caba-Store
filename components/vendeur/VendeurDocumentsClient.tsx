@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { CheckCircle2, ClipboardList, Loader2, Paperclip, Upload, XCircle } from 'lucide-react'
 import { useI18n } from '@/components/I18nProvider'
+import { usePhotoPicker } from '@/components/PhotoPicker'
 
 interface Doc {
   id: string
@@ -76,6 +77,16 @@ export default function VendeurDocumentsClient({ vendeur }: { vendeur: VendeurPr
       setUploading(null)
     }
   }
+
+  const docTargetRef = useRef<string | null>(null)
+  const { open, picker } = usePhotoPicker({
+    accept: 'image/jpeg,image/png,image/webp,application/pdf',
+    allowsDocuments: true,
+    onFiles: files => {
+      const docId = docTargetRef.current
+      if (files[0] && docId) handleFileChange(docId, files[0])
+    },
+  })
 
   const statutColor = (s: string) => {
     if (s === 'ACCEPTE')    return 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
@@ -157,19 +168,12 @@ export default function VendeurDocumentsClient({ vendeur }: { vendeur: VendeurPr
               )}
 
               {doc.statut !== 'ACCEPTE' && (
-                <label className={`
-                  flex items-center gap-2 cursor-pointer
-                  ${uploading === doc.id ? 'opacity-50 pointer-events-none' : ''}
-                `}>
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept="image/jpeg,image/png,image/webp,application/pdf"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (file) handleFileChange(doc.id, file)
-                    }}
-                  />
+                <button
+                  type="button"
+                  onClick={() => { docTargetRef.current = doc.id; open() }}
+                  disabled={uploading === doc.id}
+                  className="flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+                >
                   <span className={`
                     inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all
                     bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300
@@ -188,11 +192,12 @@ export default function VendeurDocumentsClient({ vendeur }: { vendeur: VendeurPr
                       <><Upload className="w-4 h-4 inline me-1" />{' '}{doc.fichier ? d.replaceFile : d.chooseFile}</>
                     )}
                   </span>
-                </label>
+                </button>
               )}
             </div>
           ))}
         </div>
+        {picker}
 
         <p className="text-center text-xs text-gray-400 dark:text-gray-600 mt-6">
           {d.autoActivation}

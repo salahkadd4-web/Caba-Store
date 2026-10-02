@@ -66,7 +66,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: t.msg.invalidBody }, { status: 400 })
   }
 
-  const { nom, description } = body
+  const { nom, description, image } = body
+
+  // Image facultative : uniquement une URL issue de /api/upload (Cloudinary)
+  const imageUrl = typeof image === 'string' && image.startsWith('https://res.cloudinary.com/') ? image : null
 
   if (!nom?.trim()) {
     return NextResponse.json({ error: t.msg.categoryNameRequired }, { status: 400 })
@@ -87,6 +90,7 @@ export async function POST(req: NextRequest) {
     data: {
       nom:         nom.trim(),
       description: description?.trim() || null,
+      image:       imageUrl,
       statut:      'EN_ATTENTE',
       vendeurId:   vendeur.id,
     },

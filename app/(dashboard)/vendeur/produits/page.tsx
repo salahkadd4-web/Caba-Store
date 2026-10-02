@@ -12,6 +12,7 @@ import {
   modalOverlay, modalBox, loadingPage, card, kpiCard,
 } from '@/lib/dashboard-ui'
 import { useI18n } from '@/components/I18nProvider'
+import { usePhotoPicker } from '@/components/PhotoPicker'
 
 interface Category { id: string; nom: string }
 interface VariantOption { valeur: string; stock: string }
@@ -68,8 +69,7 @@ export default function VendeurProduitsPage() {
   const [varUploadIdx,   setVarUploadIdx]   = useState<number | null>(null)
   const [filterActif,    setFilterActif]    = useState<'all' | 'true' | 'false'>('all')
   const [filterCategory, setFilterCategory] = useState('')
-  const fileRef    = useRef<HTMLInputElement>(null)
-  const varFileRef = useRef<HTMLInputElement>(null)
+  const varTargetRef = useRef<number | null>(null)
 
   useScrollLock(showForm)
 
@@ -134,6 +134,14 @@ export default function VendeurProduitsPage() {
     }
     setVarUploadIdx(null)
   }
+
+  const mainPhoto = usePhotoPicker({ onFiles: files => { if (files[0]) handleImageUpload(files[0]) } })
+  const varPhoto  = usePhotoPicker({
+    onFiles: files => {
+      const idx = varTargetRef.current
+      if (files[0] && idx !== null) handleVariantImageUpload(files[0], idx)
+    },
+  })
 
   const handleSubmit = async () => {
     setSaving(true); setError(null)
@@ -438,12 +446,11 @@ export default function VendeurProduitsPage() {
                           </button>
                         </div>
                       ))}
-                      <button onClick={() => fileRef.current?.click()} disabled={uploadingImg}
+                      <button type="button" onClick={mainPhoto.open} disabled={uploadingImg}
                         className="w-16 h-16 border-2 border-dashed border-stone-300 dark:border-stone-600 rounded-xl flex items-center justify-center text-stone-400 hover:border-orange-400 hover:text-orange-400 transition">
                         {uploadingImg ? <Spinner /> : <Plus className="w-5 h-5" />}
                       </button>
-                      <input ref={fileRef} type="file" className="hidden" accept="image/*"
-                        onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f) }} />
+                      {mainPhoto.picker}
                     </div>
                   </div>
 
@@ -628,7 +635,7 @@ export default function VendeurProduitsPage() {
                                 </div>
                               ))}
                               <button type="button"
-                                onClick={() => { setVarUploadIdx(i); varFileRef.current?.click() }}
+                                onClick={() => { varTargetRef.current = i; varPhoto.open() }}
                                 disabled={varUploadIdx === i}
                                 className="w-12 h-12 border-2 border-dashed border-stone-200 dark:border-stone-700 rounded-lg flex items-center justify-center text-stone-400 hover:border-orange-400 hover:text-orange-400 transition">
                                 {varUploadIdx === i ? <Spinner /> : <Plus className="w-4 h-4" />}
@@ -688,12 +695,7 @@ export default function VendeurProduitsPage() {
                         </div>
                       ))}
 
-                      <input ref={varFileRef} type="file" className="hidden" accept="image/*"
-                        onChange={e => {
-                          const f = e.target.files?.[0]
-                          if (f && varUploadIdx !== null) handleVariantImageUpload(f, varUploadIdx)
-                          e.target.value = ''
-                        }} />
+                      {varPhoto.picker}
                     </div>
                   )}
                 </>

@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
 import { useI18n } from '@/components/I18nProvider'
+import { usePhotoPicker } from '@/components/PhotoPicker'
 import { FolderOpen } from 'lucide-react'
 
 interface ImageUploadProps {
@@ -16,12 +17,8 @@ export default function ImageUpload({ value, onChange, label }: ImageUploadProps
   const u = t.pm.upload
   const [uploading, setUploading] = useState(false)
   const [preview, setPreview] = useState(value)
-  const inputRef = useRef<HTMLInputElement>(null)
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
+  const handleFile = async (file: File) => {
     // Preview local
     const localUrl = URL.createObjectURL(file)
     setPreview(localUrl)
@@ -50,13 +47,15 @@ export default function ImageUpload({ value, onChange, label }: ImageUploadProps
     }
   }
 
+  const { open, picker } = usePhotoPicker({ onFiles: files => { if (files[0]) handleFile(files[0]) } })
+
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label ?? u.image}</label>
+      <label className="block text-xs font-medium text-stone-600 dark:text-stone-300 mb-1.5">{label ?? u.image}</label>
 
       <div
-        onClick={() => inputRef.current?.click()}
-        className="border-2 border-dashed border-gray-300 hover:border-purple-400 rounded-xl p-4 cursor-pointer transition-colors text-center"
+        onClick={open}
+        className="border-2 border-dashed border-stone-300 dark:border-stone-600 hover:border-orange-400 rounded-xl p-4 cursor-pointer transition-colors text-center"
       >
         {preview ? (
           <div>
@@ -75,26 +74,20 @@ export default function ImageUpload({ value, onChange, label }: ImageUploadProps
                 </div>
               )}
             </div>
-            <p className="text-xs text-gray-400 mt-2">{u.clickToChange}</p>
+            <p className="text-xs text-stone-400 mt-2">{u.clickToChange}</p>
           </div>
         ) : (
-          <div className="py-6">
-            <p className="text-3xl mb-2"><FolderOpen className="w-6 h-6" /></p>
-            <p className="text-sm text-gray-500">
+          <div className="py-6 flex flex-col items-center text-stone-400">
+            <FolderOpen className="w-6 h-6 mb-2" />
+            <p className="text-sm text-stone-500 dark:text-stone-400">
               {uploading ? u.uploading : u.clickToChoose}
             </p>
-            <p className="text-xs text-gray-400 mt-1">JPG, PNG, WEBP</p>
+            <p className="text-xs text-stone-400 mt-1">JPG, PNG, WEBP</p>
           </div>
         )}
       </div>
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleFileChange}
-        className="hidden"
-      />
+      {picker}
     </div>
   )
 }
