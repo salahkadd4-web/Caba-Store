@@ -10,15 +10,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma }        from '@/lib/prisma'
 import { getAuthToken }  from '@/lib/getAuthToken'
+import { getI18n } from '@/lib/i18n/server'
 
 export async function GET(req: NextRequest) {
+  const { t } = await getI18n()
   try {
     const token = await getAuthToken()
-    if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    if (!token) return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
 
     const productId = req.nextUrl.searchParams.get('productId')
     if (!productId) {
-      return NextResponse.json({ error: 'productId requis' }, { status: 400 })
+      return NextResponse.json({ error: t.msg.productIdRequired }, { status: 400 })
     }
 
     const panier = await prisma.cart.findUnique({
@@ -40,6 +42,6 @@ export async function GET(req: NextRequest) {
       cartItemId: item?.id ?? null,
     })
   } catch {
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }

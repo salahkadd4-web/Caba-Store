@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { CheckCircle2, Info, Shield, Trash2 } from 'lucide-react'
+import { useI18n } from '@/components/I18nProvider'
 
 interface ProfilInfo {
   existe: boolean
@@ -17,6 +18,8 @@ interface ProfilInfo {
  * propose de supprimer l'éventuel profil "CabaStore Officiel" créé par erreur.
  */
 export default function BoutonInitProfilAdmin() {
+  const { t } = useI18n()
+  const a = t.admin.stats.adminProfile
   const [info,    setInfo]    = useState<ProfilInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [toast,   setToast]   = useState<{ msg: string; type: 'ok' | 'err' } | null>(null)
@@ -41,10 +44,10 @@ export default function BoutonInitProfilAdmin() {
   async function supprimer() {
     if (!info?.vendeurId) return
     if (info.nbProduits && info.nbProduits > 0) {
-      showToast(`Impossible : ${info.nbProduits} produit(s) lié(s). Supprimez-les d'abord.`, 'err')
+      showToast(a.cannotDelete(info.nbProduits), 'err')
       return
     }
-    if (!confirm('Supprimer le profil vendeur admin « CabaStore Officiel » ?')) return
+    if (!confirm(a.confirmDelete)) return
     setLoading(true)
     try {
       const res  = await fetch('/api/admin/init-profil-vendeur', { method: 'DELETE' })
@@ -53,7 +56,7 @@ export default function BoutonInitProfilAdmin() {
       showToast(data.message, 'ok')
       setInfo({ existe: false })
     } catch (e) {
-      showToast(e instanceof Error ? e.message : 'Erreur', 'err')
+      showToast(e instanceof Error ? e.message : a.error, 'err')
     } finally {
       setLoading(false)
     }
@@ -62,7 +65,7 @@ export default function BoutonInitProfilAdmin() {
   return (
     <div className="border border-purple-200 dark:border-purple-800 rounded-xl p-4 bg-purple-50 dark:bg-purple-950/30 space-y-3 max-w-lg">
       <h3 className="text-sm font-semibold text-purple-700 dark:text-purple-300 flex items-center gap-2">
-        <Shield className="w-4 h-4" /> Priorité 0 — Produits Admin
+        <Shield className="w-4 h-4" /> {a.title}
       </h3>
 
       {/* Bouton vérification manuelle */}
@@ -72,15 +75,14 @@ export default function BoutonInitProfilAdmin() {
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-purple-400 text-purple-700 dark:text-purple-300 text-sm hover:bg-purple-100 dark:hover:bg-purple-900 disabled:opacity-50 transition w-fit"
       >
         <CheckCircle2 className="w-4 h-4" />
-        {loading ? 'Vérification...' : 'Actualiser'}
+        {loading ? a.checking : a.refresh}
       </button>
 
       {/* Explication */}
       <div className="flex items-start gap-2 text-xs text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 rounded-lg p-3">
         <Info className="w-4 h-4 shrink-0 mt-0.5" />
         <p>
-          Les produits ajoutés par l&apos;admin ont <strong>automatiquement la priorité 0</strong> (premier dans
-          l&apos;affichage), car ils n&apos;ont pas de profil vendeur associé. Aucune action n&apos;est nécessaire.
+          {a.explainBefore} <strong>{a.explainStrong}</strong>{a.explainAfter}
         </p>
       </div>
 
@@ -89,15 +91,14 @@ export default function BoutonInitProfilAdmin() {
         info.existe ? (
           <div className="text-xs rounded-lg bg-white dark:bg-gray-900 border border-orange-200 dark:border-orange-800 p-3 space-y-2">
             <p className="text-orange-600 dark:text-orange-400 font-medium">
-              ⚠️ Un profil vendeur admin existe encore en base de données.
+              {a.stillExists}
             </p>
             <p className="text-gray-500 dark:text-gray-400">
-              Boutique : <span className="font-medium text-gray-700 dark:text-gray-200">{info.nomBoutique}</span>
-              {' · '}{info.nbProduits} produit(s) lié(s)
+              {a.shop} <span className="font-medium text-gray-700 dark:text-gray-200">{info.nomBoutique}</span>
+              {' · '}{a.linkedProducts(info.nbProduits ?? 0)}
             </p>
             <p className="text-gray-400 dark:text-gray-500">
-              Ce profil apparaît inutilement dans la liste des vendeurs. Supprimez-le —
-              vos produits admin restent affichés en priorité 0 sans lui.
+              {a.uselessNote}
             </p>
             <button
               onClick={supprimer}
@@ -105,19 +106,19 @@ export default function BoutonInitProfilAdmin() {
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm disabled:opacity-50 transition"
             >
               <Trash2 className="w-4 h-4" />
-              Supprimer le profil vendeur admin
+              {a.deleteProfile}
             </button>
           </div>
         ) : (
           <div className="flex items-center gap-2 text-xs text-green-700 dark:text-green-300">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
-            Aucun profil vendeur admin. Tout est correct.
+            {a.allGood}
           </div>
         )
       )}
 
       {loading && (
-        <p className="text-xs text-gray-400 animate-pulse">Vérification...</p>
+        <p className="text-xs text-gray-400 animate-pulse">{a.checking}</p>
       )}
 
       {/* Toast */}

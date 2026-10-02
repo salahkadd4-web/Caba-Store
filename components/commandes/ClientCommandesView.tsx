@@ -9,6 +9,9 @@ import {
   Truck, Wrench, XCircle, Zap, Store, Building2,
   ChevronDown, ChevronUp, MapPin, PackageCheck,
 } from 'lucide-react'
+import { useI18n } from '@/components/I18nProvider'
+import { tr } from '@/lib/i18n'
+import { formatFullAddress } from '@/lib/algeria'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -26,6 +29,8 @@ type Order = {
   statut: string
   total: number
   adresse: string
+  wilaya: string | null
+  commune: string | null
   modePaiement: string
   methodeExpedition: string
   fraisLivraison: number
@@ -39,6 +44,8 @@ type CommandeGroupe = {
   groupeId: string
   createdAt: string
   adresse: string
+  wilaya: string | null
+  commune: string | null
   modePaiement: string
   commandes: Order[]
   statutGroupe: string
@@ -47,13 +54,14 @@ type CommandeGroupe = {
 
 // ─── Config statuts ───────────────────────────────────────────────────────────
 
-const statutConfig: Record<string, { label: string; color: string; bg: string; icon: React.ElementType }> = {
-  EN_ATTENTE:     { label: 'En attente',     color: 'text-yellow-700 dark:text-yellow-400', bg: 'bg-yellow-100 dark:bg-yellow-950',          icon: Loader2      },
-  CONFIRMEE:      { label: 'Confirmée',      color: 'text-orange-700 dark:text-orange-400', bg: 'bg-orange-100 dark:bg-orange-950/50',        icon: CheckCircle2 },
-  EN_PREPARATION: { label: 'En préparation', color: 'text-purple-700 dark:text-purple-400', bg: 'bg-purple-100 dark:bg-purple-950',           icon: Wrench       },
-  EXPEDIEE:       { label: 'Expédiée',       color: 'text-blue-700 dark:text-blue-400',     bg: 'bg-blue-100 dark:bg-blue-950',               icon: Truck        },
-  LIVREE:         { label: 'Livrée',         color: 'text-green-700 dark:text-green-400',   bg: 'bg-green-100 dark:bg-green-950',             icon: PackageCheck },
-  ANNULEE:        { label: 'Annulée',        color: 'text-red-700 dark:text-red-400',       bg: 'bg-red-100 dark:bg-red-950',                 icon: XCircle      },
+// Le libellé de chaque statut vient du dictionnaire (t.orders.status).
+const statutConfig: Record<string, { color: string; bg: string; icon: React.ElementType }> = {
+  EN_ATTENTE:     { color: 'text-yellow-700 dark:text-yellow-400', bg: 'bg-yellow-100 dark:bg-yellow-950',          icon: Loader2      },
+  CONFIRMEE:      { color: 'text-orange-700 dark:text-orange-400', bg: 'bg-orange-100 dark:bg-orange-950/50',        icon: CheckCircle2 },
+  EN_PREPARATION: { color: 'text-purple-700 dark:text-purple-400', bg: 'bg-purple-100 dark:bg-purple-950',           icon: Wrench       },
+  EXPEDIEE:       { color: 'text-blue-700 dark:text-blue-400',     bg: 'bg-blue-100 dark:bg-blue-950',               icon: Truck        },
+  LIVREE:         { color: 'text-green-700 dark:text-green-400',   bg: 'bg-green-100 dark:bg-green-950',             icon: PackageCheck },
+  ANNULEE:        { color: 'text-red-700 dark:text-red-400',       bg: 'bg-red-100 dark:bg-red-950',                 icon: XCircle      },
 }
 
 const STATUT_ORDER = ['EN_ATTENTE', 'CONFIRMEE', 'EN_PREPARATION', 'EXPEDIEE', 'LIVREE']
@@ -71,8 +79,8 @@ function computeStatutGroupe(commandes: Order[]): string {
   return STATUT_ORDER[maxIndex] ?? 'EN_ATTENTE'
 }
 
-function getVendeurNom(order: Order): string {
-  return order.items[0]?.product?.vendeur?.nomBoutique ?? 'Caba Store'
+function getVendeurNom(order: Order, fallback: string): string {
+  return order.items[0]?.product?.vendeur?.nomBoutique ?? fallback
 }
 
 function groupOrdersByGroupe(orders: Order[]): CommandeGroupe[] {
@@ -84,6 +92,8 @@ function groupOrdersByGroupe(orders: Order[]): CommandeGroupe[] {
         groupeId: key,
         createdAt: order.createdAt,
         adresse: order.adresse,
+        wilaya: order.wilaya,
+        commune: order.commune,
         modePaiement: order.modePaiement,
         commandes: [],
         statutGroupe: '',
@@ -107,6 +117,7 @@ function groupOrdersByGroupe(orders: Order[]): CommandeGroupe[] {
 // ─── StatutBadge ──────────────────────────────────────────────────────────────
 
 function StatutBadge({ statut, size = 'sm' }: { statut: string; size?: 'xs' | 'sm' }) {
+  const { t } = useI18n()
   const cfg = statutConfig[statut] ?? statutConfig.EN_ATTENTE
   const Icon = cfg.icon
   return (
@@ -114,7 +125,7 @@ function StatutBadge({ statut, size = 'sm' }: { statut: string; size?: 'xs' | 's
       size === 'xs' ? 'text-[10px] px-2 py-0.5' : 'text-xs px-2.5 py-1'
     }`}>
       <Icon className={size === 'xs' ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
-      {cfg.label}
+      {tr(t.orders.status, statut)}
     </span>
   )
 }
@@ -122,6 +133,7 @@ function StatutBadge({ statut, size = 'sm' }: { statut: string; size?: 'xs' | 's
 // ─── Suivi linéaire (commande mono-vendeur) ───────────────────────────────────
 
 function ProgressStepper({ statut }: { statut: string }) {
+  const { t } = useI18n()
   const currentIndex = STATUT_ORDER.indexOf(statut)
   return (
     <div className="flex items-center gap-1">
@@ -144,7 +156,7 @@ function ProgressStepper({ statut }: { statut: string }) {
               </div>
               <p className={`text-[9px] mt-1 text-center hidden sm:block leading-tight ${
                 done ? (active ? 'text-orange-700 dark:text-orange-400 font-semibold' : 'text-orange-400 dark:text-orange-700') : 'text-stone-300 dark:text-stone-600'
-              }`}>{cfg.label}</p>
+              }`}>{tr(t.orders.status, s)}</p>
             </div>
             {i < STATUT_ORDER.length - 1 && (
               <div className={`h-0.5 flex-1 mx-0.5 rounded-full ${
@@ -201,7 +213,9 @@ function MiniProgress({ statut }: { statut: string }) {
 // ─── Section vendeur (items + livraison) ─────────────────────────────────────
 
 function VendeurSection({ cmd, showHeader }: { cmd: Order; showHeader: boolean }) {
-  const nom = getVendeurNom(cmd)
+  const { t, fmt } = useI18n()
+  const o = t.orders.client
+  const nom = getVendeurNom(cmd, t.common.appName)
   return (
     <div>
       {showHeader && (
@@ -231,19 +245,19 @@ function VendeurSection({ cmd, showHeader }: { cmd: Order; showHeader: boolean }
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-stone-700 dark:text-stone-300 line-clamp-2">{item.product.nom}</p>
-              <p className="text-[10px] text-stone-400">×{item.quantite} — {item.prix.toFixed(2)} DA/u</p>
+              <p className="text-[10px] text-stone-400">×{item.quantite} — {item.prix.toFixed(2)} {o.perUnit}</p>
             </div>
             <p className="text-xs font-semibold text-stone-700 dark:text-stone-300 shrink-0 tabular-nums">
-              {(item.prix * item.quantite).toFixed(2)} DA
+              {(item.prix * item.quantite).toFixed(2)} {fmt.currency}
             </p>
           </div>
         ))}
       </div>
 
       <div className="flex items-center justify-between mt-2.5 pt-2.5 border-t border-stone-100 dark:border-stone-800 text-[10px] text-stone-400">
-        <span className="flex items-center gap-1"><Truck className="w-3 h-3" /> {cmd.methodeExpedition}</span>
-        <span>{(cmd.fraisLivraison ?? 700).toFixed(0)} DA livraison</span>
-        <span className="font-semibold text-stone-600 dark:text-stone-300 tabular-nums">{cmd.total.toFixed(2)} DA</span>
+        <span className="flex items-center gap-1"><Truck className="w-3 h-3" /> {tr(t.orders.shipping, cmd.methodeExpedition)}</span>
+        <span>{o.deliveryFee(`${(cmd.fraisLivraison ?? 700).toFixed(0)} ${fmt.currency}`)}</span>
+        <span className="font-semibold text-stone-600 dark:text-stone-300 tabular-nums">{cmd.total.toFixed(2)} {fmt.currency}</span>
       </div>
     </div>
   )
@@ -252,6 +266,8 @@ function VendeurSection({ cmd, showHeader }: { cmd: Order; showHeader: boolean }
 // ─── Bureau de livraison ──────────────────────────────────────────────────────
 
 function BureauPanel({ groupe }: { groupe: CommandeGroupe }) {
+  const { t } = useI18n()
+  const o = t.orders.client
   const actives      = groupe.commandes.filter(c => c.statut !== 'ANNULEE')
   const atBureau     = actives.filter(c => ['EXPEDIEE', 'LIVREE'].includes(c.statut))
   const allAtBureau  = atBureau.length === actives.length && actives.length > 0
@@ -270,12 +286,12 @@ function BureauPanel({ groupe }: { groupe: CommandeGroupe }) {
     : 'text-stone-500 dark:text-stone-400'
 
   const bureauMsg = allDelivered
-    ? `✅ Tous les colis ont été livrés`
+    ? o.allDelivered
     : allAtBureau
-    ? `📦 ${atBureau.length} colis regroupés — livraison imminente`
+    ? o.allGrouped(atBureau.length)
     : atBureau.length > 0
-    ? `🏢 ${atBureau.length} / ${actives.length} colis au bureau`
-    : `⏳ En attente des colis vendeurs`
+    ? o.partlyAtOffice(atBureau.length, actives.length)
+    : o.waitingSellers
 
   return (
     <div className={`rounded-2xl border p-4 ${panelCls}`}>
@@ -283,14 +299,14 @@ function BureauPanel({ groupe }: { groupe: CommandeGroupe }) {
       <div className="flex items-center gap-2 mb-3">
         <Building2 className={`w-4 h-4 ${titleCls}`} />
         <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">
-          Bureau de livraison
+          {o.deliveryOffice}
         </p>
       </div>
 
       {/* Flux vendeurs → bureau */}
       <div className="space-y-2 mb-3">
         {actives.map(cmd => {
-          const nom         = getVendeurNom(cmd)
+          const nom         = getVendeurNom(cmd, t.common.appName)
           const isAtBureau  = ['EXPEDIEE', 'LIVREE'].includes(cmd.statut)
           const cfg         = statutConfig[cmd.statut] ?? statutConfig.EN_ATTENTE
           const Icon        = cfg.icon
@@ -305,7 +321,7 @@ function BureauPanel({ groupe }: { groupe: CommandeGroupe }) {
               <div className="flex-1 border-t border-dashed border-stone-200 dark:border-stone-700 mx-1" />
               <span className={`text-[10px] font-semibold whitespace-nowrap flex items-center gap-0.5 ${cfg.color}`}>
                 <Icon className="w-2.5 h-2.5" />
-                {isAtBureau ? 'Colis reçu' : cfg.label}
+                {isAtBureau ? o.parcelReceived : tr(t.orders.status, cmd.statut)}
               </span>
             </div>
           )
@@ -321,8 +337,8 @@ function BureauPanel({ groupe }: { groupe: CommandeGroupe }) {
           </span>
         </div>
         {!allAtBureau && (
-          <p className="text-[10px] text-stone-400 mt-1 ml-5">
-            En attente de {actives.length - atBureau.length} colis avant expédition groupée
+          <p className="text-[10px] text-stone-400 mt-1 ms-5">
+            {o.waitingParcels(actives.length - atBureau.length)}
           </p>
         )}
       </div>
@@ -333,6 +349,9 @@ function BureauPanel({ groupe }: { groupe: CommandeGroupe }) {
 // ─── Carte de groupe ──────────────────────────────────────────────────────────
 
 function GroupeCard({ groupe }: { groupe: CommandeGroupe }) {
+  const { t, fmt, locale } = useI18n()
+  const o = t.orders.client
+  const adresseComplete = formatFullAddress(groupe, locale)
   const [expanded, setExpanded] = useState(false)
   const isMulti       = groupe.commandes.length > 1
   const retourDemande = groupe.commandes.some(c => c.retourDemande)
@@ -356,23 +375,21 @@ function GroupeCard({ groupe }: { groupe: CommandeGroupe }) {
           </div>
           <div className="min-w-0">
             <p className="text-xs text-stone-400 dark:text-stone-500">
-              {new Date(groupe.createdAt).toLocaleDateString('fr-FR', {
-                day: 'numeric', month: 'long', year: 'numeric',
-              })}
+              {fmt.date(groupe.createdAt)}
               {isMulti && (
-                <span className="ml-2 font-bold text-orange-700 dark:text-orange-400">
-                  {groupe.commandes.length} vendeurs
+                <span className="ms-2 font-bold text-orange-700 dark:text-orange-400">
+                  {o.sellersCount(groupe.commandes.length)}
                 </span>
               )}
             </p>
-            <p className="text-xs text-stone-500 dark:text-stone-400 truncate">{groupe.adresse}</p>
+            <p className="text-xs text-stone-500 dark:text-stone-400 truncate">{adresseComplete}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
           <StatutBadge statut={groupe.statutGroupe} />
           <p className="font-bold text-base text-orange-700 dark:text-orange-400 tabular-nums hidden sm:block">
-            {groupe.total.toFixed(2)} DA
+            {groupe.total.toFixed(2)} {fmt.currency}
           </p>
           {expanded
             ? <ChevronUp   className="w-4 h-4 text-stone-400" />
@@ -388,12 +405,12 @@ function GroupeCard({ groupe }: { groupe: CommandeGroupe }) {
           {/* Résumé adresse + paiement */}
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="bg-stone-50 dark:bg-stone-800/60 rounded-xl p-3">
-              <p className="text-stone-400 mb-1 flex items-center gap-1"><MapPin className="w-3 h-3" /> Adresse</p>
-              <p className="font-medium text-stone-700 dark:text-stone-300 text-[11px] leading-snug">{groupe.adresse}</p>
+              <p className="text-stone-400 mb-1 flex items-center gap-1"><MapPin className="w-3 h-3" /> {o.address}</p>
+              <p className="font-medium text-stone-700 dark:text-stone-300 text-[11px] leading-snug">{adresseComplete}</p>
             </div>
             <div className="bg-stone-50 dark:bg-stone-800/60 rounded-xl p-3">
-              <p className="text-stone-400 mb-1 flex items-center gap-1"><CreditCard className="w-3 h-3" /> Paiement</p>
-              <p className="font-medium text-stone-700 dark:text-stone-300 text-[11px]">{groupe.modePaiement}</p>
+              <p className="text-stone-400 mb-1 flex items-center gap-1"><CreditCard className="w-3 h-3" /> {o.payment}</p>
+              <p className="font-medium text-stone-700 dark:text-stone-300 text-[11px]">{tr(t.orders.payment, groupe.modePaiement)}</p>
             </div>
           </div>
 
@@ -402,13 +419,13 @@ function GroupeCard({ groupe }: { groupe: CommandeGroupe }) {
             <>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-2 flex items-center gap-1">
-                  <Zap className="w-3 h-3" /> Suivi de commande
+                  <Zap className="w-3 h-3" /> {o.tracking}
                 </p>
                 <ProgressStepper statut={singleOrder.statut} />
               </div>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-3 flex items-center gap-1">
-                  <Package className="w-3 h-3" /> Articles
+                  <Package className="w-3 h-3" /> {o.items}
                 </p>
                 <VendeurSection cmd={singleOrder} showHeader={false} />
               </div>
@@ -420,7 +437,7 @@ function GroupeCard({ groupe }: { groupe: CommandeGroupe }) {
             <>
               <div className="space-y-4">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 flex items-center gap-1">
-                  <Store className="w-3 h-3" /> Commandes par vendeur
+                  <Store className="w-3 h-3" /> {o.ordersBySeller}
                 </p>
                 {groupe.commandes.map((cmd, idx) => (
                   <div key={cmd.id}>
@@ -441,22 +458,22 @@ function GroupeCard({ groupe }: { groupe: CommandeGroupe }) {
               {estLivre && (
                 retourDemande ? (
                   <span className="flex items-center gap-1 text-[11px] font-semibold px-3 py-1.5 rounded-xl border border-stone-200 dark:border-stone-700 text-stone-400 cursor-default">
-                    <Check className="w-3 h-3" /> Retour déjà demandé
+                    <Check className="w-3 h-3" /> {o.returnAlreadyRequested}
                   </span>
                 ) : (
                   <Link
                     href="/mes-retours"
                     className="flex items-center gap-1 text-[11px] font-semibold px-3 py-1.5 rounded-xl border border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition"
                   >
-                    ↩ Réclamer un retour
+                    {o.requestReturn}
                   </Link>
                 )
               )}
             </div>
-            <div className="text-right">
-              <p className="text-[10px] text-stone-400 mb-0.5">Total{isMulti ? ' général' : ''}</p>
+            <div className="text-end">
+              <p className="text-[10px] text-stone-400 mb-0.5">{isMulti ? o.grandTotal : o.total}</p>
               <p className="font-bold text-lg text-orange-700 dark:text-orange-400 tabular-nums">
-                {groupe.total.toFixed(2)} DA
+                {groupe.total.toFixed(2)} {fmt.currency}
               </p>
             </div>
           </div>
@@ -469,6 +486,8 @@ function GroupeCard({ groupe }: { groupe: CommandeGroupe }) {
 // ─── Contenu principal ────────────────────────────────────────────────────────
 
 function CommandesContent() {
+  const { t } = useI18n()
+  const o = t.orders.client
   const searchParams = useSearchParams()
   const success      = searchParams.get('success')
   const [commandes, setCommandes] = useState<Order[]>([])
@@ -479,14 +498,15 @@ function CommandesContent() {
     fetch('/api/commandes/')
       .then(r => { if (!r.ok) throw new Error(); return r.json() as Promise<Order[]> })
       .then(data => setCommandes(data))
-      .catch(() => setError('Impossible de charger vos commandes. Veuillez réessayer.'))
+      .catch(() => setError(o.loadError))
       .finally(() => setLoading(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   if (loading) return (
     <div className="max-w-4xl mx-auto px-4 py-16 text-center">
       <div className="w-8 h-8 border-2 border-stone-200 border-t-orange-700 rounded-full animate-spin mx-auto mb-3" />
-      <p className="text-stone-500 dark:text-stone-400">Chargement des commandes…</p>
+      <p className="text-stone-500 dark:text-stone-400">{o.loading}</p>
     </div>
   )
 
@@ -505,22 +525,22 @@ function CommandesContent() {
         <div className="bg-green-50 dark:bg-green-950/50 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 px-6 py-4 rounded-2xl mb-6 flex items-center gap-3">
           <PartyPopper className="w-8 h-8 shrink-0" />
           <div>
-            <p className="font-semibold">Commande passée avec succès !</p>
-            <p className="text-sm opacity-80">Vous pouvez suivre votre commande ci-dessous.</p>
+            <p className="font-semibold">{o.successTitle}</p>
+            <p className="text-sm opacity-80">{o.successDesc}</p>
           </div>
         </div>
       )}
 
       <div className="flex items-end justify-between mb-8 flex-wrap gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-400 mb-1">Espace client</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">Mes commandes</h1>
+          <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-400 mb-1">{o.clientArea}</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">{o.title}</h1>
         </div>
         <Link
           href="/commandes/nouveau"
           className="hidden sm:inline-flex items-center gap-1.5 bg-orange-700 hover:bg-orange-800 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
         >
-          + Nouvelle commande
+          {o.newOrder}
         </Link>
       </div>
 
@@ -530,11 +550,11 @@ function CommandesContent() {
             <Package className="w-10 h-10 text-stone-300 dark:text-stone-600" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-stone-800 dark:text-stone-100 mb-1">Aucune commande</h2>
-            <p className="text-stone-400 dark:text-stone-500 text-sm mb-6">Vous n&apos;avez pas encore passé de commande.</p>
+            <h2 className="text-xl font-semibold text-stone-800 dark:text-stone-100 mb-1">{o.emptyTitle}</h2>
+            <p className="text-stone-400 dark:text-stone-500 text-sm mb-6">{o.emptyDesc}</p>
           </div>
           <Link href="/produits" className="bg-orange-700 hover:bg-orange-800 text-white font-semibold px-8 py-3 rounded-xl transition">
-            Voir les produits
+            {o.seeProducts}
           </Link>
         </div>
       ) : (

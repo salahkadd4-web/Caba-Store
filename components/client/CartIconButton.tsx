@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEtatProduit } from '@/components/client/EtatProduitsProvider'
+import { useI18n } from '@/components/I18nProvider'
 
 function broadcastCartUpdate() {
   window.dispatchEvent(new CustomEvent('cart-updated'))
@@ -16,6 +17,7 @@ export default function CartIconButton({ produitId, stock }: { produitId: string
   const { data: session } = useSession()
   const router = useRouter()
   const { etat, setEtat } = useEtatProduit(produitId)
+  const { t } = useI18n()
   const [loading, setLoading] = useState(false)
 
   const inCart     = !!etat?.inCart
@@ -57,7 +59,7 @@ export default function CartIconButton({ produitId, stock }: { produitId: string
   }
 
   if (stock === 0) return (
-    <div className="w-9 h-9 rounded-full bg-stone-200 dark:bg-stone-700 flex items-center justify-center" title="Indisponible">
+    <div className="w-9 h-9 rounded-full bg-stone-200 dark:bg-stone-700 flex items-center justify-center" title={t.cart.unavailable}>
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-stone-400">
         <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
       </svg>
@@ -68,7 +70,8 @@ export default function CartIconButton({ produitId, stock }: { produitId: string
     <button
       onClick={handleToggle}
       disabled={loading}
-      title={inCart ? 'Retirer du panier' : 'Ajouter au panier'}
+      title={inCart ? t.cart.removeFromCart : t.product.addToCart}
+      aria-label={inCart ? t.cart.removeFromCart : t.product.addToCart}
       className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 shadow-md disabled:opacity-50 ${
         inCart
           ? 'bg-green-500 hover:bg-red-500 text-white'

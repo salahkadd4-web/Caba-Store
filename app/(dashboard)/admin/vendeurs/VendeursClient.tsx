@@ -13,12 +13,15 @@ import {
   heading, inputCls, selectCls, btnSecondary, btnDangerSolid,
   cardSm, kpiCard, modalOverlay, modalBox, toastCls,
 } from '@/lib/dashboard-ui'
+import { useI18n } from '@/components/I18nProvider'
+import { tr } from '@/lib/i18n'
+import { wilayaName } from '@/lib/algeria'
 
 interface Doc { id: string; type: string; label: string; description: string | null; fichier: string | null; statut: string; adminNote: string | null }
 export interface Vendeur {
   id: string; nomBoutique: string | null; statut: string; adminNote: string | null; createdAt: string
   totalCommandes: number; chiffreAffaire: number
-  user: { nom: string; prenom: string; email: string | null; telephone: string | null }
+  user: { nom: string; prenom: string; email: string | null; telephone: string | null; wilaya?: string | null; commune?: string | null }
   documents: Doc[]
   _count: { products: number; categories: number }
 }
@@ -52,23 +55,25 @@ interface AbonnementDetail {
   id: string; niveau: string; statut: string; dateFin: string; periodicite: string | null; joursRestants: number; paiements: Paiement[]; billing: BillingDetail; invoices: InvoiceDetail[]
 }
 
-const statutConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  EN_ATTENTE:      { label: 'En attente',      color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300',   icon: Loader2      },
-  APPROUVE:        { label: 'Approuvé',        color: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',       icon: CheckCircle2 },
-  SUSPENDU:        { label: 'Suspendu',        color: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',               icon: Ban          },
-  PIECES_REQUISES: { label: 'Pièces requises', color: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',   icon: ClipboardList },
+// Libellés : t.admin.sellers.status / subStatus, t.billing.levels
+const statutConfig: Record<string, { color: string; icon: React.ElementType }> = {
+  EN_ATTENTE:      { color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300',   icon: Loader2      },
+  APPROUVE:        { color: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',       icon: CheckCircle2 },
+  SUSPENDU:        { color: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',               icon: Ban          },
+  PIECES_REQUISES: { color: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',   icon: ClipboardList },
 }
-const NIVEAU_LABELS: Record<string, { label: string; color: string }> = {
-  NIVEAU_1: { label: 'Niveau 1 — 5000 DA', color: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300' },
-  NIVEAU_2: { label: 'Niveau 2 — 4000 DA', color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'         },
-  NIVEAU_3: { label: 'Niveau 3 — 3000 DA', color: 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300'     },
+const NIVEAU_LABELS: Record<string, { price: number; color: string }> = {
+  NIVEAU_1: { price: 5000, color: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300' },
+  NIVEAU_2: { price: 4000, color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'         },
+  NIVEAU_3: { price: 3000, color: 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300'     },
 }
-const STATUT_ABO_LABELS: Record<string, { label: string; color: string }> = {
-  GRATUIT:  { label: 'Gratuit (1 an)', color: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'     },
-  ACTIF:    { label: 'Actif',          color: 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300'         },
-  EXPIRE:   { label: 'Expiré',         color: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'             },
-  SUSPENDU: { label: 'Suspendu',       color: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300' },
+const STATUT_ABO_LABELS: Record<string, { color: string }> = {
+  GRATUIT:  { color: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'     },
+  ACTIF:    { color: 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300'         },
+  EXPIRE:   { color: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'             },
+  SUSPENDU: { color: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300' },
 }
+// Libellés enregistrés en base (français, lisibles par le vendeur) ; affichage traduit via t.admin.sellers.docTypes
 const DOC_TYPES = [
   { type: 'carte_nationale',    label: "Carte nationale d'identité",                  description: 'Recto et verso de votre CNI'        },
   { type: 'registre_commerce',  label: 'Registre de commerce',                        description: 'Document officiel du RC'            },
@@ -88,6 +93,12 @@ const inputField  = `w-full rounded-xl border border-stone-200 dark:border-stone
 const selectField = `w-full rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 py-2 text-sm text-stone-700 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-orange-400 transition`
 
 export default function VendeursClient({ initialData }: { initialData: Vendeur[] }) {
+  const { t, fmt, locale } = useI18n()
+  const s_ = t.admin.sellers
+  const d = (v: Date | string) => new Date(v).toLocaleDateString(fmt.intl)
+  const levelLabel = (k: string) => t.billing.levels[k]?.label ?? k
+  const levelWithPrice = (k: string) => NIVEAU_LABELS[k] ? s_.levelPrice(levelLabel(k), fmt.price(NIVEAU_LABELS[k].price)) : k
+  const docLabel = (doc: { type: string; label: string }) => s_.docTypes[doc.type]?.label ?? doc.label
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -189,7 +200,7 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
     const res  = await fetch(`/api/admin/vendeurs/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, adminNote, ...extra }) })
     const data = await res.json()
     if (res.ok) { showToast(data.message); await refresh(); if (selected?.id === id) await fetchDetail(id); setShowDocModal(false); setAdminNote('') }
-    else showToast(data.error || 'Erreur')
+    else showToast(data.error || s_.error)
     setSaving(false)
   }
 
@@ -199,7 +210,7 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
     const res  = await fetch(`/api/admin/vendeurs/${selected.id}/documents/${docAction.docId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: docAction.action, adminNote: docAction.note }) })
     const data = await res.json()
     if (res.ok) { showToast(data.message); await fetchDetail(selected.id); await refresh() }
-    else showToast(data.error || 'Erreur')
+    else showToast(data.error || s_.error)
     setDocAction(null); setSaving(false)
   }
 
@@ -221,21 +232,21 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
     <div className="space-y-5">
       {toastMsg && <div className={toastCls}>{toastMsg}</div>}
 
-      <h1 className={heading}>Gestion des Vendeurs</h1>
+      <h1 className={heading}>{s_.title}</h1>
 
       <div className="flex flex-col sm:flex-row gap-2.5">
         <div className="relative flex-1">
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none">
+          <span className="absolute start-3.5 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none">
             {searching
               ? <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
               : <Search className="w-4 h-4" />}
           </span>
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Boutique, nom, email, téléphone…" className={`${inputCls} pl-10 pr-9`} />
-          {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"><X className="w-4 h-4" /></button>}
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder={s_.searchPlaceholder} className={`${inputCls} ps-10 pe-9`} />
+          {search && <button onClick={() => setSearch('')} className="absolute end-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"><X className="w-4 h-4" /></button>}
         </div>
         <select value={filterStatut} onChange={e => setFilterStatut(e.target.value)} className={`${selectCls} min-w-44`}>
-          <option value="">Tous les statuts</option>
-          {Object.entries(statutConfig).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+          <option value="">{s_.allStatuses}</option>
+          {Object.keys(statutConfig).map(k => <option key={k} value={k}>{tr(s_.status, k)}</option>)}
         </select>
       </div>
 
@@ -244,9 +255,9 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
           const Icon = v.icon
           return (
             <button key={k} onClick={() => setFilterStatut(k === filterStatut ? '' : k)}
-              className={`${kpiCard} text-left ${filterStatut === k ? 'border-orange-400 dark:border-orange-600 ring-1 ring-orange-300 dark:ring-orange-700' : ''}`}>
+              className={`${kpiCard} text-start ${filterStatut === k ? 'border-orange-400 dark:border-orange-600 ring-1 ring-orange-300 dark:ring-orange-700' : ''}`}>
               <p className="text-xs text-stone-500 dark:text-stone-400 flex items-center gap-1 mb-1">
-                <Icon className="w-3 h-3" />{v.label}
+                <Icon className="w-3 h-3" />{tr(s_.status, k)}
               </p>
               <p className="text-2xl font-bold text-stone-800 dark:text-stone-100">
                 {vendeurs.filter(vd => vd.statut === k).length}
@@ -257,11 +268,11 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
       </div>
 
       {vendeurs.length === 0 ? (
-        <div className="text-center py-12 text-stone-400">{debouncedSearch ? `Aucun résultat pour "${debouncedSearch}"` : 'Aucun vendeur trouvé'}</div>
+        <div className="text-center py-12 text-stone-400">{debouncedSearch ? s_.noResultFor(debouncedSearch) : s_.none}</div>
       ) : (
         <div className="space-y-2.5">
           {vendeurs.map(v => {
-            const sc = statutConfig[v.statut] || { label: v.statut, color: '', icon: null as unknown as React.ElementType }
+            const sc = statutConfig[v.statut] || { color: '', icon: null as unknown as React.ElementType }
             return (
               <div key={v.id} className={`${cardSm} p-4 hover:border-orange-300 dark:hover:border-orange-700 transition cursor-pointer`} onClick={() => fetchDetail(v.id)}>
                 <div className="flex items-start justify-between gap-3">
@@ -272,22 +283,22 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
                     </div>
                     <p className="text-xs text-stone-400">{v.user.email || v.user.telephone}</p>
                     {v.user.telephone && v.user.email && (
-                      <p className="text-xs text-stone-400 flex items-center gap-1 mt-0.5"><Phone className="w-3 h-3" />{v.user.telephone}</p>
+                      <p className="text-xs text-stone-400 flex items-center gap-1 mt-0.5"><Phone className="w-3 h-3" /><span dir="ltr">{v.user.telephone}</span></p>
                     )}
                     <div className="flex flex-wrap gap-3 mt-1.5 text-xs text-stone-400">
-                      <span className="flex items-center gap-1"><Package className="w-3 h-3" />{v._count.products} produits</span>
-                      <span className="flex items-center gap-1"><ShoppingCart className="w-3 h-3" />{v.totalCommandes} cmd</span>
-                      <span className="flex items-center gap-1"><Banknote className="w-3 h-3" />{v.chiffreAffaire.toLocaleString('fr-DZ')} DA</span>
+                      <span className="flex items-center gap-1"><Package className="w-3 h-3" />{s_.productsCount(v._count.products)}</span>
+                      <span className="flex items-center gap-1"><ShoppingCart className="w-3 h-3" />{s_.ordersShort(v.totalCommandes)}</span>
+                      <span className="flex items-center gap-1"><Banknote className="w-3 h-3" />{fmt.price(v.chiffreAffaire)}</span>
                     </div>
                   </div>
                   <span className={`shrink-0 text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1 ${sc.color}`}>
                     {(() => { const Icon = sc.icon; return Icon ? <Icon className="w-3 h-3" /> : null })()}
-                    {sc.label}
+                    {tr(s_.status, v.statut)}
                   </span>
                 </div>
                 {v.documents.length > 0 && (
                   <div className="mt-2.5 flex flex-wrap gap-1">
-                    {v.documents.map(d => <span key={d.id} className={`text-xs px-2 py-0.5 rounded-full ${docStatutColor[d.statut] || ''}`}>{d.label}</span>)}
+                    {v.documents.map(doc => <span key={doc.id} className={`text-xs px-2 py-0.5 rounded-full ${docStatutColor[doc.statut] || ''}`}>{docLabel(doc)}</span>)}
                   </div>
                 )}
               </div>
@@ -306,7 +317,7 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
                   <h2 className="text-base font-bold text-stone-800 dark:text-stone-100">{selected.nomBoutique || `${selected.user.prenom} ${selected.user.nom}`}</h2>
                   <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium flex items-center gap-1 w-fit mt-1 ${statutConfig[selected.statut]?.color}`}>
                     {(() => { const Icon = statutConfig[selected.statut]?.icon; return Icon ? <Icon className="w-3 h-3" /> : null })()}
-                    {statutConfig[selected.statut]?.label}
+                    {tr(s_.status, selected.statut)}
                   </span>
                 </div>
                 <button onClick={() => { setSelected(null); clearSelectionQuery() }} className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 dark:hover:bg-stone-800 transition"><X className="w-4 h-4" /></button>
@@ -316,7 +327,7 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
                   <button key={tab} onClick={() => setOnglet(tab)}
                     className={`flex-1 py-3 text-sm font-medium border-b-2 transition flex items-center justify-center gap-1.5 ${onglet === tab ? 'border-orange-500 text-orange-600 dark:text-orange-400' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-200'}`}>
                     {tab === 'abonnement' && <CreditCard className="w-3.5 h-3.5" />}
-                    {tab === 'infos' ? 'Infos & Actions' : 'Abonnement'}
+                    {tab === 'infos' ? s_.tabInfo : s_.tabSubscription}
                   </button>
                 ))}
               </div>
@@ -327,12 +338,14 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     {[
-                      ['Nom',        `${selected.user.prenom} ${selected.user.nom}`],
-                      ['Email',       selected.user.email || '—'],
-                      ['Téléphone',   selected.user.telephone || '—'],
-                      ['Inscription', new Date(selected.createdAt).toLocaleDateString('fr-DZ')],
-                      ['Produits',    String(selected._count?.products ?? 0)],
-                      ['Commandes',   String(selected.totalCommandes ?? 0)],
+                      [s_.name,         `${selected.user.prenom} ${selected.user.nom}`],
+                      [s_.email,        selected.user.email || '—'],
+                      [s_.phone,        selected.user.telephone || '—'],
+                      [s_.registration, d(selected.createdAt)],
+                      [t.address.wilaya,  wilayaName(selected.user.wilaya, locale) || '—'],
+                      [t.address.commune, selected.user.commune || '—'],
+                      [s_.products,     String(selected._count?.products ?? 0)],
+                      [s_.orders,       String(selected.totalCommandes ?? 0)],
                     ].map(([k, v]) => (
                       <div key={k} className="bg-stone-50 dark:bg-stone-800 rounded-xl p-3">
                         <p className="text-xs text-stone-400 mb-0.5">{k}</p>
@@ -341,70 +354,70 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
                     ))}
                   </div>
                   <div className="bg-stone-900 dark:bg-stone-800 text-white rounded-xl p-4">
-                    <p className="text-xs text-stone-400 mb-1">Chiffre d&apos;affaires</p>
-                    <p className="text-xl font-bold">{selected.chiffreAffaire?.toLocaleString('fr-DZ') ?? 0} DA</p>
+                    <p className="text-xs text-stone-400 mb-1">{s_.revenue}</p>
+                    <p className="text-xl font-bold">{fmt.price(selected.chiffreAffaire ?? 0)}</p>
                   </div>
                   {selected.adminNote && (
                     <div className="bg-yellow-50 dark:bg-yellow-950 rounded-xl p-3 text-sm text-yellow-700 dark:text-yellow-300">
-                      <span className="font-semibold">Note interne : </span>{selected.adminNote}
+                      <span className="font-semibold">{s_.internalNote}</span>{selected.adminNote}
                     </div>
                   )}
                   {selected.documents.length > 0 && (
                     <div>
-                      <h3 className="text-sm font-semibold text-stone-700 dark:text-stone-200 mb-2.5">Pièces justificatives</h3>
+                      <h3 className="text-sm font-semibold text-stone-700 dark:text-stone-200 mb-2.5">{s_.documents}</h3>
                       <div className="space-y-2.5">
                         {selected.documents.map(doc => (
                           <div key={doc.id} className="border border-stone-200 dark:border-stone-700 rounded-xl p-3">
                             <div className="flex items-start justify-between gap-2 mb-2">
                               <div>
-                                <p className="text-sm font-medium text-stone-800 dark:text-stone-100">{doc.label}</p>
-                                {doc.description && <p className="text-xs text-stone-400">{doc.description}</p>}
+                                <p className="text-sm font-medium text-stone-800 dark:text-stone-100">{docLabel(doc)}</p>
+                                {doc.description && <p className="text-xs text-stone-400">{s_.docTypes[doc.type]?.description ?? doc.description}</p>}
                               </div>
-                              <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${docStatutColor[doc.statut] || ''}`}>{doc.statut}</span>
+                              <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${docStatutColor[doc.statut] || ''}`}>{tr(s_.docStatus, doc.statut)}</span>
                             </div>
-                            {doc.adminNote && <p className="text-xs text-red-500 dark:text-red-400 mb-2">Note : {doc.adminNote}</p>}
+                            {doc.adminNote && <p className="text-xs text-red-500 dark:text-red-400 mb-2">{s_.note} {doc.adminNote}</p>}
                             {doc.fichier ? (
                               <div className="flex items-center gap-3">
                                 <a href={`/api/admin/documents/view?docId=${doc.id}`} target="_blank" rel="noopener noreferrer" className="text-xs text-orange-600 dark:text-orange-400 hover:underline flex items-center gap-1">
-                                  <Paperclip className="w-3.5 h-3.5" />Voir le fichier
+                                  <Paperclip className="w-3.5 h-3.5" />{s_.viewFile}
                                 </a>
                                 {doc.statut === 'EN_ATTENTE' && (
-                                  <div className="flex gap-2 ml-auto">
-                                    <button onClick={() => setDocAction({ docId: doc.id, action: 'accepter', note: '' })} className="text-xs bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 px-3 py-1 rounded-lg hover:bg-green-100 transition flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" />Accepter</button>
-                                    <button onClick={() => setDocAction({ docId: doc.id, action: 'refuser', note: '' })} className="text-xs bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 px-3 py-1 rounded-lg hover:bg-red-100 transition flex items-center gap-1"><XCircle className="w-3.5 h-3.5" />Refuser</button>
+                                  <div className="flex gap-2 ms-auto">
+                                    <button onClick={() => setDocAction({ docId: doc.id, action: 'accepter', note: '' })} className="text-xs bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 px-3 py-1 rounded-lg hover:bg-green-100 transition flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" />{s_.accept}</button>
+                                    <button onClick={() => setDocAction({ docId: doc.id, action: 'refuser', note: '' })} className="text-xs bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 px-3 py-1 rounded-lg hover:bg-red-100 transition flex items-center gap-1"><XCircle className="w-3.5 h-3.5" />{s_.refuse}</button>
                                   </div>
                                 )}
                               </div>
-                            ) : <p className="text-xs text-stone-400 italic">En attente du fichier du vendeur…</p>}
+                            ) : <p className="text-xs text-stone-400 italic">{s_.waitingFile}</p>}
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
                   <div>
-                    <label className="block text-xs font-medium text-stone-500 dark:text-stone-400 mb-1.5">Note interne (optionnelle)</label>
-                    <textarea value={adminNote} onChange={e => setAdminNote(e.target.value)} rows={2} placeholder="Motif, commentaire…"
+                    <label className="block text-xs font-medium text-stone-500 dark:text-stone-400 mb-1.5">{s_.internalNoteOptional}</label>
+                    <textarea value={adminNote} onChange={e => setAdminNote(e.target.value)} rows={2} placeholder={s_.internalNotePlaceholder}
                       className="w-full border border-stone-200 dark:border-stone-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-stone-800 text-stone-800 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-orange-400 transition resize-none" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     {(selected.statut === 'EN_ATTENTE' || selected.statut === 'PIECES_REQUISES') && (
                       <button onClick={() => doAction(selected.id, 'approuver')} disabled={saving} className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-sm py-2.5 rounded-xl font-medium transition flex items-center justify-center gap-1.5">
-                        <CheckCircle2 className="w-4 h-4" />Approuver
+                        <CheckCircle2 className="w-4 h-4" />{s_.approve}
                       </button>
                     )}
                     {selected.statut === 'APPROUVE' && (
                       <button onClick={() => doAction(selected.id, 'suspendre')} disabled={saving} className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm py-2.5 rounded-xl font-medium transition flex items-center justify-center gap-1.5">
-                        <Ban className="w-4 h-4" />Suspendre
+                        <Ban className="w-4 h-4" />{s_.suspend}
                       </button>
                     )}
                     {selected.statut === 'SUSPENDU' && (
                       <button onClick={() => doAction(selected.id, 'reactiver')} disabled={saving} className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm py-2.5 rounded-xl font-medium transition flex items-center justify-center gap-1.5">
-                        <Play className="w-4 h-4" />Réactiver
+                        <Play className="w-4 h-4 rtl-flip" />{s_.reactivate}
                       </button>
                     )}
                     {selected.statut !== 'SUSPENDU' && (
                       <button onClick={() => { setNewDocs([]); setShowDocModal(true) }} className="bg-orange-500 hover:bg-orange-600 text-white text-sm py-2.5 rounded-xl font-medium transition flex items-center justify-center gap-1.5">
-                        <ClipboardList className="w-4 h-4" />Demander des pièces
+                        <ClipboardList className="w-4 h-4" />{s_.requestDocs}
                       </button>
                     )}
                   </div>
@@ -414,17 +427,17 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
               {onglet === 'abonnement' && (
                 <div className="space-y-4">
                   {loadingAbo ? (
-                    <p className="text-sm text-stone-400 text-center py-8">Chargement…</p>
+                    <p className="text-sm text-stone-400 text-center py-8">{t.common.loading}</p>
                   ) : !abonnement ? (
-                    <p className="text-sm text-stone-400 text-center py-8">Aucun abonnement — vendeur pas encore approuvé.</p>
+                    <p className="text-sm text-stone-400 text-center py-8">{s_.noSubscription}</p>
                   ) : (
                     <>
                       <div className="bg-stone-50 dark:bg-stone-800 rounded-xl p-4 space-y-2.5 text-sm">
                         {[
-                          { label: 'Statut abonnement', value: <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUT_ABO_LABELS[abonnement.statut]?.color ?? ''}`}>{STATUT_ABO_LABELS[abonnement.statut]?.label ?? abonnement.statut}</span> },
-                          { label: 'Niveau actuel',     value: <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${NIVEAU_LABELS[abonnement.niveau]?.color ?? ''}`}>{NIVEAU_LABELS[abonnement.niveau]?.label ?? abonnement.niveau}</span> },
-                          { label: 'Expire le',         value: <span className="font-semibold text-stone-800 dark:text-stone-100">{new Date(abonnement.dateFin).toLocaleDateString('fr-DZ')}</span> },
-                          { label: 'Jours restants',    value: <span className={`font-bold ${abonnement.statut === 'EXPIRE' ? 'text-red-500' : abonnement.joursRestants <= 7 ? 'text-orange-500' : 'text-teal-600 dark:text-teal-400'}`}>{abonnement.statut === 'EXPIRE' ? 'Expiré' : `${abonnement.joursRestants} jours`}</span> },
+                          { label: s_.subStatusLabel, value: <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUT_ABO_LABELS[abonnement.statut]?.color ?? ''}`}>{tr(s_.subStatus, abonnement.statut)}</span> },
+                          { label: s_.currentLevel,   value: <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${NIVEAU_LABELS[abonnement.niveau]?.color ?? ''}`}>{levelWithPrice(abonnement.niveau)}</span> },
+                          { label: s_.expiresOn,      value: <span className="font-semibold text-stone-800 dark:text-stone-100">{d(abonnement.dateFin)}</span> },
+                          { label: s_.daysLeft,       value: <span className={`font-bold ${abonnement.statut === 'EXPIRE' ? 'text-red-500' : abonnement.joursRestants <= 7 ? 'text-orange-500' : 'text-teal-600 dark:text-teal-400'}`}>{abonnement.statut === 'EXPIRE' ? s_.expired : s_.daysCount(abonnement.joursRestants)}</span> },
                         ].map(({ label, value }) => (
                           <div key={label} className="flex justify-between items-center">
                             <span className="text-stone-500">{label}</span>
@@ -434,85 +447,85 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
                       </div>
                       <div className="grid gap-3 sm:grid-cols-3">
                         <div className="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-4">
-                          <p className="text-xs text-stone-500 mb-1">Abonnement</p>
-                          <p className="text-lg font-semibold text-stone-900 dark:text-white">{abonnement.billing.subscriptionAmount.toLocaleString('fr-DZ')} DA</p>
+                          <p className="text-xs text-stone-500 mb-1">{s_.subscription}</p>
+                          <p className="text-lg font-semibold text-stone-900 dark:text-white">{fmt.price(abonnement.billing.subscriptionAmount)}</p>
                         </div>
                         <div className="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-4">
-                          <p className="text-xs text-stone-500 mb-1">Frais ventes</p>
-                          <p className="text-lg font-semibold text-stone-900 dark:text-white">{abonnement.billing.salesFee.toLocaleString('fr-DZ')} DA</p>
-                          <p className="text-[11px] text-stone-400 mt-1">1% sur {abonnement.billing.grossSales.toLocaleString('fr-DZ')} DA</p>
+                          <p className="text-xs text-stone-500 mb-1">{s_.salesFees}</p>
+                          <p className="text-lg font-semibold text-stone-900 dark:text-white">{fmt.price(abonnement.billing.salesFee)}</p>
+                          <p className="text-[11px] text-stone-400 mt-1">{s_.feeOn(fmt.price(abonnement.billing.grossSales))}</p>
                         </div>
                         <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 p-4">
-                          <p className="text-xs text-emerald-700 dark:text-emerald-300 mb-1">Total a payer</p>
-                          <p className="text-lg font-semibold text-emerald-800 dark:text-emerald-200">{abonnement.billing.totalDue.toLocaleString('fr-DZ')} DA</p>
+                          <p className="text-xs text-emerald-700 dark:text-emerald-300 mb-1">{s_.totalDue}</p>
+                          <p className="text-lg font-semibold text-emerald-800 dark:text-emerald-200">{fmt.price(abonnement.billing.totalDue)}</p>
                         </div>
                       </div>
                       <div className="rounded-xl border border-stone-200 dark:border-stone-700 p-4 bg-stone-50 dark:bg-stone-800/50 text-sm space-y-2">
                         <div className="flex justify-between gap-3">
-                          <span className="text-stone-500">Ventes livrees sur la periode</span>
-                          <span className="font-medium text-stone-800 dark:text-stone-100">{abonnement.billing.grossSales.toLocaleString('fr-DZ')} DA</span>
+                          <span className="text-stone-500">{s_.deliveredSalesPeriod}</span>
+                          <span className="font-medium text-stone-800 dark:text-stone-100">{fmt.price(abonnement.billing.grossSales)}</span>
                         </div>
                         <div className="flex justify-between gap-3">
-                          <span className="text-stone-500">Commandes livrees</span>
+                          <span className="text-stone-500">{s_.deliveredOrders}</span>
                           <span className="font-medium text-stone-800 dark:text-stone-100">{abonnement.billing.deliveredOrdersCount}</span>
                         </div>
                         <div className="flex justify-between gap-3">
-                          <span className="text-stone-500">Lignes vendues</span>
+                          <span className="text-stone-500">{s_.soldLines}</span>
                           <span className="font-medium text-stone-800 dark:text-stone-100">{abonnement.billing.soldItemsCount}</span>
                         </div>
                         <div className="flex justify-between gap-3">
-                          <span className="text-stone-500">Periode facturee</span>
-                          <span className="font-medium text-stone-800 dark:text-stone-100 text-right">
+                          <span className="text-stone-500">{s_.billedPeriod}</span>
+                          <span className="font-medium text-stone-800 dark:text-stone-100 text-end">
                             {abonnement.billing.periodStart && abonnement.billing.periodEnd
-                              ? `${new Date(abonnement.billing.periodStart).toLocaleDateString('fr-DZ')} - ${new Date(abonnement.billing.periodEnd).toLocaleDateString('fr-DZ')}`
-                              : 'Non definie'}
+                              ? `${d(abonnement.billing.periodStart)} - ${d(abonnement.billing.periodEnd)}`
+                              : t.billing.undefinedPeriod}
                           </span>
                         </div>
                       </div>
                       <div className="border border-stone-200 dark:border-stone-700 rounded-xl p-4 space-y-3">
-                        <p className="font-semibold text-sm text-stone-800 dark:text-stone-100">Confirmer un paiement / renouveler</p>
+                        <p className="font-semibold text-sm text-stone-800 dark:text-stone-100">{s_.confirmPayment}</p>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="text-xs text-stone-500 mb-1 block">Niveau</label>
+                            <label className="text-xs text-stone-500 mb-1 block">{s_.level}</label>
                             <select value={aboForm.niveau} onChange={e => setAboForm(f => ({...f, niveau: e.target.value}))} className={selectField}>
-                              <option value="NIVEAU_1">Niveau 1 — 5000 DA/mois</option>
-                              <option value="NIVEAU_2">Niveau 2 — 4000 DA/mois</option>
-                              <option value="NIVEAU_3">Niveau 3 — 3000 DA/mois</option>
+                              {(['NIVEAU_1', 'NIVEAU_2', 'NIVEAU_3'] as const).map(k => (
+                                <option key={k} value={k}>{s_.levelPricePerMonth(levelLabel(k), fmt.price(NIVEAU_LABELS[k].price))}</option>
+                              ))}
                             </select>
                           </div>
                           <div>
-                            <label className="text-xs text-stone-500 mb-1 block">Périodicité</label>
+                            <label className="text-xs text-stone-500 mb-1 block">{s_.periodicity}</label>
                             <select value={aboForm.periodicite} onChange={e => setAboForm(f => ({...f, periodicite: e.target.value}))} className={selectField}>
-                              <option value="mensuel">Mensuel</option>
-                              <option value="annuel">Annuel (−17%)</option>
+                              <option value="mensuel">{s_.monthly}</option>
+                              <option value="annuel">{s_.yearly}</option>
                             </select>
                           </div>
                           <div>
-                            <label className="text-xs text-stone-500 mb-1 block">Méthode</label>
+                            <label className="text-xs text-stone-500 mb-1 block">{s_.method}</label>
                             <select value={aboForm.methode} onChange={e => setAboForm(f => ({...f, methode: e.target.value}))} className={selectField}>
-                              <option value="virement">Virement bancaire</option>
-                              <option value="ccp">CCP</option>
-                              <option value="cash">Espèces</option>
+                              <option value="virement">{s_.bankTransfer}</option>
+                              <option value="ccp">{s_.ccp}</option>
+                              <option value="cash">{s_.cash}</option>
                             </select>
                           </div>
                           <div>
-                            <label className="text-xs text-stone-500 mb-1 block">Référence / reçu</label>
-                            <input value={aboForm.reference} onChange={e => setAboForm(f => ({...f, reference: e.target.value}))} placeholder="N° virement…" className={inputField} />
+                            <label className="text-xs text-stone-500 mb-1 block">{s_.reference}</label>
+                            <input value={aboForm.reference} onChange={e => setAboForm(f => ({...f, reference: e.target.value}))} placeholder={s_.referencePlaceholder} className={inputField} />
                           </div>
                         </div>
                         <div>
-                          <label className="text-xs text-stone-500 mb-1 block">Note interne</label>
-                          <input value={aboForm.note} onChange={e => setAboForm(f => ({...f, note: e.target.value}))} placeholder="Remarque…" className={inputField} />
+                          <label className="text-xs text-stone-500 mb-1 block">{s_.internalNoteShort}</label>
+                          <input value={aboForm.note} onChange={e => setAboForm(f => ({...f, note: e.target.value}))} placeholder={s_.notePlaceholder} className={inputField} />
                         </div>
                         {aboMsg && <p className="text-sm text-center font-medium text-teal-600 dark:text-teal-400">{aboMsg}</p>}
                         <button onClick={handleConfirmerPaiement} disabled={savingAbo}
                           className="w-full bg-orange-700 hover:bg-orange-800 disabled:opacity-50 text-white font-medium py-2.5 rounded-xl text-sm transition active:scale-95">
-                          {savingAbo ? 'Enregistrement…' : 'Confirmer le paiement & renouveler'}
+                          {savingAbo ? t.common.saving : s_.confirmAndRenew}
                         </button>
                       </div>
                       {abonnement.paiements.length > 0 && (
                         <div>
-                          <p className="font-semibold text-sm text-stone-800 dark:text-stone-100 mb-2">Historique de facturation</p>
+                          <p className="font-semibold text-sm text-stone-800 dark:text-stone-100 mb-2">{s_.history}</p>
                           <div className="space-y-2">
                             {abonnement.invoices.map((invoice, index) => (
                               <div key={invoice.paymentId} className="bg-stone-50 dark:bg-stone-800 rounded-xl px-3 py-3 text-sm space-y-3">
@@ -520,33 +533,33 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
                                   <div className="space-y-2 min-w-0">
                                     <div>
                                       <p className="font-medium text-stone-900 dark:text-white">{invoice.invoiceNumber}</p>
-                                      <p className="text-stone-400 text-xs mt-0.5">{new Date(invoice.paymentDate).toLocaleDateString('fr-DZ')} · {invoice.methode}</p>
+                                      <p className="text-stone-400 text-xs mt-0.5">{d(invoice.paymentDate)} · {tr(t.billing.methods, invoice.methode)}</p>
                                     </div>
                                     <div className="grid gap-2 sm:grid-cols-2">
                                       <div>
-                                        <p className="text-[11px] text-stone-400 uppercase tracking-wide">Periode</p>
+                                        <p className="text-[11px] text-stone-400 uppercase tracking-wide">{s_.period}</p>
                                         <p className="text-stone-700 dark:text-stone-200">
                                           {invoice.periodStart && invoice.periodEnd
-                                            ? `${new Date(invoice.periodStart).toLocaleDateString('fr-DZ')} - ${new Date(invoice.periodEnd).toLocaleDateString('fr-DZ')}`
-                                            : 'Non definie'}
+                                            ? `${d(invoice.periodStart)} - ${d(invoice.periodEnd)}`
+                                            : t.billing.undefinedPeriod}
                                         </p>
                                       </div>
                                       <div>
-                                        <p className="text-[11px] text-stone-400 uppercase tracking-wide">Total</p>
-                                        <p className="text-stone-700 dark:text-stone-200 font-medium">{invoice.totalDue.toLocaleString('fr-DZ')} DA</p>
+                                        <p className="text-[11px] text-stone-400 uppercase tracking-wide">{s_.total}</p>
+                                        <p className="text-stone-700 dark:text-stone-200 font-medium">{fmt.price(invoice.totalDue)}</p>
                                       </div>
                                       <div>
-                                        <p className="text-[11px] text-stone-400 uppercase tracking-wide">Abonnement</p>
-                                        <p className="text-stone-700 dark:text-stone-200">{invoice.subscriptionAmount.toLocaleString('fr-DZ')} DA</p>
+                                        <p className="text-[11px] text-stone-400 uppercase tracking-wide">{s_.subscription}</p>
+                                        <p className="text-stone-700 dark:text-stone-200">{fmt.price(invoice.subscriptionAmount)}</p>
                                       </div>
                                       <div>
-                                        <p className="text-[11px] text-stone-400 uppercase tracking-wide">Frais ventes</p>
-                                        <p className="text-stone-700 dark:text-stone-200">{invoice.salesFee.toLocaleString('fr-DZ')} DA</p>
+                                        <p className="text-[11px] text-stone-400 uppercase tracking-wide">{s_.salesFees}</p>
+                                        <p className="text-stone-700 dark:text-stone-200">{fmt.price(invoice.salesFee)}</p>
                                       </div>
                                     </div>
                                     {(invoice.reference || invoice.adminNote || abonnement.paiements[index]?.note) && (
                                       <p className="text-stone-400 text-xs mt-0.5">
-                                        {invoice.reference ? `Ref. ${invoice.reference}` : ''}
+                                        {invoice.reference ? t.billing.ref(invoice.reference) : ''}
                                         {invoice.reference && (invoice.adminNote || abonnement.paiements[index]?.note) ? ' · ' : ''}
                                         {invoice.adminNote || abonnement.paiements[index]?.note}
                                       </p>
@@ -556,19 +569,19 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
                                   <SellerInvoiceActions invoice={{
                                     invoiceNumber: invoice.invoiceNumber,
                                     sellerName: selected.nomBoutique || `${selected.user.prenom} ${selected.user.nom}`,
-                                    levelLabel: NIVEAU_LABELS[invoice.level]?.label ?? invoice.level,
-                                    periodiciteLabel: invoice.periodicite ?? 'Offert',
-                                    paymentDateLabel: new Date(invoice.paymentDate).toLocaleDateString('fr-DZ'),
+                                    levelLabel: levelWithPrice(invoice.level),
+                                    periodiciteLabel: invoice.periodicite ? tr(t.billing.periodicity, invoice.periodicite) : t.billing.offered,
+                                    paymentDateLabel: d(invoice.paymentDate),
                                     periodLabel: invoice.periodStart && invoice.periodEnd
-                                      ? `${new Date(invoice.periodStart).toLocaleDateString('fr-DZ')} - ${new Date(invoice.periodEnd).toLocaleDateString('fr-DZ')}`
-                                      : 'Non definie',
-                                    paymentMethodLabel: invoice.methode,
+                                      ? `${d(invoice.periodStart)} - ${d(invoice.periodEnd)}`
+                                      : t.billing.undefinedPeriod,
+                                    paymentMethodLabel: tr(t.billing.methods, invoice.methode),
                                     reference: invoice.reference,
                                     adminNote: invoice.adminNote,
-                                    grossSalesLabel: `${invoice.grossSales.toLocaleString('fr-DZ')} DA`,
-                                    salesFeeLabel: `${invoice.salesFee.toLocaleString('fr-DZ')} DA`,
-                                    subscriptionAmountLabel: `${invoice.subscriptionAmount.toLocaleString('fr-DZ')} DA`,
-                                    totalDueLabel: `${invoice.totalDue.toLocaleString('fr-DZ')} DA`,
+                                    grossSalesLabel: fmt.price(invoice.grossSales),
+                                    salesFeeLabel: fmt.price(invoice.salesFee),
+                                    subscriptionAmountLabel: fmt.price(invoice.subscriptionAmount),
+                                    totalDueLabel: fmt.price(invoice.totalDue),
                                     deliveredOrdersCount: invoice.deliveredOrdersCount,
                                     soldItemsCount: invoice.soldItemsCount,
                                   }} />
@@ -592,20 +605,20 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
         <div className={`${modalOverlay} z-60`}>
           <div className={`${modalBox} max-w-md p-5`}>
             <h3 className="text-base font-bold text-stone-800 dark:text-stone-100 mb-3 flex items-center gap-2">
-              {docAction.action === 'accepter' ? <><CheckCircle2 className="w-4 h-4 text-green-600" />Accepter le document</> : <><XCircle className="w-4 h-4 text-red-600" />Refuser le document</>}
+              {docAction.action === 'accepter' ? <><CheckCircle2 className="w-4 h-4 text-green-600" />{s_.acceptDoc}</> : <><XCircle className="w-4 h-4 text-red-600" />{s_.refuseDoc}</>}
             </h3>
             {docAction.action === 'refuser' && (
               <div className="mb-4">
-                <label className="block text-xs font-medium text-stone-500 mb-1.5">Motif du refus *</label>
-                <textarea value={docAction.note} onChange={e => setDocAction({...docAction, note: e.target.value})} rows={3} placeholder="Expliquez pourquoi le document est refusé…"
+                <label className="block text-xs font-medium text-stone-500 mb-1.5">{s_.refusalReason}</label>
+                <textarea value={docAction.note} onChange={e => setDocAction({...docAction, note: e.target.value})} rows={3} placeholder={s_.refusalPlaceholder}
                   className="w-full border border-stone-200 dark:border-stone-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-stone-800 text-stone-800 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-orange-400 transition resize-none" />
               </div>
             )}
             <div className="flex gap-3">
-              <button onClick={() => setDocAction(null)} className={`flex-1 ${btnSecondary}`}>Annuler</button>
+              <button onClick={() => setDocAction(null)} className={`flex-1 ${btnSecondary}`}>{t.common.cancel}</button>
               <button onClick={handleDocAction} disabled={saving || (docAction.action === 'refuser' && !docAction.note.trim())}
                 className={`flex-1 text-white text-sm py-2.5 rounded-xl font-medium disabled:opacity-50 transition ${docAction.action === 'accepter' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}>
-                {saving ? '…' : 'Confirmer'}
+                {saving ? '…' : t.common.confirm}
               </button>
             </div>
           </div>
@@ -617,39 +630,39 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
         <div className={`${modalOverlay} z-60`}>
           <div className={`${modalBox} max-w-lg max-h-[90vh] overflow-y-auto`}>
             <div className="sticky top-0 bg-[#FAF7F2] dark:bg-stone-900 flex items-center justify-between p-5 border-b border-stone-200 dark:border-stone-800">
-              <h3 className="text-base font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2"><ClipboardList className="w-4 h-4 text-orange-600" />Demander des pièces jointes</h3>
+              <h3 className="text-base font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2"><ClipboardList className="w-4 h-4 text-orange-600" />{s_.requestDocsTitle}</h3>
               <button onClick={() => setShowDocModal(false)} className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 dark:hover:bg-stone-800"><X className="w-4 h-4" /></button>
             </div>
             <div className="p-5 space-y-4">
-              <p className="text-xs text-stone-500">Sélectionnez les documents à demander. Le compte sera bloqué jusqu&apos;à validation.</p>
+              <p className="text-xs text-stone-500">{s_.requestDocsHint}</p>
               <div className="space-y-2">
                 {DOC_TYPES.map(doc => {
                   const checked = newDocs.some(d => d.type === doc.type)
                   return (
                     <button key={doc.type} onClick={() => toggleNewDoc(doc)}
-                      className={`w-full flex items-start gap-3 p-3 rounded-xl border text-left transition ${checked ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/40 dark:border-orange-600' : 'border-stone-200 dark:border-stone-700 hover:border-orange-300 dark:hover:border-orange-700'}`}>
+                      className={`w-full flex items-start gap-3 p-3 rounded-xl border text-start transition ${checked ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/40 dark:border-orange-600' : 'border-stone-200 dark:border-stone-700 hover:border-orange-300 dark:hover:border-orange-700'}`}>
                       <div className={`mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 ${checked ? 'bg-orange-600 border-orange-600' : 'border-stone-400'}`}>
                         {checked && <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-stone-800 dark:text-stone-100">{doc.label}</p>
-                        <p className="text-xs text-stone-400">{doc.description}</p>
+                        <p className="text-sm font-medium text-stone-800 dark:text-stone-100">{docLabel(doc)}</p>
+                        <p className="text-xs text-stone-400">{s_.docTypes[doc.type]?.description ?? doc.description}</p>
                       </div>
                     </button>
                   )
                 })}
               </div>
               <div>
-                <label className="block text-xs font-medium text-stone-500 mb-1.5">Note pour le vendeur (optionnelle)</label>
-                <textarea value={adminNote} onChange={e => setAdminNote(e.target.value)} rows={2} placeholder="Instructions supplémentaires…"
+                <label className="block text-xs font-medium text-stone-500 mb-1.5">{s_.noteForSeller}</label>
+                <textarea value={adminNote} onChange={e => setAdminNote(e.target.value)} rows={2} placeholder={s_.noteForSellerPlaceholder}
                   className="w-full border border-stone-200 dark:border-stone-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-stone-800 text-stone-800 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-orange-400 transition resize-none" />
               </div>
             </div>
             <div className="flex gap-3 p-5 border-t border-stone-200 dark:border-stone-800">
-              <button onClick={() => setShowDocModal(false)} className={`flex-1 ${btnSecondary}`}>Annuler</button>
+              <button onClick={() => setShowDocModal(false)} className={`flex-1 ${btnSecondary}`}>{t.common.cancel}</button>
               <button onClick={() => doAction(selected.id, 'demander_pieces', { documents: newDocs })} disabled={saving || newDocs.length === 0}
                 className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white text-sm py-2.5 rounded-xl font-medium active:scale-95">
-                {saving ? 'Envoi…' : `Demander (${newDocs.length})`}
+                {saving ? t.common.sending : s_.requestCount(newDocs.length)}
               </button>
             </div>
           </div>

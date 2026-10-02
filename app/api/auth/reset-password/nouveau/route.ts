@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { sanitize } from '@/lib/security'
+import { getI18n } from '@/lib/i18n/server'
 
 const pwdRules = [
   (p: string) => p.length >= 8,
@@ -12,19 +13,20 @@ const pwdRules = [
 ]
 
 export async function POST(req: NextRequest) {
+  const { t } = await getI18n()
   try {
     const body = await req.json()
     const identifiant      = sanitize(body.identifiant ?? '').toLowerCase()
     const nouveauMotDePasse = body.nouveauMotDePasse as string ?? ''
 
     if (!identifiant || !nouveauMotDePasse) {
-      return NextResponse.json({ error: 'Données manquantes' }, { status: 400 })
+      return NextResponse.json({ error: t.auth.api.missingData }, { status: 400 })
     }
 
     // Validation mot de passe (8+ chars, maj, min, chiffre, spécial)
     if (!pwdRules.every(r => r(nouveauMotDePasse))) {
       return NextResponse.json(
-        { error: 'Le mot de passe ne respecte pas toutes les conditions de sécurité' },
+        { error: t.auth.api.passwordNotSecure },
         { status: 400 }
       )
     }
@@ -39,7 +41,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (!user) {
-      return NextResponse.json({ error: 'Compte introuvable' }, { status: 400 })
+      return NextResponse.json({ error: t.auth.api.accountNotFound }, { status: 400 })
     }
 
     // ── Vérifier que /verifier a bien validé le code (verified=true) ─────────
@@ -56,7 +58,7 @@ export async function POST(req: NextRequest) {
 
     if (!resetToken) {
       return NextResponse.json(
-        { error: 'Session expirée ou code non vérifié. Recommencez la procédure.' },
+        { error: t.auth.api.resetSessionExpired },
         { status: 400 }
       )
     }
@@ -74,9 +76,9 @@ export async function POST(req: NextRequest) {
       data:  { motDePasse: hashedPassword },
     })
 
-    return NextResponse.json({ message: 'Mot de passe mis à jour avec succès' })
+    return NextResponse.json({ message: t.auth.api.passwordUpdated })
   } catch (error) {
     console.error('Erreur reset nouveau:', error)
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }

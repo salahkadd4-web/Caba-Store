@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getI18n } from '@/lib/i18n/server'
 
 export async function GET(req: NextRequest) {
+  const { t } = await getI18n()
   // Sécurité : seul Vercel Cron peut appeler cette route.
   // Si CRON_SECRET n'est pas défini, on REFUSE — sinon `Bearer undefined`
   // matcherait `Bearer undefined` (CWE-1188).
   const cronSecret = process.env.CRON_SECRET
   const authHeader = req.headers.get('authorization')
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
   }
 
   const now = new Date()

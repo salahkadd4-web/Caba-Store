@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendNotifAbonnement } from '@/lib/mail'
+import { getI18n } from '@/lib/i18n/server'
 
 /**
  * GET /api/cron/notif-abonnements
@@ -16,11 +17,12 @@ import { sendNotifAbonnement } from '@/lib/mail'
 const SEUILS = [25, 50, 75, 90] as const
 
 export async function GET(req: NextRequest) {
+  const { t } = await getI18n()
   // Sécurité Vercel Cron — refus si CRON_SECRET non défini (CWE-1188).
   const cronSecret = process.env.CRON_SECRET
   const authHeader = req.headers.get('authorization')
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
   }
 
   const now = new Date()

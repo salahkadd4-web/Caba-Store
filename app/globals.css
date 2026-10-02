@@ -26,6 +26,11 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ─── Arabe : police dédiée (les variables de police sont posées sur <body>) ─── */
+html[lang="ar"] body {
+  font-family: var(--font-arabic), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
 /* ─── Fix scroll horizontal mobile ─── */
 html, body {
   overflow-x: hidden;
@@ -97,7 +102,7 @@ html, body {
   content: '';
   position: absolute;
   bottom: -2px;
-  left: 0;
+  inset-inline-start: 0;
   width: 0;
   height: 1px;
   background: currentColor;
@@ -109,12 +114,12 @@ html, body {
 /* Bordure gauche + fond qui glisse */
 .menu-link {
   position: relative;
-  border-left: 2px solid transparent;
-  transition: border-color 0.2s ease, background 0.2s ease, padding-left 0.2s ease, color 0.2s ease;
+  border-inline-start: 2px solid transparent;
+  transition: border-color 0.2s ease, background 0.2s ease, padding-inline-start 0.2s ease, color 0.2s ease;
 }
 .menu-link:hover {
-  border-left-color: currentColor;
-  padding-left: 20px;
+  border-inline-start-color: currentColor;
+  padding-inline-start: 20px;
 }
 
 /* Liens "Voir tout →" */
@@ -247,4 +252,37 @@ button[disabled] {
   animation: trust-marquee 12s linear infinite;
   will-change: transform;
   pointer-events: none;
+}
+@keyframes trust-marquee-rtl {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(50%); }
+}
+[dir="rtl"] .trust-marquee-track {
+  animation-name: trust-marquee-rtl;
+}
+
+/* ════════════════════════════════════════
+   RTL (arabe)
+   ════════════════════════════════════════ */
+
+/* L'espacement des lettres casse la liaison des caractères arabes :
+   on le neutralise partout (classes tracking-*, effets hover inclus). */
+[dir="rtl"] *,
+[dir="rtl"] *:hover {
+  letter-spacing: 0 !important;
+}
+
+/* Les champs techniques restent saisis de gauche à droite. */
+[dir="rtl"] input[type="email"],
+[dir="rtl"] input[type="tel"],
+[dir="rtl"] input[type="url"],
+[dir="rtl"] input[type="password"] {
+  direction: ltr;
+  text-align: right;
+}
+
+/* Icônes directionnelles (flèches, chevrons) : ajouter .rtl-flip pour les
+   retourner horizontalement en RTL. */
+[dir="rtl"] .rtl-flip {
+  transform: scaleX(-1);
 }

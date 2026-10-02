@@ -6,6 +6,8 @@ import { AlertTriangle, CheckCircle2, Clock, CreditCard, RefreshCw, XCircle } fr
 import {
   heading, kpiCard, tableWrapper, tableHead, tableTh, tableTd, tableRow, loadingPage,
 } from '@/lib/dashboard-ui'
+import { useI18n } from '@/components/I18nProvider'
+import { tr } from '@/lib/i18n'
 
 interface AbonnementRow {
   id: string; vendeurId: string; niveau: string; statut: string
@@ -13,19 +15,22 @@ interface AbonnementRow {
   vendeur: { nomBoutique: string | null; user: { nom: string; prenom: string; email: string | null } }
 }
 
-const NIVEAU_LABELS: Record<string, { label: string; color: string }> = {
-  NIVEAU_1: { label: 'Niveau 1', color: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300' },
-  NIVEAU_2: { label: 'Niveau 2', color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'         },
-  NIVEAU_3: { label: 'Niveau 3', color: 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300'     },
+// Libellés : t.billing.levels / t.billing.statusShort
+const NIVEAU_LABELS: Record<string, { color: string }> = {
+  NIVEAU_1: { color: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300' },
+  NIVEAU_2: { color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'         },
+  NIVEAU_3: { color: 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300'     },
 }
-const STATUT_LABELS: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  GRATUIT:  { label: 'Gratuit',  color: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',     icon: CheckCircle2 },
-  ACTIF:    { label: 'Actif',    color: 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300',         icon: CheckCircle2 },
-  EXPIRE:   { label: 'Expiré',   color: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',             icon: XCircle      },
-  SUSPENDU: { label: 'Suspendu', color: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300', icon: AlertTriangle },
+const STATUT_LABELS: Record<string, { color: string; icon: React.ElementType }> = {
+  GRATUIT:  { color: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',     icon: CheckCircle2 },
+  ACTIF:    { color: 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300',         icon: CheckCircle2 },
+  EXPIRE:   { color: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',             icon: XCircle      },
+  SUSPENDU: { color: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300', icon: AlertTriangle },
 }
 
 export default function AbonnementsClient({ initialData }: { initialData: AbonnementRow[] }) {
+  const { t, fmt } = useI18n()
+  const s_ = t.admin.subs
   const [rows,         setRows]   = useState<AbonnementRow[]>(initialData)
   const [loading,      setLoading] = useState(false)
   const [filterStatut, setFilter]  = useState('')
@@ -52,20 +57,20 @@ export default function AbonnementsClient({ initialData }: { initialData: Abonne
   const gratuits        = rows.filter(r => r.statut === 'GRATUIT')
 
   const kpis = [
-    { label: 'Actifs',        value: actifs.length,          color: 'text-teal-600 dark:text-teal-400',    bg: 'bg-teal-50 dark:bg-teal-950/40',     Icon: CheckCircle2  },
-    { label: 'Gratuits',      value: gratuits.length,        color: 'text-green-600 dark:text-green-400',  bg: 'bg-green-50 dark:bg-green-950/40',   Icon: Clock         },
-    { label: 'Expirés',       value: expires.length,         color: 'text-red-600 dark:text-red-400',      bg: 'bg-red-50 dark:bg-red-950/40',       Icon: XCircle       },
-    { label: 'Expirent ≤ 7j', value: expirentBientot.length, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-950/40', Icon: AlertTriangle },
+    { label: s_.active,       value: actifs.length,          color: 'text-teal-600 dark:text-teal-400',    bg: 'bg-teal-50 dark:bg-teal-950/40',     Icon: CheckCircle2  },
+    { label: s_.free,         value: gratuits.length,        color: 'text-green-600 dark:text-green-400',  bg: 'bg-green-50 dark:bg-green-950/40',   Icon: Clock         },
+    { label: s_.expired,      value: expires.length,         color: 'text-red-600 dark:text-red-400',      bg: 'bg-red-50 dark:bg-red-950/40',       Icon: XCircle       },
+    { label: s_.expiringSoon, value: expirentBientot.length, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-950/40', Icon: AlertTriangle },
   ]
 
   return (
     <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className={heading}>Abonnements</h1>
+        <h1 className={heading}>{s_.title}</h1>
         <button onClick={() => setRefresh(k => k + 1)}
           className="flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 transition px-3 py-2 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800">
-          <RefreshCw className="w-3.5 h-3.5" /> Actualiser
+          <RefreshCw className="w-3.5 h-3.5" /> {s_.refresh}
         </button>
       </div>
 
@@ -86,15 +91,15 @@ export default function AbonnementsClient({ initialData }: { initialData: Abonne
       {expirentBientot.length > 0 && (
         <div className="bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 rounded-2xl p-4">
           <p className="font-semibold text-orange-700 dark:text-orange-300 flex items-center gap-2 mb-2 text-sm">
-            <AlertTriangle className="w-4 h-4" /> {expirentBientot.length} abonnement{expirentBientot.length > 1 ? 's' : ''} expirent dans moins de 7 jours
+            <AlertTriangle className="w-4 h-4" /> {s_.expiringAlert(expirentBientot.length)}
           </p>
           <ul className="text-sm text-orange-600 dark:text-orange-400 space-y-1">
             {expirentBientot.map(r => (
               <li key={r.id} className="flex items-center gap-2">
                 <span className="w-1 h-1 rounded-full bg-orange-400" />
                 <strong>{r.vendeur.nomBoutique ?? `${r.vendeur.user.prenom} ${r.vendeur.user.nom}`}</strong>
-                {' '}— expire dans <strong>{r.joursRestants}j</strong>
-                <span className="text-orange-400">({new Date(r.dateFin).toLocaleDateString('fr-DZ')})</span>
+                {' '}{s_.expiresIn} <strong>{s_.daysShort(r.joursRestants)}</strong>
+                <span className="text-orange-400">({new Date(r.dateFin).toLocaleDateString(fmt.intl)})</span>
               </li>
             ))}
           </ul>
@@ -110,7 +115,7 @@ export default function AbonnementsClient({ initialData }: { initialData: Abonne
                 ? 'bg-stone-900 text-white border-stone-900 dark:bg-stone-100 dark:text-stone-900 dark:border-stone-100'
                 : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-stone-400'
             }`}>
-            {s === '' ? 'Tous' : STATUT_LABELS[s]?.label ?? s}
+            {s === '' ? s_.all : tr(t.billing.statusShort, s)}
           </button>
         ))}
       </div>
@@ -118,19 +123,19 @@ export default function AbonnementsClient({ initialData }: { initialData: Abonne
       {/* Tableau */}
       <div className={tableWrapper}>
         {loading ? (
-          <div className={loadingPage}>Chargement…</div>
+          <div className={loadingPage}>{t.common.loading}</div>
         ) : rows.length === 0 ? (
-          <div className="p-10 text-center text-stone-400">Aucun abonnement trouvé</div>
+          <div className="p-10 text-center text-stone-400">{s_.none}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-160">
               <thead className={tableHead}>
                 <tr>
-                  <th className={tableTh}>Boutique / Vendeur</th>
-                  <th className={tableTh}>Statut</th>
-                  <th className={tableTh}>Niveau</th>
-                  <th className={tableTh}>Expiration</th>
-                  <th className={tableTh}>Jours restants</th>
+                  <th className={tableTh}>{s_.colShop}</th>
+                  <th className={tableTh}>{s_.colStatus}</th>
+                  <th className={tableTh}>{s_.colLevel}</th>
+                  <th className={tableTh}>{s_.colExpiration}</th>
+                  <th className={tableTh}>{s_.colDaysLeft}</th>
                   <th className={tableTh}></th>
                 </tr>
               </thead>
@@ -147,26 +152,26 @@ export default function AbonnementsClient({ initialData }: { initialData: Abonne
                       </td>
                       <td className={tableTd}>
                         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${statut?.color}`}>
-                          <Icon className="w-3 h-3" /> {statut?.label}
+                          <Icon className="w-3 h-3" /> {tr(t.billing.statusShort, r.statut)}
                         </span>
                       </td>
                       <td className={tableTd}>
                         {NIVEAU_LABELS[r.niveau]
-                          ? <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${NIVEAU_LABELS[r.niveau].color}`}>{NIVEAU_LABELS[r.niveau].label}</span>
+                          ? <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${NIVEAU_LABELS[r.niveau].color}`}>{t.billing.levels[r.niveau]?.label ?? r.niveau}</span>
                           : '—'}
                       </td>
                       <td className={`${tableTd} text-stone-600 dark:text-stone-300 whitespace-nowrap`}>
-                        {new Date(r.dateFin).toLocaleDateString('fr-DZ')}
+                        {new Date(r.dateFin).toLocaleDateString(fmt.intl)}
                       </td>
                       <td className={tableTd}>
                         <span className={`font-semibold ${urgent ? 'text-orange-500' : r.statut === 'EXPIRE' ? 'text-red-500' : 'text-stone-700 dark:text-stone-200'}`}>
-                          {r.statut === 'EXPIRE' ? 'Expiré' : `${r.joursRestants}j`}
+                          {r.statut === 'EXPIRE' ? s_.expiredShort : s_.daysShort(r.joursRestants)}
                         </span>
                       </td>
-                      <td className={`${tableTd} text-right`}>
+                      <td className={`${tableTd} text-end`}>
                         <Link href={`/admin/vendeurs?id=${r.vendeurId}&tab=abonnement`}
                           className="inline-flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400 hover:underline whitespace-nowrap">
-                          <CreditCard className="w-3 h-3" /> Gérer
+                          <CreditCard className="w-3 h-3" /> {s_.manage}
                         </Link>
                       </td>
                     </tr>

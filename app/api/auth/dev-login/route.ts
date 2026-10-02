@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { signIn } from '@/auth'
+import { getI18n } from '@/lib/i18n/server'
 
 const DEV_EMAILS = {
   admin:   'cabastoredz31@gmail.com',
@@ -17,6 +18,7 @@ const DEV_EMAILS = {
 type DevRole = keyof typeof DEV_EMAILS
 
 export async function POST(req: NextRequest) {
+  const { t } = await getI18n()
   if (process.env.NODE_ENV === 'production') {
     return new NextResponse(null, { status: 404 })
   }
@@ -24,13 +26,13 @@ export async function POST(req: NextRequest) {
   try {
     const { role } = await req.json()
     if (role !== 'admin' && role !== 'vendeur' && role !== 'client') {
-      return NextResponse.json({ ok: false, error: 'Rôle invalide.' }, { status: 400 })
+      return NextResponse.json({ ok: false, error: t.auth.api.invalidRole }, { status: 400 })
     }
 
     const email = DEV_EMAILS[role as DevRole]
     const user = await prisma.user.findFirst({ where: { email } })
     if (!user) {
-      return NextResponse.json({ ok: false, error: `Compte DEV ${role} introuvable.` }, { status: 404 })
+      return NextResponse.json({ ok: false, error: t.auth.api.devAccountNotFound(role) }, { status: 404 })
     }
 
     // Connexion server-side : NextAuth pose le cookie de session sur la réponse.
@@ -42,6 +44,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, role: user.role })
   } catch (err) {
     console.error('[dev-login] Erreur:', err)
-    return NextResponse.json({ ok: false, error: 'Erreur serveur.' }, { status: 500 })
+    return NextResponse.json({ ok: false, error: t.api.serverError }, { status: 500 })
   }
 }

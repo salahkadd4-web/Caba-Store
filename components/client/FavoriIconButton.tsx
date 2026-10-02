@@ -4,11 +4,13 @@ import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEtatProduit } from '@/components/client/EtatProduitsProvider'
+import { useI18n } from '@/components/I18nProvider'
 
 export default function FavoriIconButton({ produitId }: { produitId: string }) {
   const { data: session } = useSession()
   const router = useRouter()
   const { etat, setEtat } = useEtatProduit(produitId)
+  const { t } = useI18n()
   const [loading, setLoading] = useState(false)
 
   const isFavori = !!etat?.isFavori
@@ -40,7 +42,8 @@ export default function FavoriIconButton({ produitId }: { produitId: string }) {
     <button
       onClick={handleToggle}
       disabled={loading}
-      title={isFavori ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+      title={isFavori ? t.catalog.favorites.remove : t.catalog.favorites.add}
+      aria-label={isFavori ? t.catalog.favorites.remove : t.catalog.favorites.add}
       className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 shadow-md disabled:opacity-50 ${
         isFavori
           ? 'bg-red-500 hover:bg-red-600 text-white'

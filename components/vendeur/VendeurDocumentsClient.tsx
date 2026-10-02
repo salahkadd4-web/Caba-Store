@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { CheckCircle2, ClipboardList, Loader2, Paperclip, Upload, XCircle } from 'lucide-react'
+import { useI18n } from '@/components/I18nProvider'
 
 interface Doc {
   id: string
@@ -20,6 +21,8 @@ interface VendeurProfile {
 }
 
 export default function VendeurDocumentsClient({ vendeur }: { vendeur: VendeurProfile }) {
+  const { t } = useI18n()
+  const d = t.seller.documents
   const [docs, setDocs]           = useState<Doc[]>(vendeur.documents)
   const [uploading, setUploading] = useState<string | null>(null)
   const [success, setSuccess]     = useState<string | null>(null)
@@ -42,7 +45,7 @@ export default function VendeurDocumentsClient({ vendeur }: { vendeur: VendeurPr
 
       if (!uploadRes.ok) {
         const data = await uploadRes.json().catch(() => ({}))
-        throw new Error(data.error || 'Échec de l\'envoi du fichier')
+        throw new Error(data.error || d.uploadFailed)
       }
 
       const { filename } = await uploadRes.json()
@@ -56,7 +59,7 @@ export default function VendeurDocumentsClient({ vendeur }: { vendeur: VendeurPr
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        throw new Error(data.error || 'Erreur lors de la soumission')
+        throw new Error(data.error || d.submitError)
       }
 
       setDocs((prev) =>
@@ -66,9 +69,9 @@ export default function VendeurDocumentsClient({ vendeur }: { vendeur: VendeurPr
             : d
         )
       )
-      setSuccess('Document soumis avec succès. En attente de validation.')
+      setSuccess(d.submitted)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue')
+      setError(err instanceof Error ? err.message : t.common.genericError)
     } finally {
       setUploading(null)
     }
@@ -82,9 +85,9 @@ export default function VendeurDocumentsClient({ vendeur }: { vendeur: VendeurPr
   }
 
   const statutLabel = (s: string) => {
-    if (s === 'ACCEPTE')    return <><CheckCircle2 className="w-5 h-5" />{' '}Accepté</>
-    if (s === 'REFUSE')     return <><XCircle className="w-5 h-5" />{' '}Refusé</>
-    if (s === 'EN_ATTENTE') return <><Loader2 className="w-4 h-4 animate-spin" />{' '}En attente</>
+    if (s === 'ACCEPTE')    return <><CheckCircle2 className="w-5 h-5" />{' '}{d.accepted}</>
+    if (s === 'REFUSE')     return <><XCircle className="w-5 h-5" />{' '}{d.refused}</>
+    if (s === 'EN_ATTENTE') return <><Loader2 className="w-4 h-4 animate-spin" />{' '}{d.pending}</>
     return s
   }
 
@@ -94,14 +97,14 @@ export default function VendeurDocumentsClient({ vendeur }: { vendeur: VendeurPr
         <div className="text-center mb-6">
           <ClipboardList className="w-14 h-14" />
           <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-            Pièces justificatives requises
+            {d.title}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            L'admin vous demande de fournir les documents suivants pour activer votre compte.
+            {d.subtitle}
           </p>
           {vendeur.adminNote && (
-            <div className="mt-3 text-xs bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300 rounded-xl p-3 text-left">
-              <span className="font-semibold">Note de l'équipe :</span> {vendeur.adminNote}
+            <div className="mt-3 text-xs bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300 rounded-xl p-3 text-start">
+              <span className="font-semibold">{d.teamNote}</span> {vendeur.adminNote}
             </div>
           )}
         </div>
@@ -126,29 +129,29 @@ export default function VendeurDocumentsClient({ vendeur }: { vendeur: VendeurPr
               <div className="flex items-start justify-between mb-2">
                 <div>
                   <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                    {doc.label}
+                    {t.admin.sellers.docTypes[doc.type]?.label ?? doc.label}
                   </p>
                   {doc.description && (
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      {doc.description}
+                      {t.admin.sellers.docTypes[doc.type]?.description ?? doc.description}
                     </p>
                   )}
                 </div>
-                <span className={`text-xs px-2 py-1 rounded-full font-medium shrink-0 ml-2 ${statutColor(doc.statut)}`}>
+                <span className={`text-xs px-2 py-1 rounded-full font-medium shrink-0 ms-2 ${statutColor(doc.statut)}`}>
                   {statutLabel(doc.statut)}
                 </span>
               </div>
 
               {doc.adminNote && doc.statut === 'REFUSE' && (
                 <div className="mb-3 text-xs bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 rounded-lg p-2">
-                  <span className="font-semibold">Motif du refus :</span> {doc.adminNote}
+                  <span className="font-semibold">{d.refusalReason}</span> {doc.adminNote}
                 </div>
               )}
 
               {/* Indicateur fichier soumis (pas de lien public — l'admin voit dans son dashboard) */}
               {doc.fichier && (
                 <div className="mb-2">
-                  <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1"><Paperclip className="w-4 h-4 inline mr-1" />{' '}Fichier soumis — en cours de révision par l'équipe
+                  <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1"><Paperclip className="w-4 h-4 inline me-1" />{' '}{d.fileSubmitted}
                   </span>
                 </div>
               )}
@@ -179,10 +182,10 @@ export default function VendeurDocumentsClient({ vendeur }: { vendeur: VendeurPr
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                         </svg>
-                        Envoi en cours...
+                        {d.sending}
                       </>
                     ) : (
-                      <><Upload className="w-4 h-4 inline mr-1" />{' '}{doc.fichier ? 'Remplacer le fichier' : 'Choisir un fichier'}</>
+                      <><Upload className="w-4 h-4 inline me-1" />{' '}{doc.fichier ? d.replaceFile : d.chooseFile}</>
                     )}
                   </span>
                 </label>
@@ -192,12 +195,12 @@ export default function VendeurDocumentsClient({ vendeur }: { vendeur: VendeurPr
         </div>
 
         <p className="text-center text-xs text-gray-400 dark:text-gray-600 mt-6">
-          Votre compte sera activé automatiquement dès que tous les documents seront acceptés.
+          {d.autoActivation}
         </p>
 
         <div className="mt-4 text-center">
           <a href="/" className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
-            ← Retour à la boutique
+            {t.seller.status.backToShopArrow}
           </a>
         </div>
       </div>

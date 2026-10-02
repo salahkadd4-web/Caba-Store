@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
+import { getI18n } from '@/lib/i18n/server'
 
 async function checkAdmin() {
   const token = await getAuthToken()
@@ -12,9 +13,10 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { t } = await getI18n()
   try {
     const token = await checkAdmin()
-    if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    if (!token) return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
 
     const { id } = await params
 
@@ -34,12 +36,12 @@ export async function GET(
       },
     })
 
-    if (!client) return NextResponse.json({ error: 'Client introuvable' }, { status: 404 })
+    if (!client) return NextResponse.json({ error: t.msg.clientNotFound }, { status: 404 })
 
     // Les retours sont gérés par Flowmerce — aucun champ local lié aux retours
     return NextResponse.json(client)
   } catch {
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }
 
@@ -48,9 +50,10 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { t } = await getI18n()
   try {
     const token = await checkAdmin()
-    if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    if (!token) return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
 
     const { id } = await params
 
@@ -62,8 +65,8 @@ export async function DELETE(
     await prisma.order.deleteMany({ where: { userId: id } })
     await prisma.user.delete({ where: { id } })
 
-    return NextResponse.json({ message: 'Client supprimé' })
+    return NextResponse.json({ message: t.msg.clientDeleted })
   } catch {
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }

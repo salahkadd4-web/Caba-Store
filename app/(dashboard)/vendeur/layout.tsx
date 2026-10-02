@@ -20,16 +20,14 @@ import {
   Clock, ShieldOff, ArrowLeft, Mail,
 } from 'lucide-react'
 import VendeurDocumentsClient from '@/components/vendeur/VendeurDocumentsClient'
+import { getI18n } from '@/lib/i18n/server'
 
 // ─── Configuration par statut (EN_ATTENTE + SUSPENDU uniquement) ──────────────
+// Textes : t.seller.status[statut]
 
 const STATUT_CONFIG = {
   EN_ATTENTE: {
     Icon:        Clock,
-    badge:       'En attente de validation',
-    title:       'Compte en cours d\'examen',
-    description: 'Votre dossier vendeur a bien été reçu et est en cours d\'examen par notre équipe. Vous serez notifié dès qu\'une décision sera prise.',
-    tip:         '⏱ Ce processus prend généralement 1 à 3 jours ouvrés.',
     iconBg:      'bg-amber-100 dark:bg-amber-900/50',
     iconColor:   'text-amber-600 dark:text-amber-400',
     cardBg:      'bg-amber-50 dark:bg-amber-950/20',
@@ -38,10 +36,6 @@ const STATUT_CONFIG = {
   },
   SUSPENDU: {
     Icon:        ShieldOff,
-    badge:       'Compte suspendu',
-    title:       'Votre accès vendeur est suspendu',
-    description: 'Votre compte vendeur a été suspendu par l\'administration. Cette décision peut être temporaire. Contactez le support pour plus d\'informations.',
-    tip:         '📋 Munissez-vous de votre numéro de compte lors de votre prise de contact.',
     iconBg:      'bg-red-100 dark:bg-red-900/50',
     iconColor:   'text-red-600 dark:text-red-400',
     cardBg:      'bg-red-50 dark:bg-red-950/20',
@@ -59,7 +53,7 @@ export default async function VendeurLayout({
 }: {
   children: React.ReactNode
 }) {
-  const session = await auth()
+  const [session, { t }] = await Promise.all([auth(), getI18n()])
 
   // Double vérification (le middleware gère déjà cela, mais on sécurise côté serveur)
   if (!session?.user || session.user.role !== 'VENDEUR') {
@@ -106,8 +100,10 @@ export default async function VendeurLayout({
   }
 
   // ── Accès bloqué : affichage du message adapté (EN_ATTENTE / SUSPENDU) ────
-  const statut = (vendeur?.statut ?? 'EN_ATTENTE') as SimpleStatut
-  const cfg    = STATUT_CONFIG[statut] ?? STATUT_CONFIG.EN_ATTENTE
+  const statut: SimpleStatut = vendeur?.statut && vendeur.statut in STATUT_CONFIG ? vendeur.statut as SimpleStatut : 'EN_ATTENTE'
+  const cfg    = STATUT_CONFIG[statut]
+  const txt    = t.seller.status[statut]
+  const s      = t.seller.status
   const { Icon } = cfg
 
   return (
@@ -136,17 +132,17 @@ export default async function VendeurLayout({
             ${cfg.badgeCls}
           `}
         >
-          {cfg.badge}
+          {txt.badge}
         </span>
 
         {/* ── Titre ── */}
         <h1 className="text-xl font-bold text-stone-800 dark:text-stone-100 mb-3">
-          {cfg.title}
+          {txt.title}
         </h1>
 
         {/* ── Description ── */}
         <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed mb-4">
-          {cfg.description}
+          {txt.description}
         </p>
 
         {/* ── Note de l'admin (si présente) ── */}
@@ -154,10 +150,10 @@ export default async function VendeurLayout({
           <div className="
             bg-white/70 dark:bg-stone-900/50
             border border-stone-200 dark:border-stone-700
-            rounded-xl p-4 mb-4 text-left
+            rounded-xl p-4 mb-4 text-start
           ">
             <p className="text-xs font-semibold text-stone-400 dark:text-stone-500 mb-1 uppercase tracking-wider">
-              Message de l&apos;administration
+              {s.adminMessage}
             </p>
             <p className="text-sm text-stone-700 dark:text-stone-300 leading-relaxed">
               {vendeur.adminNote}
@@ -168,13 +164,13 @@ export default async function VendeurLayout({
         {/* ── Boutique ── */}
         {vendeur?.nomBoutique && (
           <p className="text-xs text-stone-400 dark:text-stone-500 mb-3">
-            Boutique : <span className="font-semibold">{vendeur.nomBoutique}</span>
+            {s.shop} <span className="font-semibold">{vendeur.nomBoutique}</span>
           </p>
         )}
 
         {/* ── Conseil ── */}
         <p className="text-xs text-stone-400 dark:text-stone-500 mb-7 leading-relaxed">
-          {cfg.tip}
+          {txt.tip}
         </p>
 
         {/* ── Actions ── */}
@@ -190,8 +186,8 @@ export default async function VendeurLayout({
               transition-all active:scale-95
             "
           >
-            <ArrowLeft className="w-4 h-4" />
-            Retour à la boutique
+            <ArrowLeft className="w-4 h-4 rtl-flip" />
+            {s.backToShop}
           </Link>
           <a
             href="mailto:cabastoredz31@gmail.com"
@@ -202,7 +198,7 @@ export default async function VendeurLayout({
             "
           >
             <Mail className="w-4 h-4" />
-            Contacter le support
+            {s.contactSupport}
           </a>
         </div>
       </div>

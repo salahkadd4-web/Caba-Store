@@ -9,8 +9,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
 import { rateLimit, sanitize, isValidEmail } from '@/lib/security'
+import { getI18n } from '@/lib/i18n/server'
 
 export async function POST(req: NextRequest) {
+  const { t } = await getI18n()
   // Rate limiting : 20 vérifications / min par IP
   // (debounce côté client à 600ms, donc ~1 appel / frappe rapide)
   const limited = await rateLimit(req, { maxRequests: 20, windowMs: 60 * 1000 })
@@ -20,7 +22,7 @@ export async function POST(req: NextRequest) {
     // Authentification requise — protège contre l'énumération anonyme
     const token = await getAuthToken()
     if (!token) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+      return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
     }
 
     const body  = await req.json()

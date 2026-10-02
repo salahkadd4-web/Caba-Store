@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useScrollLock } from '@/lib/hooks/useScrollLock'
 import { Store, Phone, Mail, MapPin, ChevronRight } from 'lucide-react'
+import { useI18n } from '@/components/I18nProvider'
+import { wilayaName } from '@/lib/algeria'
 
 type VendeurInfo = {
   id: string
@@ -18,6 +20,8 @@ type VendeurInfo = {
 }
 
 export default function VendeurButton({ produitId }: { produitId: string }) {
+  const { t, locale } = useI18n()
+  const s = t.product.seller
   const [vendeur, setVendeur] = useState<VendeurInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [open, setOpen]       = useState(false)
@@ -95,7 +99,7 @@ export default function VendeurButton({ produitId }: { produitId: string }) {
   }
 
   const nomBoutique = vendeur?.nomBoutique
-    ?? (`${vendeur?.user.prenom ?? ''} ${vendeur?.user.nom ?? ''}`.trim() || 'Boutique')
+    ?? (`${vendeur?.user.prenom ?? ''} ${vendeur?.user.nom ?? ''}`.trim() || s.shopFallback)
 
   if (loading) return (
     <div className="w-full h-14 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/50 animate-pulse" />
@@ -107,20 +111,20 @@ export default function VendeurButton({ produitId }: { produitId: string }) {
       {/* ── Bouton déclencheur ── */}
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2.5 w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 hover:border-orange-300 dark:hover:border-orange-700 bg-white dark:bg-stone-900 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-all group text-left"
+        className="flex items-center gap-2.5 w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 hover:border-orange-300 dark:hover:border-orange-700 bg-white dark:bg-stone-900 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-all group text-start"
       >
         <div className="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-950 flex items-center justify-center shrink-0">
           <Store className="w-4 h-4 text-orange-700 dark:text-orange-400" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">
-            {vendeur.isAdmin ? 'Boutique officielle' : 'Vendu par'}
+            {vendeur.isAdmin ? s.official : s.soldBy}
           </p>
           <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 truncate leading-tight">
             {nomBoutique}
           </p>
         </div>
-        <ChevronRight className="w-4 h-4 text-stone-400 group-hover:text-orange-700 dark:group-hover:text-orange-400 transition-colors shrink-0" />
+        <ChevronRight className="w-4 h-4 text-stone-400 group-hover:text-orange-700 dark:group-hover:text-orange-400 transition-colors shrink-0 rtl-flip" />
       </button>
 
       {/* ── Bottom Sheet ── */}
@@ -159,7 +163,7 @@ export default function VendeurButton({ produitId }: { produitId: string }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-orange-700 dark:text-orange-400">
-                    {vendeur.isAdmin ? 'Boutique officielle' : 'Vendeur'}
+                    {vendeur.isAdmin ? s.official : s.seller}
                   </p>
                   <p className="text-lg font-semibold text-stone-900 dark:text-stone-100 leading-tight truncate">
                     {nomBoutique}
@@ -181,7 +185,7 @@ export default function VendeurButton({ produitId }: { produitId: string }) {
                       </span>
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-0.5">Contact</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-0.5">{s.contact}</p>
                       <p className="text-sm font-medium text-stone-800 dark:text-stone-200">
                         {vendeur.user.prenom} {vendeur.user.nom}
                       </p>
@@ -196,8 +200,8 @@ export default function VendeurButton({ produitId }: { produitId: string }) {
                       <MapPin className="w-5 h-5 text-stone-500 dark:text-stone-400" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-0.5">Wilaya</p>
-                      <p className="text-sm font-medium text-stone-800 dark:text-stone-200">{vendeur.user.wilaya}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-0.5">{s.wilaya}</p>
+                      <p className="text-sm font-medium text-stone-800 dark:text-stone-200">{wilayaName(vendeur.user.wilaya, locale)}</p>
                     </div>
                   </div>
                 )}
@@ -212,8 +216,8 @@ export default function VendeurButton({ produitId }: { produitId: string }) {
                       <Phone className="w-5 h-5 text-stone-500 dark:text-stone-400 group-hover:text-orange-700 dark:group-hover:text-orange-400 transition-colors" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-0.5">Téléphone</p>
-                      <p className="text-sm font-medium text-stone-800 dark:text-stone-200 group-hover:text-orange-700 dark:group-hover:text-orange-400 transition-colors">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-0.5">{s.phone}</p>
+                      <p dir="ltr" className="text-sm font-medium text-stone-800 dark:text-stone-200 group-hover:text-orange-700 dark:group-hover:text-orange-400 transition-colors">
                         {vendeur.user.telephone}
                       </p>
                     </div>
@@ -230,7 +234,7 @@ export default function VendeurButton({ produitId }: { produitId: string }) {
                       <Mail className="w-5 h-5 text-stone-500 dark:text-stone-400 group-hover:text-orange-700 dark:group-hover:text-orange-400 transition-colors" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-0.5">Email</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-0.5">{s.email}</p>
                       <p className="text-sm font-medium text-stone-800 dark:text-stone-200 group-hover:text-orange-700 dark:group-hover:text-orange-400 transition-colors truncate">
                         {vendeur.user.email}
                       </p>
@@ -247,7 +251,7 @@ export default function VendeurButton({ produitId }: { produitId: string }) {
                     className="w-full flex items-center justify-center gap-2 bg-orange-700 hover:bg-orange-800 active:bg-orange-900 text-white font-semibold py-4 rounded-2xl transition-colors text-base"
                   >
                     <Phone className="w-5 h-5" />
-                    {vendeur.isAdmin ? 'Appeler Caba Store' : 'Appeler le vendeur'}
+                    {vendeur.isAdmin ? s.callStore : s.callSeller}
                   </a>
                 </div>
               )}

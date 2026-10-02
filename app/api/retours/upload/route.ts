@@ -13,6 +13,7 @@ import 'server-only'
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthToken } from '@/lib/getAuthToken'
 import { rateLimit, rateLimits } from '@/lib/security'
+import { getI18n } from '@/lib/i18n/server'
 
 const FLOWMERCE_UPLOAD_URL = (process.env.FLOWMERCE_UPLOAD_URL || '').replace(/\/$/, '')
 const FLOWMERCE_API_KEY    = process.env.FLOWMERCE_API_KEY || ''
@@ -26,6 +27,7 @@ const ALLOWED_TYPES = [
 ]
 
 export async function POST(req: NextRequest) {
+  const { t } = await getI18n()
   // Rate limiting — 20 uploads/heure
   const limited = await rateLimit(req, rateLimits.upload)
   if (limited) return limited
@@ -33,7 +35,7 @@ export async function POST(req: NextRequest) {
   try {
     const token = await getAuthToken()
     if (!token?.id) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+      return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
     }
 
     const formData = await req.formData()
@@ -46,7 +48,7 @@ export async function POST(req: NextRequest) {
     // ── Validation taille ─────────────────────────────────────
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: 'Fichier trop volumineux (max 10 MB)' },
+        { error: t.msg.fileTooLarge10 },
         { status: 400 }
       )
     }
@@ -54,7 +56,7 @@ export async function POST(req: NextRequest) {
     // ── Validation type MIME ──────────────────────────────────
     if (!ALLOWED_TYPES.includes(file.type)) {
       return NextResponse.json(
-        { error: 'Type de fichier non autorisé' },
+        { error: t.msg.fileTypeNotAllowed },
         { status: 400 }
       )
     }
@@ -67,7 +69,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ url })
   } catch (error) {
     console.error('[retours/upload] erreur:', error)
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }
 
@@ -93,6 +95,7 @@ async function uploadToFlowmerce(file: File): Promise<string> {
 
 // ── Repli : upload Cloudinary ────────────────────────────────────────────────
 async function uploadToCloudinary(file: File): Promise<string> {
+  const { t } = await getI18n()
   const { default: cloudinary } = await import('@/lib/cloudinary')
 
   const buffer = await file.arrayBuffer()
@@ -108,7 +111,7 @@ async function uploadToCloudinary(file: File): Promise<string> {
   const isPdf  = bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46
 
   if (!isJpeg && !isPng && !isWebp && !isGif && !isMp4 && !isWebm && !isPdf) {
-    throw new Error('Le contenu du fichier ne correspond pas à un type autorisé')
+    throw new Error(t.msg.fileTypeMismatch)
   }
 
   const dataUri = `data:${file.type};base64,${Buffer.from(buffer).toString('base64')}`

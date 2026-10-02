@@ -6,8 +6,13 @@ import { signIn } from 'next-auth/react'
 import Link from 'next/link'
 import { Check, Phone, ShieldCheck, Store, User } from 'lucide-react'
 import CabaLogo from '@/components/CabaLogo'
+import LanguageSwitcher from '@/components/LanguageSwitcher'
+import { useI18n } from '@/components/I18nProvider'
 
 function FinaliserGoogleContent() {
+  const { t } = useI18n()
+  const a = t.auth
+  const g = t.auth.googleFinalize
   const router       = useRouter()
   const searchParams = useSearchParams()
   const tempToken    = searchParams.get('token') ?? ''
@@ -40,7 +45,7 @@ function FinaliserGoogleContent() {
       setTestMode(!!data.testMode)
       setEtape(2)
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Erreur inconnue.')
+      setError(e instanceof Error ? e.message : a.unknownError)
     } finally { setLoading(false) }
   }
 
@@ -55,7 +60,7 @@ function FinaliserGoogleContent() {
       if (!res.ok) throw new Error(data.error)
 
       const signInResult = await signIn('credentials-google', { userId: data.userId, redirect: false })
-      if (!signInResult?.ok) throw new Error('Impossible de créer la session. Veuillez vous reconnecter.')
+      if (!signInResult?.ok) throw new Error(g.sessionCreateError)
 
       if (data.role === 'VENDEUR') {
         router.push('/inscription/finaliser-vendeur?skipPhone=true')
@@ -64,7 +69,7 @@ function FinaliserGoogleContent() {
       }
       router.refresh()
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Erreur inconnue.')
+      setError(e instanceof Error ? e.message : a.unknownError)
     } finally { setLoading(false) }
   }
 
@@ -75,8 +80,8 @@ function FinaliserGoogleContent() {
   const Stepper = () => (
     <div className="flex items-center gap-3 mb-10">
       {([
-        { n: 1, label: 'Téléphone & Rôle' },
-        { n: 2, label: 'Confirmation SMS' },
+        { n: 1, label: g.stepPhoneRole },
+        { n: 2, label: g.stepSms },
       ] as const).map(({ n, label }) => (
         <div key={n} className="flex items-center gap-3">
           <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium transition-colors duration-300 ${
@@ -103,7 +108,7 @@ function FinaliserGoogleContent() {
     <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex flex-col lg:flex-row transition-colors duration-300">
 
       {/* ── Panneau gauche ── */}
-      <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-stone-900 dark:bg-stone-950 items-center justify-center p-12 border-r border-stone-800">
+      <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-stone-900 dark:bg-stone-950 items-center justify-center p-12 border-e border-stone-800">
         <div className="absolute inset-0 flex items-center justify-center opacity-[0.06]">
           <CabaLogo className="w-120 h-120 text-white" />
         </div>
@@ -111,13 +116,13 @@ function FinaliserGoogleContent() {
           <CabaLogo className="w-16 h-16 text-orange-500 mx-auto" />
           <div className="w-10 h-px bg-stone-700 mx-auto" />
           <p className="text-stone-400 font-light text-sm tracking-wider">
-            Finalisez votre inscription
+            {g.sideTitle}
           </p>
-          <div className="space-y-4 text-left mt-8">
+          <div className="space-y-4 text-start mt-8">
             {[
-              { icon: Phone,       text: 'Vérification par SMS' },
-              { icon: ShieldCheck, text: 'Numéro confirmé, compte sécurisé' },
-              { icon: Store,       text: 'Ouvrez votre boutique en ligne' },
+              { icon: Phone,       text: g.sideSms },
+              { icon: ShieldCheck, text: g.sideSecure },
+              { icon: Store,       text: g.sideShop },
             ].map(({ icon: Icon, text }) => (
               <div key={text} className="flex items-center gap-3 text-stone-400">
                 <Icon className="w-4 h-4 shrink-0 text-orange-500/60" />
@@ -132,9 +137,13 @@ function FinaliserGoogleContent() {
       <div className="flex-1 flex flex-col items-center justify-center p-8 overflow-y-auto">
         <div className="w-full max-w-sm py-8">
 
+          <div className="flex justify-end mb-6 -mt-2">
+            <LanguageSwitcher className="border border-stone-200 dark:border-stone-700" />
+          </div>
+
           <div className="mb-8">
-            <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500 mb-2">Presque terminé</p>
-            <h2 className="text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">Votre Compte</h2>
+            <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500 mb-2">{g.almostDone}</p>
+            <h2 className="text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">{g.title}</h2>
             <div className="w-8 h-px bg-orange-700 dark:bg-orange-500 mt-4" />
           </div>
 
@@ -152,11 +161,11 @@ function FinaliserGoogleContent() {
 
               {/* Choix rôle */}
               <div>
-                <p className={`${labelCls} mb-4`}>Je souhaite…</p>
+                <p className={`${labelCls} mb-4`}>{g.iWant}</p>
                 <div className="grid grid-cols-2 gap-3">
                   {([
-                    { value: 'CLIENT',  icon: User,  label: 'Acheter', sub: 'Compte client' },
-                    { value: 'VENDEUR', icon: Store, label: 'Vendre',  sub: 'Compte vendeur' },
+                    { value: 'CLIENT',  icon: User,  label: g.buy,  sub: g.clientAccount },
+                    { value: 'VENDEUR', icon: Store, label: g.sell, sub: g.sellerAccount },
                   ] as const).map(({ value, icon: Icon, label, sub }) => (
                     <button key={value} type="button" onClick={() => setRole(value)}
                       className={`flex flex-col items-center gap-2 py-5 px-3 border-2 rounded-xl transition-colors duration-200 ${
@@ -174,33 +183,33 @@ function FinaliserGoogleContent() {
                 </div>
                 {role === 'VENDEUR' && (
                   <p className="mt-3 text-xs text-stone-400 dark:text-stone-500 border border-stone-100 dark:border-stone-800 rounded-lg px-3 py-2 tracking-wide">
-                    Votre boutique sera activée après validation par notre équipe.
+                    {g.sellerNote}
                   </p>
                 )}
               </div>
 
               {/* Téléphone */}
               <div>
-                <label className={labelCls}>Numéro de téléphone *</label>
+                <label className={labelCls}>{a.phoneNumber}</label>
                 <input type="tel" value={telephone} onChange={e => setTelephone(e.target.value)}
                   placeholder="05 XX XX XX XX" className={baseInput} />
                 <p className="mt-1.5 text-xs text-stone-400 dark:text-stone-600 tracking-wide">
-                  Un code de confirmation vous sera envoyé par SMS.
+                  {a.smsCodeHint}
                 </p>
               </div>
 
               <button onClick={handleEtape1} disabled={loading || !phoneValid}
                 className="w-full bg-orange-700 hover:bg-orange-800 text-white text-xs uppercase tracking-[0.3em] py-4 rounded-xl transition-colors duration-300 disabled:opacity-40 flex items-center justify-center gap-2">
                 {loading
-                  ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Envoi...</>
-                  : 'Recevoir le code SMS'
+                  ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {a.sending}</>
+                  : g.receiveSms
                 }
               </button>
 
               <p className="text-center text-xs text-stone-400 dark:text-stone-500 tracking-wide">
-                Vous avez déjà un compte ?{' '}
+                {g.haveAccount}{' '}
                 <Link href="/connexion" className="text-orange-700 dark:text-orange-500 underline underline-offset-4 font-medium">
-                  Se connecter
+                  {a.login}
                 </Link>
               </p>
             </div>
@@ -210,18 +219,18 @@ function FinaliserGoogleContent() {
           {etape === 2 && (
             <div className="space-y-7">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400 mb-1">Code envoyé au</p>
-                <p className="text-sm text-stone-900 dark:text-stone-100 font-medium">{telephone}</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400 mb-1">{a.codeSentToPhone}</p>
+                <p dir="ltr" className="text-sm text-stone-900 dark:text-stone-100 font-medium text-start">{telephone}</p>
                 {testMode && (
                   <p className="mt-2 text-xs text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 px-3 py-2 rounded-lg tracking-wide">
-                    Mode test — entrez <span className="font-mono font-bold">000000</span>
+                    {a.testMode} <span className="font-mono font-bold">000000</span>
                   </p>
                 )}
               </div>
 
               <div>
                 <label className="block text-xs uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400 mb-4">
-                  Code de confirmation *
+                  {a.confirmationCode}
                 </label>
                 <input type="text" inputMode="numeric" value={code}
                   onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
@@ -239,14 +248,14 @@ function FinaliserGoogleContent() {
               <button onClick={handleEtape2} disabled={loading || code.length !== 6}
                 className="w-full bg-orange-700 hover:bg-orange-800 text-white text-xs uppercase tracking-[0.3em] py-4 rounded-xl transition-colors duration-300 disabled:opacity-40 flex items-center justify-center gap-2">
                 {loading
-                  ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Création...</>
-                  : 'Confirmer & Créer mon compte'
+                  ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {a.creating}</>
+                  : g.confirmCreate
                 }
               </button>
 
               <button onClick={() => { setEtape(1); setCode(''); setError(null) }}
                 className="w-full text-xs text-stone-400 dark:text-stone-600 hover:text-orange-700 dark:hover:text-orange-500 uppercase tracking-[0.2em] transition-colors py-2">
-                ← Modifier mes informations
+                {a.editMyInfo}
               </button>
             </div>
           )}
@@ -257,7 +266,7 @@ function FinaliserGoogleContent() {
         <div className="lg:hidden mt-12 flex flex-col items-center gap-3 pb-8">
           <div className="w-16 h-px bg-stone-200 dark:bg-stone-800" />
           <CabaLogo className="w-12 h-12 text-orange-700 dark:text-orange-500 opacity-60" />
-          <p className="text-xs text-stone-300 dark:text-stone-700 uppercase tracking-[0.3em]">Caba Store</p>
+          <p className="text-xs text-stone-300 dark:text-stone-700 uppercase tracking-[0.3em]">{t.common.appName}</p>
         </div>
       </div>
     </div>

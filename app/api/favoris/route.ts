@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
+import { getI18n } from '@/lib/i18n/server'
 
 export async function GET(req: NextRequest) {
+  const { t } = await getI18n()
   try {
     const token = await getAuthToken()
-    if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    if (!token) return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
 
     const userId    = token.id as string
     const productId = req.nextUrl.searchParams.get('productId')
@@ -30,14 +32,15 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(favoris)
   } catch {
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }
 
 export async function POST(req: NextRequest) {
+  const { t } = await getI18n()
   try {
     const token = await getAuthToken()
-    if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    if (!token) return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
 
     const { produitId } = await req.json()
 
@@ -56,7 +59,7 @@ export async function POST(req: NextRequest) {
       await prisma.favorite.delete({
         where: { id: existing.id },
       })
-      return NextResponse.json({ message: 'Retiré des favoris', isFavori: false })
+      return NextResponse.json({ message: t.msg.removedFromFavorites, isFavori: false })
     }
 
     // Ajouter aux favoris
@@ -67,8 +70,8 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    return NextResponse.json({ message: 'Ajouté aux favoris', isFavori: true })
+    return NextResponse.json({ message: t.msg.addedToFavorites, isFavori: true })
   } catch {
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }

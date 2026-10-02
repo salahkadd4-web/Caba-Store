@@ -9,6 +9,7 @@ import {
   tableWrapper, tableHead, tableTh, tableTd, tableRow,
   modalOverlay, modalBox,
 } from '@/lib/dashboard-ui'
+import { useI18n } from '@/components/I18nProvider'
 
 export type Client = {
   id: string
@@ -41,6 +42,8 @@ function Spinner({ cls = 'w-4 h-4' }: { cls?: string }) {
 }
 
 export default function ClientsClient({ initialData }: { initialData: Client[] }) {
+  const { t, fmt } = useI18n()
+  const c_ = t.admin.clients
   const [clients,        setClients]        = useState<Client[]>(initialData)
   const [searching,      setSearching]      = useState(false)
   const [search,         setSearch]         = useState('')
@@ -95,29 +98,29 @@ export default function ClientsClient({ initialData }: { initialData: Client[] }
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className={heading}>Clients</h1>
-          <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">{clients.length} client{clients.length > 1 ? 's' : ''}</p>
+          <h1 className={heading}>{c_.title}</h1>
+          <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">{c_.count(clients.length)}</p>
         </div>
       </div>
 
       <div className="max-w-md">
         <div className="relative">
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none">
+          <span className="absolute start-3.5 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none">
             {searching ? <Spinner /> : <Search className="w-4 h-4" />}
           </span>
           <input
             type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder="Nom, prénom, email, téléphone…"
-            className={`${inputCls} pl-10 pr-9`}
+            placeholder={c_.searchPlaceholder}
+            className={`${inputCls} ps-10 pe-9`}
           />
           {search && (
-            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200">
+            <button onClick={() => setSearch('')} className="absolute end-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200">
               <X className="w-4 h-4" />
             </button>
           )}
         </div>
         {debouncedSearch && (
-          <p className="mt-1.5 text-xs text-stone-400">{clients.length} résultat{clients.length !== 1 ? 's' : ''} pour «&nbsp;{debouncedSearch}&nbsp;»</p>
+          <p className="mt-1.5 text-xs text-stone-400">{c_.resultsFor(clients.length, debouncedSearch)}</p>
         )}
       </div>
 
@@ -127,17 +130,17 @@ export default function ClientsClient({ initialData }: { initialData: Client[] }
           <table className="w-full text-sm">
             <thead className={tableHead}>
               <tr>
-                <th className={tableTh}>Client</th>
-                <th className={tableTh}>Contact</th>
-                <th className={tableTh}>Commandes</th>
-                <th className={tableTh}>Favoris</th>
-                <th className={tableTh}>Inscrit le</th>
-                <th className={tableTh}>Actions</th>
+                <th className={tableTh}>{c_.colClient}</th>
+                <th className={tableTh}>{c_.colContact}</th>
+                <th className={tableTh}>{c_.colOrders}</th>
+                <th className={tableTh}>{c_.colFavorites}</th>
+                <th className={tableTh}>{c_.colRegistered}</th>
+                <th className={tableTh}>{c_.colActions}</th>
               </tr>
             </thead>
             <tbody>
               {clients.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-12 text-stone-400">{debouncedSearch ? `Aucun résultat pour "${debouncedSearch}"` : 'Aucun client'}</td></tr>
+                <tr><td colSpan={6} className="text-center py-12 text-stone-400">{debouncedSearch ? c_.noResultFor(debouncedSearch) : c_.none}</td></tr>
               ) : clients.map((client) => (
                 <tr key={client.id} className={tableRow}>
                   <td className={tableTd}>
@@ -158,14 +161,14 @@ export default function ClientsClient({ initialData }: { initialData: Client[] }
                     <p className="text-stone-700 dark:text-stone-200 text-sm">{client.email || '—'}</p>
                     {client.telephone
                       ? <a href={`tel:${client.telephone}`} className="text-xs text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1 mt-0.5">
-                          <Phone className="w-3 h-3" />{client.telephone}
+                          <Phone className="w-3 h-3" /><span dir="ltr">{client.telephone}</span>
                         </a>
                       : <p className="text-xs text-stone-400">—</p>
                     }
                   </td>
                   <td className={tableTd}>
                     <span className="bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 text-xs font-semibold px-2.5 py-1 rounded-full">
-                      {client._count.orders} cmd
+                      {c_.ordersShort(client._count.orders)}
                     </span>
                   </td>
                   <td className={tableTd}>
@@ -175,13 +178,13 @@ export default function ClientsClient({ initialData }: { initialData: Client[] }
                   </td>
                   <td className={tableTd}>
                     <p className="text-stone-500 dark:text-stone-400 text-xs">
-                      {new Date(client.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {fmt.date(client.createdAt, { day: 'numeric', month: 'short', year: 'numeric' })}
                     </p>
                   </td>
                   <td className={tableTd}>
                     <div className="flex gap-2">
                       <button onClick={() => openDetail(client)} className="bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1">
-                        <Eye className="w-3.5 h-3.5" /> Détails
+                        <Eye className="w-3.5 h-3.5" /> {c_.details}
                       </button>
                       <button onClick={() => setDeleteId(client.id)} className="bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 p-1.5 rounded-lg transition">
                         <Trash2 className="w-3.5 h-3.5" />
@@ -209,7 +212,7 @@ export default function ClientsClient({ initialData }: { initialData: Client[] }
               <p className="font-medium text-stone-800 dark:text-stone-100 truncate">{client.prenom} {client.nom}</p>
               <p className="text-xs text-stone-400 truncate">{client.email}</p>
               <div className="flex gap-2 mt-1">
-                <span className="text-xs bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">{client._count.orders} cmd</span>
+                <span className="text-xs bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">{c_.ordersShort(client._count.orders)}</span>
                 <span className="text-xs bg-red-50 dark:bg-red-950 text-red-500 dark:text-red-400 px-2 py-0.5 rounded-full">{client._count.favorites} ♥</span>
               </div>
             </div>
@@ -250,34 +253,34 @@ export default function ClientsClient({ initialData }: { initialData: Client[] }
               ) : (
                 <div className="p-6 space-y-3">
                   <div className="bg-stone-50 dark:bg-stone-800 rounded-xl p-4">
-                    <p className="text-xs text-stone-400 font-medium mb-1 flex items-center gap-1"><Mail className="w-3.5 h-3.5" /> Email</p>
+                    <p className="text-xs text-stone-400 font-medium mb-1 flex items-center gap-1"><Mail className="w-3.5 h-3.5" /> {c_.email}</p>
                     <p className="text-sm text-stone-800 dark:text-stone-100">{selectedClient.email || '—'}</p>
                   </div>
                   <div className="bg-stone-50 dark:bg-stone-800 rounded-xl p-4">
-                    <p className="text-xs text-stone-400 font-medium mb-1 flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> Téléphone</p>
+                    <p className="text-xs text-stone-400 font-medium mb-1 flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> {c_.phone}</p>
                     {selectedClient.telephone
-                      ? <a href={`tel:${selectedClient.telephone}`} className="text-sm text-purple-600 dark:text-purple-400 hover:underline font-medium">{selectedClient.telephone}</a>
+                      ? <a href={`tel:${selectedClient.telephone}`} className="text-sm text-purple-600 dark:text-purple-400 hover:underline font-medium" dir="ltr">{selectedClient.telephone}</a>
                       : <p className="text-sm text-stone-800 dark:text-stone-100">—</p>
                     }
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-blue-50 dark:bg-blue-950 rounded-xl p-4 text-center">
                       <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{selectedClient._count?.orders ?? 0}</p>
-                      <p className="text-xs text-blue-500 mt-1">Commandes</p>
+                      <p className="text-xs text-blue-500 mt-1">{c_.orders}</p>
                     </div>
                     <div className="bg-red-50 dark:bg-red-950 rounded-xl p-4 text-center">
                       <p className="text-2xl font-bold text-red-500 dark:text-red-400">{selectedClient._count?.favorites ?? 0}</p>
-                      <p className="text-xs text-red-400 mt-1">Favoris</p>
+                      <p className="text-xs text-red-400 mt-1">{c_.favorites}</p>
                     </div>
                   </div>
                   <div className="bg-stone-50 dark:bg-stone-800 rounded-xl p-4">
-                    <p className="text-xs text-stone-400 font-medium mb-1 flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> Inscrit le</p>
+                    <p className="text-xs text-stone-400 font-medium mb-1 flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {c_.registeredOn}</p>
                     <p className="text-sm text-stone-800 dark:text-stone-100">
-                      {new Date(selectedClient.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      {fmt.date(selectedClient.createdAt)}
                     </p>
                   </div>
                   <button onClick={() => setDeleteId(selectedClient.id)} className={`w-full ${btnDanger} flex items-center justify-center gap-2`}>
-                    <Trash2 className="w-4 h-4" /> Supprimer ce client
+                    <Trash2 className="w-4 h-4" /> {c_.deleteClient}
                   </button>
                 </div>
               )}
@@ -292,11 +295,11 @@ export default function ClientsClient({ initialData }: { initialData: Client[] }
             <div className="w-14 h-14 bg-red-50 dark:bg-red-950 rounded-full flex items-center justify-center mx-auto mb-4">
               <Trash2 className="w-6 h-6 text-red-500" />
             </div>
-            <h2 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-2">Supprimer ce client ?</h2>
-            <p className="text-stone-500 dark:text-stone-400 text-sm mb-6">Toutes ses commandes, favoris et messages seront supprimés.</p>
+            <h2 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-2">{c_.deleteQ}</h2>
+            <p className="text-stone-500 dark:text-stone-400 text-sm mb-6">{c_.deleteDesc}</p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteId(null)} className={`flex-1 ${btnSecondary}`}>Annuler</button>
-              <button onClick={() => handleDelete(deleteId)} className={`flex-1 ${btnDangerSolid}`}>Supprimer</button>
+              <button onClick={() => setDeleteId(null)} className={`flex-1 ${btnSecondary}`}>{t.common.cancel}</button>
+              <button onClick={() => handleDelete(deleteId)} className={`flex-1 ${btnDangerSolid}`}>{c_.delete}</button>
             </div>
           </div>
         </div>

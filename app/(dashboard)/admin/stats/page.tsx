@@ -10,6 +10,8 @@ import {
   heading, kpiCard, kpiCardDark, sectionHeading,
   card, tableWrapper,
 } from '@/lib/dashboard-ui'
+import { getI18n } from '@/lib/i18n/server'
+import { SELLER_SUBSCRIPTION_PRICING } from '@/lib/seller-billing'
 
 async function getStats() {
   const now         = new Date()
@@ -179,9 +181,10 @@ async function getStats() {
 // ── Tableau stat générique ────────────────────────────────────────────────────
 type StatRow = { id: string; nom?: string; images?: string[] }
 
-function StatTable<T extends StatRow>({ title, icon, rows, getValue, getLabel, getSubLabel }: {
+function StatTable<T extends StatRow>({ title, icon, rows, getValue, getLabel, getSubLabel, emptyLabel }: {
   title: string; icon: React.ElementType; rows: T[]
   getValue: (r: T) => string; getLabel: (r: T) => string; getSubLabel?: (r: T) => string
+  emptyLabel: string
 }) {
   const Icon = icon
   return (
@@ -192,7 +195,7 @@ function StatTable<T extends StatRow>({ title, icon, rows, getValue, getLabel, g
       </div>
       <div className="divide-y divide-stone-50 dark:divide-stone-800">
         {rows.length === 0 ? (
-          <p className="p-5 text-xs text-stone-400 text-center">Aucune donnée</p>
+          <p className="p-5 text-xs text-stone-400 text-center">{emptyLabel}</p>
         ) : rows.map((r, i) => (
           <div key={r.id} className="px-5 py-3 flex items-center gap-3">
             <span className={`text-lg font-bold shrink-0 w-6 ${i === 0 ? 'text-yellow-400' : i === 1 ? 'text-stone-400' : i === 2 ? 'text-amber-600' : 'text-stone-300 dark:text-stone-600'}`}>
@@ -215,23 +218,24 @@ function StatTable<T extends StatRow>({ title, icon, rows, getValue, getLabel, g
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default async function AdminStatsPage() {
-  const session = await auth()
+  const [session, { t, fmt }] = await Promise.all([auth(), getI18n()])
   if (!session?.user || session.user.role !== 'ADMIN') redirect('/connexion')
+  const s_ = t.admin.stats
 
   const stats = await getStats()
 
   const kpisResume = [
-    { label: 'CA Total',        value: `${stats.resume.ca.toLocaleString('fr-DZ')} DA`, dark: true },
-    { label: 'Commandes',       value: stats.resume.totalCommandes },
-    { label: 'Clients',         value: stats.resume.totalClients },
-    { label: 'Vendeurs actifs', value: `${stats.resume.totalVendeursApprouves} / ${stats.resume.totalVendeurs}` },
-    { label: 'Produits',        value: stats.resume.totalProduits },
-    { label: 'Retours',         value: stats.resume.totalRetours },
+    { label: s_.totalRevenue,  value: fmt.price(stats.resume.ca), dark: true },
+    { label: s_.orders,        value: stats.resume.totalCommandes },
+    { label: s_.clients,       value: stats.resume.totalClients },
+    { label: s_.activeSellers, value: `${stats.resume.totalVendeursApprouves} / ${stats.resume.totalVendeurs}` },
+    { label: s_.products,      value: stats.resume.totalProduits },
+    { label: s_.returns,       value: stats.resume.totalRetours },
   ]
 
   return (
     <div className="space-y-8">
-      <h1 className={heading}>Statistiques avancées</h1>
+      <h1 className={heading}>{s_.title}</h1>
 
       {/* KPIs résumé */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -252,33 +256,35 @@ export default async function AdminStatsPage() {
 
       {/* Priorités admin */}
       <div>
-        <h2 className={sectionHeading}><ShieldCheck className="w-4 h-4 text-purple-600" /> Priorités d&apos;affichage vendeurs</h2>
+        <h2 className={sectionHeading}><ShieldCheck className="w-4 h-4 text-purple-600" /> {s_.priorities}</h2>
         <BoutonInitProfilAdmin />
       </div>
 
       {/* Abonnements */}
       <div>
-        <h2 className={sectionHeading}><CreditCard className="w-4 h-4 text-teal-600" /> Abonnements vendeurs</h2>
+        <h2 className={sectionHeading}><CreditCard className="w-4 h-4 text-teal-600" /> {s_.subscriptions}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {stats.statsAbonnements.map(a => {
             const cfg = {
-              NIVEAU_1: { label: 'Niveau 1', tarif: '3 000 DA/mois', border: 'border-purple-300 dark:border-purple-700', badge: 'bg-purple-600 text-white' },
-              NIVEAU_2: { label: 'Niveau 2', tarif: '4 000 DA/mois', border: 'border-blue-300 dark:border-blue-700',     badge: 'bg-blue-500 text-white'   },
-              NIVEAU_3: { label: 'Niveau 3', tarif: '5 000 DA/mois', border: 'border-stone-300 dark:border-stone-600',   badge: 'bg-stone-500 text-white'  },
+              NIVEAU_1: { border: 'border-purple-300 dark:border-purple-700', badge: 'bg-purple-600 text-white' },
+              NIVEAU_2: { border: 'border-blue-300 dark:border-blue-700',     badge: 'bg-blue-500 text-white'   },
+              NIVEAU_3: { border: 'border-stone-300 dark:border-stone-600',   badge: 'bg-stone-500 text-white'  },
             }[a.niveau]!
+            const label = t.billing.levels[a.niveau]?.label ?? a.niveau
+            const tarif = s_.perMonth(fmt.price(SELLER_SUBSCRIPTION_PRICING[a.niveau].mensuel))
             const tauxActif = a.total > 0 ? Math.round(((a.actif + a.gratuit) / a.total) * 100) : 0
             return (
               <div key={a.niveau} className={`bg-white dark:bg-stone-900 rounded-2xl border-2 ${cfg.border} p-5 space-y-4`}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${cfg.badge}`}>{cfg.label}</span>
-                    <p className="text-xs text-stone-400 mt-1">{cfg.tarif}</p>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${cfg.badge}`}>{label}</span>
+                    <p className="text-xs text-stone-400 mt-1">{tarif}</p>
                   </div>
                   <p className="text-3xl font-bold text-stone-800 dark:text-stone-100">{a.total}</p>
                 </div>
                 <div>
                   <div className="flex justify-between text-xs text-stone-500 mb-1">
-                    <span>Taux actifs</span><span className="font-medium">{tauxActif}%</span>
+                    <span>{s_.activeRate}</span><span className="font-medium">{tauxActif}%</span>
                   </div>
                   <div className="w-full bg-stone-100 dark:bg-stone-800 rounded-full h-1.5">
                     <div className="h-1.5 rounded-full bg-teal-500 transition-all" style={{ width: `${tauxActif}%` }} />
@@ -286,10 +292,10 @@ export default async function AdminStatsPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   {[
-                    { label: 'Actifs',    value: a.actif,   cls: 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300'     },
-                    { label: 'Gratuits',  value: a.gratuit, cls: 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300'  },
-                    { label: 'Expirés',   value: a.expire,  cls: 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300'         },
-                    { label: 'Suspendus', value: a.suspendu,cls: 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300'},
+                    { label: s_.active,    value: a.actif,   cls: 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300'     },
+                    { label: s_.free,      value: a.gratuit, cls: 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300'  },
+                    { label: s_.expired,   value: a.expire,  cls: 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300'         },
+                    { label: s_.suspended, value: a.suspendu,cls: 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300'},
                   ].map(s => (
                     <div key={s.label} className={`${s.cls} rounded-xl p-2 text-center`}>
                       <p className="font-bold text-base">{s.value}</p>
@@ -299,12 +305,12 @@ export default async function AdminStatsPage() {
                 </div>
                 <div className="border-t border-stone-100 dark:border-stone-800 pt-3 space-y-1.5 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-stone-500">Revenus encaissés</span>
-                    <span className="font-bold text-stone-800 dark:text-stone-100">{a.revenu.toLocaleString('fr-DZ')} DA</span>
+                    <span className="text-stone-500">{s_.collected}</span>
+                    <span className="font-bold text-stone-800 dark:text-stone-100">{fmt.price(a.revenu)}</span>
                   </div>
                   {a.bientotExpire > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-orange-500">⚠ Expirent dans 30j</span>
+                      <span className="text-orange-500">{s_.expiring30}</span>
                       <span className="font-bold text-orange-600">{a.bientotExpire}</span>
                     </div>
                   )}
@@ -317,57 +323,57 @@ export default async function AdminStatsPage() {
 
       {/* Produits */}
       <div>
-        <h2 className={sectionHeading}>Produits</h2>
+        <h2 className={sectionHeading}>{s_.productsSection}</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <StatTable title="Meilleurs produits" icon={Trophy} rows={stats.topProduits}
-            getLabel={r => r.nom} getSubLabel={r => `${r.category?.nom ?? '—'} • ${r.vendeur?.nomBoutique ?? 'Admin'}`}
-            getValue={r => `${r._count.orderItems} ventes`} />
-          <StatTable title="Produits les moins vendus" icon={TrendingDown} rows={stats.flopProduits}
+          <StatTable emptyLabel={s_.noData} title={s_.bestProducts} icon={Trophy} rows={stats.topProduits}
+            getLabel={r => r.nom} getSubLabel={r => `${r.category?.nom ?? '—'} • ${r.vendeur?.nomBoutique ?? s_.admin}`}
+            getValue={r => s_.sales(r._count.orderItems)} />
+          <StatTable emptyLabel={s_.noData} title={s_.worstProducts} icon={TrendingDown} rows={stats.flopProduits}
             getLabel={r => r.nom} getSubLabel={r => r.category?.nom ?? '—'}
-            getValue={r => `${r._count.orderItems} ventes`} />
+            getValue={r => s_.sales(r._count.orderItems)} />
         </div>
       </div>
 
       {/* Catégories */}
       <div>
-        <h2 className={sectionHeading}>Catégories</h2>
+        <h2 className={sectionHeading}>{s_.categoriesSection}</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <StatTable title="Meilleures catégories" icon={Tag} rows={stats.topCategories}
-            getLabel={r => r.nom} getSubLabel={r => `${r._count.products} produits`}
-            getValue={r => `${r.ventes} ventes`} />
-          <StatTable title="Catégories les moins vendues" icon={TrendingDown} rows={stats.flopCategories}
-            getLabel={r => r.nom} getSubLabel={r => `${r._count.products} produits`}
-            getValue={r => `${r.ventes} ventes`} />
+          <StatTable emptyLabel={s_.noData} title={s_.bestCategories} icon={Tag} rows={stats.topCategories}
+            getLabel={r => r.nom} getSubLabel={r => s_.productsCount(r._count.products)}
+            getValue={r => s_.sales(r.ventes)} />
+          <StatTable emptyLabel={s_.noData} title={s_.worstCategories} icon={TrendingDown} rows={stats.flopCategories}
+            getLabel={r => r.nom} getSubLabel={r => s_.productsCount(r._count.products)}
+            getValue={r => s_.sales(r.ventes)} />
         </div>
       </div>
 
       {/* Vendeurs */}
       <div>
-        <h2 className={sectionHeading}>Vendeurs</h2>
+        <h2 className={sectionHeading}>{s_.sellersSection}</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <StatTable title="Meilleurs vendeurs" icon={Star} rows={stats.topVendeurs}
+          <StatTable emptyLabel={s_.noData} title={s_.bestSellers} icon={Star} rows={stats.topVendeurs}
             getLabel={r => r.nomBoutique || `${r.user.prenom} ${r.user.nom}`}
-            getSubLabel={r => `${r.nb} commandes`}
-            getValue={r => `${r.ca.toLocaleString('fr-DZ')} DA`} />
-          <StatTable title="Vendeurs les moins actifs" icon={Moon} rows={stats.flopVendeurs}
+            getSubLabel={r => s_.ordersCount(r.nb)}
+            getValue={r => fmt.price(r.ca)} />
+          <StatTable emptyLabel={s_.noData} title={s_.leastActiveSellers} icon={Moon} rows={stats.flopVendeurs}
             getLabel={r => r.nomBoutique || `${r.user.prenom} ${r.user.nom}`}
-            getSubLabel={r => `${r.nb} commandes`}
-            getValue={r => `${r.ca.toLocaleString('fr-DZ')} DA`} />
+            getSubLabel={r => s_.ordersCount(r.nb)}
+            getValue={r => fmt.price(r.ca)} />
         </div>
       </div>
 
       {/* Clients */}
       <div>
-        <h2 className={sectionHeading}>Clients</h2>
+        <h2 className={sectionHeading}>{s_.clientsSection}</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <StatTable title="Meilleurs clients" icon={Gem} rows={stats.topClients}
+          <StatTable emptyLabel={s_.noData} title={s_.bestClients} icon={Gem} rows={stats.topClients}
             getLabel={r => `${r.prenom} ${r.nom}`}
-            getSubLabel={r => `${r._count.orders} commandes · ${r.retours} retour(s)`}
-            getValue={r => `${r.ca.toLocaleString('fr-DZ')} DA`} />
-          <StatTable title="Clients inactifs" icon={Moon} rows={stats.flopClients}
+            getSubLabel={r => s_.ordersAndReturns(r._count.orders, r.retours)}
+            getValue={r => fmt.price(r.ca)} />
+          <StatTable emptyLabel={s_.noData} title={s_.inactiveClients} icon={Moon} rows={stats.flopClients}
             getLabel={r => `${r.prenom} ${r.nom}`}
-            getSubLabel={r => `${r._count.orders} commandes`}
-            getValue={r => `${r.ca.toLocaleString('fr-DZ')} DA`} />
+            getSubLabel={r => s_.ordersCount(r._count.orders)}
+            getValue={r => fmt.price(r.ca)} />
         </div>
       </div>
     </div>

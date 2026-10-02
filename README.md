@@ -1,6 +1,6 @@
 # Caba Store
 
-Marketplace algérienne multi-vendeurs : vente en ligne de produits avec paiement à la livraison, livraison 48h dans les 58 wilayas, retours gratuits sous 14 jours, et abonnements vendeurs. Interface 100 % en français, devise : **DA (dinar algérien)**.
+Marketplace algérienne multi-vendeurs : vente en ligne de produits avec paiement à la livraison, livraison 48h dans toutes les wilayas, retours gratuits sous 14 jours, et abonnements vendeurs. Interface **bilingue français / arabe** (arabe en RTL), devise : **DA (dinar algérien)**.
 
 ## Fonctionnalités
 
@@ -11,7 +11,7 @@ Marketplace algérienne multi-vendeurs : vente en ligne de produits avec paiemen
 - **Commandes** : tunnel multi-vendeurs (une commande par vendeur reliée par `groupeId`), adresse + wilaya, **paiement à la livraison** (COD), 3 méthodes d'expédition par vendeur (standard 700 DA / express 1 200 DA / point relais 400 DA), suivi de statut en 6 états.
 - **Retours** : entièrement pilotés par **Flowmerce** (source de vérité unique). Caba Store récupère la définition JSON du formulaire (`GET /api/v1/return-form`, la clé API Bearer identifie le Vendor et sa ReturnPolicy), le génère dynamiquement (17 types de champs, validation, upload de fichiers), et envoie les réponses à Flowmerce (`POST /api/v1/returns`). Webhook HMAC de réconciliation des statuts ; aucune politique de retour ni identifiant de boutique n'est stocké localement.
 - **Recherche** : barre de recherche globale + page dédiée.
-- **Favoris**, **profil** (58 wilayas, genre, âge, adresse, changement de mot de passe ou OTP email), **inscription et connexion** par email/téléphone + mot de passe ou **Google** (web et natif Android).
+- **Favoris**, **profil** (wilaya + commune en cascade, genre, âge, adresse, changement de mot de passe ou OTP email), **inscription et connexion** par email/téléphone + mot de passe ou **Google** (web et natif Android).
 - **OTP** : SMS (Twilio, `+213`) et email (Nodemailer), expiration 15 min, rate limité.
 
 ### Côté vendeur
@@ -34,6 +34,17 @@ Marketplace algérienne multi-vendeurs : vente en ligne de produits avec paiemen
 - Services : **Twilio Verify** (SMS), **Nodemailer** (emails), **Cloudinary** (images), **Vercel Blob** (documents), **Upstash Redis** (rate limiting), **Pusher** (temps réel), **Flowmerce** (moteur de gestion des retours)
 
 ## Architecture
+
+### Langues (FR / AR)
+- Dictionnaires typés dans `lib/i18n/{fr,ar}/*.ts` : l'arabe est typé sur le français, une clé manquante est une erreur de compilation.
+- Langue lue dans le cookie `lang` (sinon `Accept-Language`, sinon français) : `getI18n()` côté serveur et routes API, `useI18n()` côté client. `<html lang dir>` est posé par le layout racine.
+- RTL : utilitaires Tailwind logiques (`ms-`, `ps-`, `start-`, `text-start`…), classe `.rtl-flip` pour les icônes directionnelles, `letter-spacing` neutralisé en arabe.
+- Les valeurs stockées en base (statuts, méthode d'expédition, mode de paiement) restent en français et sont traduites à l'affichage.
+
+### Wilayas / communes
+- Données : `public/Wilaya_Commune_FR.json` et `public/Wilaya_Commune_AR.json` (69 wilayas). `User.wilaya` / `Order.wilaya` stockent le **code** de wilaya ; la commune est stockée telle que choisie.
+- Classement des produits (`lib/product-ranking.ts`) : priorité d'abonnement → vendeurs de la wilaya du visiteur → date de mise en ligne. Filtre « wilaya du vendeur » sur `/produits`.
+
 
 ### Rôles et protection
 3 rôles : `CLIENT`, `VENDEUR`, `ADMIN`. Protection en 3 couches :

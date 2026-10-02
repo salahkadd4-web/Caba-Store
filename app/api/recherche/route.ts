@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { VENDEUR_SUSPENDU_PRIORITE } from '@/lib/constants'
+import { rankProducts, VENDEUR_RANK_SELECT } from '@/lib/product-ranking'
+import { getViewerWilaya } from '@/lib/viewer'
 
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get('q')?.trim()
@@ -8,7 +11,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ categories: [], produits: [] })
   }
 
-  const [categories, produitsRaw] = await Promise.all([
+  const [categories, produitsRaw, viewerWilaya] = await Promise.all([
     prisma.category.findMany({
       where: { nom: { contains: q, mode: 'insensitive' } },
       take: 4,
@@ -20,28 +23,29 @@ export async function GET(req: NextRequest) {
         nom: { contains: q, mode: 'insensitive' },
         OR: [
           { vendeurId: null },
-          { vendeur: { prioriteAffichage: { lt: 99 } } },
+          { vendeur: { prioriteAffichage: { lt: VENDEUR_SUSPENDU_PRIORITE } } },
         ],
       },
       // On prend plus pour trier puis limiter à 5
       take: 20,
-      // Tri DB par date ; le tri priorité se fait en JS ci-dessous
+      // Tri DB par date ; le classement complet se fait en JS (rankProducts)
       orderBy: [{ createdAt: 'desc' }],
       select: {
         id: true,
         nom: true,
         images: true,
         prix: true,
+        createdAt: true,
         category: { select: { nom: true } },
-        vendeur: { select: { prioriteAffichage: true } },
+        vendeur: VENDEUR_RANK_SELECT,
       },
     }),
+    // Réponse non mise en cache : on peut lire la wilaya du visiteur en session
+    getViewerWilaya(),
   ])
 
-  // Tri priorité applicatif puis limite à 5
-  const produits = [...produitsRaw]
-    .sort((a, b) => (a.vendeur?.prioriteAffichage ?? 0) - (b.vendeur?.prioriteAffichage ?? 0))
-    .slice(0, 5)
+  // Priorité d'abonnement → wilaya du visiteur → date, puis limite à 5
+  const produits = rankProducts(produitsRaw, viewerWilaya).slice(0, 5)
 
   return NextResponse.json({ categories, produits })
 }

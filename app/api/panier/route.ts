@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
+import { getI18n } from '@/lib/i18n/server'
 
 export async function GET() {
+  const { t } = await getI18n()
   try {
     const token = await getAuthToken()
-    if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    if (!token) return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
 
     const panier = await prisma.cart.findUnique({
       where: { userId: token.id as string },
@@ -38,14 +40,15 @@ export async function GET() {
     })
     return NextResponse.json(panier)
   } catch {
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }
 
 export async function POST(req: NextRequest) {
+  const { t } = await getI18n()
   try {
     const token = await getAuthToken()
-    if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    if (!token) return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
 
     const { produitId, quantite = 1, variantId, variantOptionId } = await req.json()
 
@@ -53,21 +56,21 @@ export async function POST(req: NextRequest) {
       where: { id: produitId },
       include: { variants: { include: { options: true } } },
     })
-    if (!produit) return NextResponse.json({ error: 'Produit introuvable' }, { status: 404 })
+    if (!produit) return NextResponse.json({ error: t.msg.productNotFound }, { status: 404 })
 
     // Vérifier stock
     if (variantOptionId) {
       const option = produit.variants
         .flatMap(v => v.options)
         .find(o => o.id === variantOptionId)
-      if (!option) return NextResponse.json({ error: 'Option introuvable' }, { status: 404 })
-      if (option.stock === 0) return NextResponse.json({ error: 'Option en rupture de stock' }, { status: 400 })
+      if (!option) return NextResponse.json({ error: t.msg.optionNotFound }, { status: 404 })
+      if (option.stock === 0) return NextResponse.json({ error: t.msg.optionOutOfStock }, { status: 400 })
     } else if (variantId) {
       const variant = produit.variants.find(v => v.id === variantId)
-      if (!variant) return NextResponse.json({ error: 'Variante introuvable' }, { status: 404 })
-      if (variant.stock === 0) return NextResponse.json({ error: 'Variante en rupture de stock' }, { status: 400 })
+      if (!variant) return NextResponse.json({ error: t.msg.variantNotFound }, { status: 404 })
+      if (variant.stock === 0) return NextResponse.json({ error: t.msg.variantOutOfStock }, { status: 400 })
     } else {
-      if (produit.stock === 0) return NextResponse.json({ error: 'Produit en rupture de stock' }, { status: 400 })
+      if (produit.stock === 0) return NextResponse.json({ error: t.msg.productOutOfStock }, { status: 400 })
     }
 
     let panier = await prisma.cart.findUnique({ where: { userId: token.id as string } })
@@ -105,8 +108,8 @@ export async function POST(req: NextRequest) {
       cartItemId = created.id
     }
     // On retourne l'id du cartItem pour éviter un re-fetch côté client
-    return NextResponse.json({ message: 'Produit ajouté au panier', cartItemId })
+    return NextResponse.json({ message: t.msg.addedToCart, cartItemId })
   } catch {
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }

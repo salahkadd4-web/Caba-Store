@@ -4,18 +4,20 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Check, X } from 'lucide-react'
+import { useI18n } from '@/components/I18nProvider'
 
 type Etape = 'demande' | 'verification' | 'nouveau'
 
 const pwdRules = [
-  { id: 'length',  label: 'Au moins 8 caractères',         test: (p: string) => p.length >= 8 },
-  { id: 'upper',   label: 'Au moins une lettre majuscule', test: (p: string) => /[A-Z]/.test(p) },
-  { id: 'lower',   label: 'Au moins une lettre minuscule', test: (p: string) => /[a-z]/.test(p) },
-  { id: 'number',  label: 'Au moins un chiffre',           test: (p: string) => /[0-9]/.test(p) },
-  { id: 'special', label: 'Au moins un caractère spécial', test: (p: string) => /[^A-Za-z0-9]/.test(p) },
-]
+  { id: 'length',  test: (p: string) => p.length >= 8 },
+  { id: 'upper',   test: (p: string) => /[A-Z]/.test(p) },
+  { id: 'lower',   test: (p: string) => /[a-z]/.test(p) },
+  { id: 'number',  test: (p: string) => /[0-9]/.test(p) },
+  { id: 'special', test: (p: string) => /[^A-Za-z0-9]/.test(p) },
+] as const
 
 function PasswordStrength({ password }: { password: string }) {
+  const { t } = useI18n()
   if (!password) return null
   return (
     <div className="mt-2 space-y-1">
@@ -27,7 +29,7 @@ function PasswordStrength({ password }: { password: string }) {
               {ok ? <Check className="w-4 h-4" /> : '○'}
             </span>
             <span className={`text-xs transition-colors ${ok ? 'text-green-600 dark:text-green-400' : 'text-stone-400 dark:text-stone-500'}`}>
-              {rule.label}
+              {t.password.rules[rule.id]}
             </span>
           </div>
         )
@@ -38,6 +40,8 @@ function PasswordStrength({ password }: { password: string }) {
 
 export default function RecupererMotDePassePage() {
   const router = useRouter()
+  const { t } = useI18n()
+  const r = t.auth.reset
   const [etape, setEtape] = useState<Etape>('demande')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -93,9 +97,9 @@ export default function RecupererMotDePassePage() {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
-      setSuccess('Code envoyé ! Vérifiez votre email ou téléphone.')
+      setSuccess(r.codeSent)
       setEtape('verification')
-    } catch { setError('Erreur serveur') } finally { setLoading(false) }
+    } catch { setError(t.common.serverError) } finally { setLoading(false) }
   }
 
   // Étape 2 — Vérification du code
@@ -113,7 +117,7 @@ export default function RecupererMotDePassePage() {
       if (!res.ok) { setError(data.error); return }
       setSuccess('')
       setEtape('nouveau')
-    } catch { setError('Erreur serveur') } finally { setLoading(false) }
+    } catch { setError(t.common.serverError) } finally { setLoading(false) }
   }
 
   // Étape 3 — Nouveau mot de passe
@@ -121,11 +125,11 @@ export default function RecupererMotDePassePage() {
     e.preventDefault()
     setError('')
     if (!pwdRules.every(r => r.test(nouveauMotDePasse))) {
-      setError('Le mot de passe ne respecte pas toutes les conditions')
+      setError(r.passwordInvalid)
       return
     }
     if (nouveauMotDePasse !== confirmerMotDePasse) {
-      setError('Les mots de passe ne correspondent pas')
+      setError(r.passwordsDontMatch)
       return
     }
     setLoading(true)
@@ -138,7 +142,7 @@ export default function RecupererMotDePassePage() {
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
       router.push('/connexion?reset=success')
-    } catch { setError('Erreur serveur') } finally { setLoading(false) }
+    } catch { setError(t.common.serverError) } finally { setLoading(false) }
   }
 
   const inputClass = "w-full border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-800 dark:text-stone-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600 focus:border-orange-700 dark:focus:border-orange-500 transition"
@@ -147,7 +151,6 @@ export default function RecupererMotDePassePage() {
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex items-center justify-center px-4 transition-colors">
       <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-md w-full max-w-md p-8">
-
         {/* Indicateur d'étapes */}
         <div className="flex items-center justify-center gap-2 mb-6">
           {(['demande', 'verification', 'nouveau'] as Etape[]).map((e, i) => {
@@ -168,14 +171,14 @@ export default function RecupererMotDePassePage() {
         </div>
 
         <h1 className="text-2xl font-bold text-center text-stone-800 dark:text-stone-100 mb-1">
-          {etape === 'demande'      && 'Mot de passe oublié'}
-          {etape === 'verification' && 'Vérification'}
-          {etape === 'nouveau'      && 'Nouveau mot de passe'}
+          {etape === 'demande'      && r.titleRequest}
+          {etape === 'verification' && r.titleVerify}
+          {etape === 'nouveau'      && r.titleNew}
         </h1>
         <p className="text-center text-sm text-stone-500 dark:text-stone-400 mb-6">
-          {etape === 'demande'      && 'Entrez votre email ou téléphone'}
-          {etape === 'verification' && 'Entrez le code reçu'}
-          {etape === 'nouveau'      && 'Choisissez un nouveau mot de passe sécurisé'}
+          {etape === 'demande'      && r.subRequest}
+          {etape === 'verification' && r.subVerify}
+          {etape === 'nouveau'      && r.subNew}
         </p>
 
         {error && (
@@ -193,21 +196,21 @@ export default function RecupererMotDePassePage() {
         {etape === 'demande' && (
           <form onSubmit={handleDemande} className="space-y-4">
             <div>
-              <label className={labelClass}>Email ou téléphone</label>
+              <label className={labelClass}>{r.identifier}</label>
               <div className="relative">
                 <input
                   type="text"
                   value={identifiant}
                   onChange={(e) => { setIdentifiant(e.target.value); setIdStatus('idle') }}
                   required
-                  className={`${inputClass} pr-10 ${
+                  className={`${inputClass} pe-10 ${
                     idStatus === 'found'    ? 'border-green-400 dark:border-green-600 focus:ring-green-400' :
                     idStatus === 'notfound' ? 'border-red-400 dark:border-red-600 focus:ring-red-400' : ''
                   }`}
-                  placeholder="votre@email.com ou 05XX XX XX XX"
+                  placeholder={r.identifierPlaceholder}
                 />
                 {/* Indicateur AJAX */}
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <div className="absolute end-3 top-1/2 -translate-y-1/2">
                   {checkingId && (
                     <svg className="animate-spin w-4 h-4 text-stone-400" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
@@ -225,10 +228,10 @@ export default function RecupererMotDePassePage() {
 
               {/* Message sous le champ */}
               {idStatus === 'found' && (
-                <p className="text-xs text-green-600 dark:text-green-400 mt-1"><Check className="w-4 h-4 inline mr-1" />{' '}Compte trouvé</p>
+                <p className="text-xs text-green-600 dark:text-green-400 mt-1"><Check className="w-4 h-4 inline me-1" />{' '}{r.accountFound}</p>
               )}
               {idStatus === 'notfound' && (
-                <p className="text-xs text-red-500 dark:text-red-400 mt-1"><X className="w-4 h-4 inline mr-1" />{' '}Aucun compte associé à cet identifiant</p>
+                <p className="text-xs text-red-500 dark:text-red-400 mt-1"><X className="w-4 h-4 inline me-1" />{' '}{r.accountNotFound}</p>
               )}
             </div>
 
@@ -237,13 +240,13 @@ export default function RecupererMotDePassePage() {
               disabled={loading || idStatus !== 'found'}
               className="w-full bg-orange-700 hover:bg-orange-800 text-white font-semibold py-2.5 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Envoi en cours...' : 'Envoyer le code'}
+              {loading ? r.sendingCode : r.sendCode}
             </button>
 
             {idStatus === 'notfound' && (
               <p className="text-center text-xs text-stone-400 dark:text-stone-500">
-                Pas encore de compte ?{' '}
-                <Link href="/inscription" className="text-orange-700 dark:text-orange-500 hover:underline">S&apos;inscrire</Link>
+                {r.noAccount}{' '}
+                <Link href="/inscription" className="text-orange-700 dark:text-orange-500 hover:underline">{r.register}</Link>
               </p>
             )}
           </form>
@@ -253,7 +256,7 @@ export default function RecupererMotDePassePage() {
         {etape === 'verification' && (
           <form onSubmit={handleVerification} className="space-y-4">
             <div>
-              <label className={labelClass}>Code de vérification</label>
+              <label className={labelClass}>{r.verificationCode}</label>
               <input
                 type="text" value={code}
                 onChange={(e) => setCode(e.target.value)}
@@ -264,11 +267,11 @@ export default function RecupererMotDePassePage() {
             </div>
             <button type="submit" disabled={loading || code.length < 6}
               className="w-full bg-orange-700 hover:bg-orange-800 text-white font-semibold py-2.5 rounded-xl transition disabled:opacity-50">
-              {loading ? 'Vérification...' : 'Vérifier le code'}
+              {loading ? t.auth.verifying : r.verifyCode}
             </button>
             <button type="button" onClick={() => { setEtape('demande'); setError(''); setCode('') }}
               className="w-full text-sm text-stone-500 dark:text-stone-400 hover:text-orange-700 dark:hover:text-orange-500 transition">
-              ← Retour
+              {t.common.backWithArrow}
             </button>
           </form>
         )}
@@ -277,38 +280,38 @@ export default function RecupererMotDePassePage() {
         {etape === 'nouveau' && (
           <form onSubmit={handleNouveau} className="space-y-4">
             <div>
-              <label className={labelClass}>Nouveau mot de passe</label>
+              <label className={labelClass}>{r.newPassword}</label>
               <input
                 type="password" value={nouveauMotDePasse}
                 onChange={(e) => setNouveauMotDePasse(e.target.value)}
-                required className={inputClass} placeholder="Minimum 8 caractères"
+                required className={inputClass} placeholder={r.newPasswordPlaceholder}
               />
               <PasswordStrength password={nouveauMotDePasse} />
             </div>
             <div>
-              <label className={labelClass}>Confirmer le mot de passe</label>
+              <label className={labelClass}>{r.confirmPassword}</label>
               <input
                 type="password" value={confirmerMotDePasse}
                 onChange={(e) => setConfirmerMotDePasse(e.target.value)}
-                required className={inputClass} placeholder="Répétez le mot de passe"
+                required className={inputClass} placeholder={r.repeatPassword}
               />
               {confirmerMotDePasse && nouveauMotDePasse !== confirmerMotDePasse && (
-                <p className="text-xs text-red-500 dark:text-red-400 mt-1">Les mots de passe ne correspondent pas</p>
+                <p className="text-xs text-red-500 dark:text-red-400 mt-1">{r.passwordsDontMatch}</p>
               )}
               {confirmerMotDePasse && nouveauMotDePasse === confirmerMotDePasse && (
-                <p className="text-xs text-green-600 dark:text-green-400 mt-1"><Check className="w-4 h-4 inline mr-1" />{' '}Les mots de passe correspondent</p>
+                <p className="text-xs text-green-600 dark:text-green-400 mt-1"><Check className="w-4 h-4 inline me-1" />{' '}{r.passwordsMatch}</p>
               )}
             </div>
             <button type="submit" disabled={loading || !pwdRules.every(r => r.test(nouveauMotDePasse))}
               className="w-full bg-orange-700 hover:bg-orange-800 text-white font-semibold py-2.5 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed">
-              {loading ? 'Mise à jour...' : 'Mettre à jour le mot de passe'}
+              {loading ? r.updating : r.update}
             </button>
           </form>
         )}
 
         <p className="text-center text-sm text-stone-500 dark:text-stone-400 mt-6">
           <Link href="/connexion" className="text-orange-700 dark:text-orange-500 hover:underline font-medium">
-            ← Retour à la connexion
+            {r.backToLogin}
           </Link>
         </p>
       </div>

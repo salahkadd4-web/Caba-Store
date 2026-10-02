@@ -11,6 +11,7 @@ import {
   heading, inputCls, selectCls, btnPrimaryEmerald, btnSecondary,
   modalOverlay, modalBox, loadingPage, card, kpiCard,
 } from '@/lib/dashboard-ui'
+import { useI18n } from '@/components/I18nProvider'
 
 interface Category { id: string; nom: string }
 interface VariantOption { valeur: string; stock: string }
@@ -50,6 +51,8 @@ const Spinner = () => (
 )
 
 export default function VendeurProduitsPage() {
+  const { t, fmt } = useI18n()
+  const p_ = t.pm
   const [produits,       setProduits]       = useState<Product[]>([])
   const [categories,     setCategories]     = useState<Category[]>([])
   const [loading,        setLoading]        = useState(true)
@@ -164,9 +167,9 @@ export default function VendeurProduitsPage() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erreur')
+      if (!res.ok) throw new Error(data.error || p_.error)
       setShowForm(false); fetchData()
-    } catch (e) { setError(e instanceof Error ? e.message : 'Erreur') }
+    } catch (e) { setError(e instanceof Error ? e.message : p_.error) }
     finally { setSaving(false) }
   }
 
@@ -179,7 +182,7 @@ export default function VendeurProduitsPage() {
   }
 
   const handleDelete = async (p: Product) => {
-    if (!confirm(`Supprimer "${p.nom}" ?`)) return
+    if (!confirm(p_.confirmDelete(p.nom))) return
     await fetch(`/api/vendeur/produits/${p.id}`, { method: 'DELETE' })
     fetchData()
   }
@@ -191,11 +194,11 @@ export default function VendeurProduitsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className={heading}>Mes Produits</h1>
-          <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">{produits.length} produit{produits.length > 1 ? 's' : ''}</p>
+          <h1 className={heading}>{p_.sellerTitle}</h1>
+          <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">{p_.count(produits.length)}</p>
         </div>
         <button onClick={openAdd} className={btnPrimaryEmerald}>
-          <Plus className="w-4 h-4 inline mr-1.5" />Ajouter
+          <Plus className="w-4 h-4 inline me-1.5" />{p_.add}
         </button>
       </div>
 
@@ -203,9 +206,9 @@ export default function VendeurProduitsPage() {
       {!loading && (
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Total',      value: produits.length,                             color: 'text-stone-700 dark:text-stone-200' },
-            { label: 'Actifs',     value: produits.filter(p => p.actif).length,        color: 'text-emerald-600 dark:text-emerald-400' },
-            { label: 'Désactivés', value: produits.filter(p => !p.actif).length,       color: 'text-stone-400' },
+            { label: p_.total,    value: produits.length,                             color: 'text-stone-700 dark:text-stone-200' },
+            { label: p_.active,   value: produits.filter(p => p.actif).length,        color: 'text-emerald-600 dark:text-emerald-400' },
+            { label: p_.inactive, value: produits.filter(p => !p.actif).length,       color: 'text-stone-400' },
           ].map(k => (
             <div key={k.label} className={kpiCard}>
               <p className="text-xs text-stone-500 dark:text-stone-400">{k.label}</p>
@@ -225,24 +228,24 @@ export default function VendeurProduitsPage() {
                   ? 'bg-stone-900 text-white border-stone-900 dark:bg-stone-100 dark:text-stone-900 dark:border-stone-100'
                   : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-stone-400'
               }`}>
-              {v === 'all' ? 'Tous' : v === 'true' ? 'Actifs' : 'Désactivés'}
+              {v === 'all' ? p_.all : v === 'true' ? p_.active : p_.inactive}
             </button>
           ))}
         </div>
         <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
           className={`${selectCls} text-sm py-1.5`}>
-          <option value="">Toutes les catégories</option>
+          <option value="">{p_.allCategories}</option>
           {categories.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
         </select>
       </div>
 
       {/* Grille */}
       {loading ? (
-        <div className={loadingPage}>Chargement…</div>
+        <div className={loadingPage}>{t.common.loading}</div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-stone-400">
           <Package className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p>Aucun produit correspondant aux filtres</p>
+          <p>{p_.noMatch}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -267,7 +270,7 @@ export default function VendeurProduitsPage() {
                       ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
                       : 'bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400'
                   }`}>
-                    {p.actif ? 'Actif' : 'Désactivé'}
+                    {p.actif ? p_.statusActive : p_.statusInactive}
                   </span>
                 </div>
                 <p className="text-xs text-stone-400 mb-1">{p.category.nom}</p>
@@ -275,12 +278,12 @@ export default function VendeurProduitsPage() {
                 {/* Prix */}
                 <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                   <p className="text-sm font-bold text-orange-600 dark:text-orange-400">
-                    {p.prix.toLocaleString('fr-DZ')} DA
+                    {fmt.price(p.prix)}
                   </p>
                   {Array.isArray(p.prixVariables) && p.prixVariables.length > 0 && (
                     <span className="flex items-center gap-0.5 text-[10px] bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-300 font-semibold px-1.5 py-0.5 rounded-full">
                       <TrendingDown className="w-2.5 h-2.5" />
-                      {p.prixVariables.length} palier{p.prixVariables.length > 1 ? 's' : ''}
+                      {p_.tiers(p.prixVariables.length)}
                     </span>
                   )}
                 </div>
@@ -305,8 +308,8 @@ export default function VendeurProduitsPage() {
                 )}
 
                 <div className="flex items-center gap-3 text-xs text-stone-400 mb-3">
-                  <span>Stock : {p.stock}</span>
-                  <span>{p._count.orderItems} ventes</span>
+                  <span>{p_.stockLabel(p.stock)}</span>
+                  <span>{p_.sales(p._count.orderItems)}</span>
                   <span className="flex items-center gap-0.5">
                     <Heart className="w-3 h-3" />{p._count.favorites}
                   </span>
@@ -315,13 +318,13 @@ export default function VendeurProduitsPage() {
                 <div className="flex gap-2">
                   <button onClick={() => openEdit(p)}
                     className="flex-1 text-xs bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 px-2 py-1.5 rounded-lg transition flex items-center justify-center gap-1">
-                    <Pencil className="w-3 h-3" /> Modifier
+                    <Pencil className="w-3 h-3" /> {p_.edit}
                   </button>
                   <button onClick={() => toggleActif(p)}
                     className="flex-1 text-xs bg-amber-50 dark:bg-amber-950 hover:bg-amber-100 dark:hover:bg-amber-900 text-amber-700 dark:text-amber-300 px-2 py-1.5 rounded-lg transition flex items-center justify-center gap-1">
                     {p.actif
-                      ? <><EyeOff className="w-3 h-3" /> Désactiver</>
-                      : <><Eye className="w-3 h-3" /> Activer</>
+                      ? <><EyeOff className="w-3 h-3" /> {p_.deactivate}</>
+                      : <><Eye className="w-3 h-3" /> {p_.activate}</>
                     }
                   </button>
                   <button onClick={() => handleDelete(p)}
@@ -343,7 +346,7 @@ export default function VendeurProduitsPage() {
             {/* Header */}
             <div className="sticky top-0 bg-[#FAF7F2] dark:bg-stone-900 z-10 flex items-center justify-between p-5 border-b border-stone-200 dark:border-stone-800">
               <h2 className="text-base font-bold text-stone-800 dark:text-stone-100">
-                {editing ? 'Modifier le produit' : 'Nouveau produit'}
+                {editing ? p_.editProduct : p_.newProduct}
               </h2>
               <button onClick={() => setShowForm(false)}
                 className="text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition">
@@ -362,10 +365,10 @@ export default function VendeurProduitsPage() {
                         : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
                     }`}>
                     {tab === 'infos'
-                      ? <><ClipboardList className="w-3 h-3" />Infos</>
+                      ? <><ClipboardList className="w-3 h-3" />{p_.tabInfo}</>
                       : tab === 'prix'
-                        ? <><TrendingDown className="w-3 h-3" />Prix</>
-                        : <><Palette className="w-3 h-3" />Variantes</>
+                        ? <><TrendingDown className="w-3 h-3" />{p_.tabPrice}</>
+                        : <><Palette className="w-3 h-3" />{p_.tabVariants}</>
                     }
                     {tab === 'prix' && prixTiers.length > 0 && (
                       <span className="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-[9px] px-1 rounded-full">
@@ -391,31 +394,31 @@ export default function VendeurProduitsPage() {
               {activeTab === 'infos' && (
                 <>
                   <div>
-                    <label className="block text-xs font-medium text-stone-600 dark:text-stone-300 mb-1.5">Nom du produit *</label>
+                    <label className="block text-xs font-medium text-stone-600 dark:text-stone-300 mb-1.5">{p_.productName}</label>
                     <input type="text" value={form.nom} onChange={e => setForm(f => ({ ...f, nom: e.target.value }))}
-                      className={inputCls} placeholder="Ex: Chaussures de sport…" />
+                      className={inputCls} placeholder={p_.namePlaceholder} />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-stone-600 dark:text-stone-300 mb-1.5">Description</label>
+                    <label className="block text-xs font-medium text-stone-600 dark:text-stone-300 mb-1.5">{p_.description}</label>
                     <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3}
                       className="w-full border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-800 dark:text-stone-100 placeholder-stone-400 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 transition resize-none" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-stone-600 dark:text-stone-300 mb-1.5">Stock</label>
+                      <label className="block text-xs font-medium text-stone-600 dark:text-stone-300 mb-1.5">{p_.stock}</label>
                       <input type="number" value={form.stock} onChange={e => setForm(f => ({ ...f, stock: e.target.value }))} min="0"
                         className={inputCls} />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-stone-600 dark:text-stone-300 mb-1.5">Catégorie *</label>
+                      <label className="block text-xs font-medium text-stone-600 dark:text-stone-300 mb-1.5">{p_.category}</label>
                       {categories.length === 0 ? (
                         <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 p-2 rounded-xl">
-                          Aucune catégorie approuvée.
+                          {p_.noApprovedCategory}
                         </p>
                       ) : (
                         <select value={form.categoryId} onChange={e => setForm(f => ({ ...f, categoryId: e.target.value }))}
                           className={`${selectCls} w-full`}>
-                          <option value="">Choisir</option>
+                          <option value="">{p_.choose}</option>
                           {categories.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
                         </select>
                       )}
@@ -424,13 +427,13 @@ export default function VendeurProduitsPage() {
 
                   {/* Images produit */}
                   <div>
-                    <label className="block text-xs font-medium text-stone-600 dark:text-stone-300 mb-2">Images du produit</label>
+                    <label className="block text-xs font-medium text-stone-600 dark:text-stone-300 mb-2">{p_.productImages}</label>
                     <div className="flex flex-wrap gap-2">
                       {form.images.map((img, idx) => (
                         <div key={idx} className="relative group">
                           <Image src={img} alt="" width={64} height={64} className="w-16 h-16 object-cover rounded-xl border border-stone-200 dark:border-stone-700" />
                           <button onClick={() => setForm(f => ({ ...f, images: f.images.filter((_, i) => i !== idx) }))}
-                            className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            className="absolute -top-1 -end-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                             <X className="w-2.5 h-2.5" />
                           </button>
                         </div>
@@ -448,10 +451,10 @@ export default function VendeurProduitsPage() {
                   <div className="flex items-center gap-3">
                     <button onClick={() => setForm(f => ({ ...f, actif: !f.actif }))}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${form.actif ? 'bg-emerald-500' : 'bg-stone-300 dark:bg-stone-600'}`}>
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${form.actif ? 'translate-x-6' : 'translate-x-1'}`} />
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${form.actif ? 'translate-x-6 rtl:-translate-x-6' : 'translate-x-1 rtl:-translate-x-1'}`} />
                     </button>
                     <span className="text-sm text-stone-700 dark:text-stone-200">
-                      Produit {form.actif ? 'actif (visible)' : 'désactivé (masqué)'}
+                      {form.actif ? p_.productActive : p_.productInactive}
                     </span>
                   </div>
                 </>
@@ -461,33 +464,33 @@ export default function VendeurProduitsPage() {
               {activeTab === 'prix' && (
                 <>
                   <div>
-                    <label className="block text-xs font-medium text-stone-600 dark:text-stone-300 mb-1.5">Prix de base (DA) *</label>
+                    <label className="block text-xs font-medium text-stone-600 dark:text-stone-300 mb-1.5">{p_.basePrice}</label>
                     <input type="number" step="0.01" value={form.prix} onChange={e => setForm(f => ({ ...f, prix: e.target.value }))} min="0"
-                      className={inputCls} placeholder="Prix pour 1 unité" />
-                    <p className="text-xs text-stone-400 mt-1">Affiché par défaut — barré quand un palier s&apos;applique</p>
+                      className={inputCls} placeholder={p_.basePricePlaceholder} />
+                    <p className="text-xs text-stone-400 mt-1">{p_.basePriceHint}</p>
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <div>
-                        <p className="text-xs font-medium text-stone-600 dark:text-stone-300">Prix dégressifs par quantité</p>
-                        <p className="text-[10px] text-stone-400 mt-0.5">Le prix de base sera barré quand un palier s&apos;applique</p>
+                        <p className="text-xs font-medium text-stone-600 dark:text-stone-300">{p_.degressiveTitle}</p>
+                        <p className="text-[10px] text-stone-400 mt-0.5">{p_.degressiveHint}</p>
                       </div>
                       <button type="button" onClick={() => setPrixTiers(t => [...t, emptyTier()])}
                         className="text-xs bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-lg hover:bg-emerald-200 transition flex items-center gap-1">
-                        <Plus className="w-3 h-3" /> Palier
+                        <Plus className="w-3 h-3" /> {p_.addTier}
                       </button>
                     </div>
 
                     {prixTiers.length === 0 ? (
                       <div className="border-2 border-dashed border-stone-200 dark:border-stone-700 rounded-xl py-6 text-center">
-                        <p className="text-sm text-stone-400 dark:text-stone-500 mb-1">Aucun palier de prix</p>
-                        <p className="text-xs text-stone-300 dark:text-stone-600">Exemple : 1–4 unités → 1500 DA, 5+ unités → 1200 DA</p>
+                        <p className="text-sm text-stone-400 dark:text-stone-500 mb-1">{p_.noTier}</p>
+                        <p className="text-xs text-stone-300 dark:text-stone-600">{p_.tierExample}</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
                         <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 text-[10px] text-stone-500 dark:text-stone-400 px-1 font-semibold uppercase tracking-wide">
-                          <span>Qté min</span><span>Qté max</span><span>Prix/u (DA)</span><span />
+                          <span>{p_.minQty}</span><span>{p_.maxQty}</span><span>{p_.unitPrice}</span><span />
                         </div>
                         {prixTiers.map((tier, i) => (
                           <div key={i} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-center">
@@ -496,7 +499,7 @@ export default function VendeurProduitsPage() {
                               placeholder="1" className={inputSm} />
                             <input type="number" value={tier.maxQte}
                               onChange={e => setPrixTiers(t => t.map((x, j) => j === i ? { ...x, maxQte: e.target.value } : x))}
-                              placeholder="vide=∞" className={inputSm} />
+                              placeholder={p_.emptyInfinite} className={inputSm} />
                             <input type="number" step="0.01" value={tier.prix}
                               onChange={e => setPrixTiers(t => t.map((x, j) => j === i ? { ...x, prix: e.target.value } : x))}
                               placeholder="1200" className={inputSm} />
@@ -508,16 +511,16 @@ export default function VendeurProduitsPage() {
                         ))}
                         {form.prix && prixTiers.some(t => t.minQte && t.prix) && (
                           <div className="mt-3 p-3 bg-stone-50 dark:bg-stone-800 rounded-xl">
-                            <p className="text-[10px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wide mb-2">Aperçu</p>
+                            <p className="text-[10px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wide mb-2">{p_.preview}</p>
                             <div className="space-y-1">
                               {prixTiers.filter(t => t.minQte && t.prix).map((t, i) => {
                                 const r = Math.round((1 - parseFloat(t.prix) / parseFloat(form.prix)) * 100)
                                 return (
                                   <div key={i} className="flex justify-between text-xs text-stone-600 dark:text-stone-400">
-                                    <span>{t.maxQte ? `${t.minQte}–${t.maxQte} unités` : `${t.minQte}+ unités`}</span>
+                                    <span>{t.maxQte ? p_.unitsRange(t.minQte, t.maxQte) : p_.unitsPlus(t.minQte)}</span>
                                     <span className="font-semibold text-stone-800 dark:text-stone-200">
-                                      {parseFloat(t.prix).toFixed(2)} DA
-                                      {r > 0 && <span className="ml-1 text-emerald-600 dark:text-emerald-400">−{r}%</span>}
+                                      {parseFloat(t.prix).toFixed(2)} {fmt.currency}
+                                      {r > 0 && <span className="ms-1 text-emerald-600 dark:text-emerald-400">−{r}%</span>}
                                     </span>
                                   </div>
                                 )
@@ -525,7 +528,7 @@ export default function VendeurProduitsPage() {
                             </div>
                           </div>
                         )}
-                        <p className="text-[10px] text-stone-400">Laissez &quot;Qté max&quot; vide pour &quot;et plus&quot; (ex : 10+)</p>
+                        <p className="text-[10px] text-stone-400">{p_.maxEmptyHint}</p>
                       </div>
                     )}
                   </div>
@@ -537,34 +540,34 @@ export default function VendeurProduitsPage() {
                 <>
                   <div>
                     <label className="flex items-center gap-1 text-xs font-medium text-stone-600 dark:text-stone-300 mb-1.5">
-                      <Ruler className="w-3.5 h-3.5" /> Type d&apos;option
+                      <Ruler className="w-3.5 h-3.5" /> {p_.optionType}
                     </label>
                     <input type="text" value={form.typeOption}
                       onChange={e => setForm(f => ({ ...f, typeOption: e.target.value }))}
-                      placeholder="ex : Taille, Pointure, Volume, Contenance…"
+                      placeholder={p_.optionTypePlaceholder}
                       className={inputCls} />
                     <p className="text-[10px] text-stone-400 mt-1">
-                      Laissez vide si vos variantes n&apos;ont pas de sous-options
+                      {p_.optionTypeHint}
                     </p>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs font-medium text-stone-600 dark:text-stone-300 flex items-center gap-1">
-                        <Palette className="w-3.5 h-3.5" /> Couleurs ou parfums
+                        <Palette className="w-3.5 h-3.5" /> {p_.colorsOrScents}
                       </p>
-                      <p className="text-[10px] text-stone-400 mt-0.5">Chaque variante a son propre stock et ses images</p>
+                      <p className="text-[10px] text-stone-400 mt-0.5">{p_.variantsHint}</p>
                     </div>
                     <button type="button" onClick={() => setVariants(vs => [...vs, emptyVariant()])}
                       className="text-xs bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-lg hover:bg-emerald-200 transition flex items-center gap-1">
-                      <Plus className="w-3 h-3" /> Variante
+                      <Plus className="w-3 h-3" /> {p_.addVariant}
                     </button>
                   </div>
 
                   {variants.length === 0 ? (
                     <div className="border-2 border-dashed border-stone-200 dark:border-stone-700 rounded-xl py-6 text-center">
-                      <p className="text-sm text-stone-400 dark:text-stone-500 mb-1">Aucune variante</p>
-                      <p className="text-xs text-stone-300 dark:text-stone-600">Exemple : Rouge, Bleu, Lavande, Vanille…</p>
+                      <p className="text-sm text-stone-400 dark:text-stone-500 mb-1">{p_.noVariant}</p>
+                      <p className="text-xs text-stone-300 dark:text-stone-600">{p_.variantExample}</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -576,7 +579,7 @@ export default function VendeurProduitsPage() {
                               style={{ backgroundColor: v.couleur || '#e5e7eb' }} />
                             <input type="text" value={v.nom}
                               onChange={e => setVariants(vs => vs.map((x, j) => j === i ? { ...x, nom: e.target.value } : x))}
-                              placeholder="Nom (ex : Rouge, Lavande)"
+                              placeholder={p_.variantNamePlaceholder}
                               className={`flex-1 ${inputSm}`} />
                             <button type="button" onClick={() => setVariants(vs => vs.filter((_, j) => j !== i))}
                               className="text-red-400 hover:text-red-600 p-1 shrink-0">
@@ -587,7 +590,7 @@ export default function VendeurProduitsPage() {
                           {/* Couleur + Stock */}
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <label className="text-[10px] text-stone-500 dark:text-stone-400 mb-1 block">Couleur (optionnel)</label>
+                              <label className="text-[10px] text-stone-500 dark:text-stone-400 mb-1 block">{p_.colorOptional}</label>
                               <div className="flex items-center gap-1.5">
                                 <input type="color" value={v.couleur || '#000000'}
                                   onChange={e => setVariants(vs => vs.map((x, j) => j === i ? { ...x, couleur: e.target.value } : x))}
@@ -599,7 +602,7 @@ export default function VendeurProduitsPage() {
                               </div>
                             </div>
                             <div>
-                              <label className="text-[10px] text-stone-500 dark:text-stone-400 mb-1 block">Stock *</label>
+                              <label className="text-[10px] text-stone-500 dark:text-stone-400 mb-1 block">{p_.stockRequired}</label>
                               <input type="number" value={v.stock} min="0"
                                 onChange={e => setVariants(vs => vs.map((x, j) => j === i ? { ...x, stock: e.target.value } : x))}
                                 placeholder="0" className={`w-full ${inputSm}`} />
@@ -609,8 +612,8 @@ export default function VendeurProduitsPage() {
                           {/* Images de la variante */}
                           <div>
                             <label className="text-[10px] text-stone-500 dark:text-stone-400 mb-1.5 block">
-                              Images — {v.nom || 'variante'}{' '}
-                              <span className="text-stone-300 dark:text-stone-600">(remplacent les images du produit)</span>
+                              {p_.variantImages(v.nom || p_.variantFallback)}{' '}
+                              <span className="text-stone-300 dark:text-stone-600">{p_.replacesProductImages}</span>
                             </label>
                             <div className="flex flex-wrap gap-2">
                               {v.images.map((img, imgIdx) => (
@@ -619,7 +622,7 @@ export default function VendeurProduitsPage() {
                                   <button
                                     onClick={() => setVariants(vs => vs.map((x, j) => j === i
                                       ? { ...x, images: x.images.filter((_, k) => k !== imgIdx) } : x))}
-                                    className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-3.5 h-3.5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    className="absolute -top-1 -end-1 bg-red-500 text-white rounded-full w-3.5 h-3.5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                     <X className="w-2.5 h-2.5" />
                                   </button>
                                 </div>
@@ -639,18 +642,18 @@ export default function VendeurProduitsPage() {
                               <div className="flex items-center justify-between mb-1.5">
                                 <label className="text-[10px] text-stone-500 dark:text-stone-400 flex items-center gap-1 font-medium">
                                   <Ruler className="w-3 h-3" />
-                                  {form.typeOption}s disponibles{v.nom ? ` — ${v.nom}` : ''}
+                                  {p_.optionsAvailable(form.typeOption, v.nom)}
                                 </label>
                                 <button type="button"
                                   onClick={() => setVariants(vs => vs.map((x, j) => j === i
                                     ? { ...x, options: [...x.options, emptyOption()] } : x))}
                                   className="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded flex items-center gap-0.5 hover:bg-emerald-200 transition">
-                                  <Plus className="w-2.5 h-2.5" /> Ajouter
+                                  <Plus className="w-2.5 h-2.5" /> {p_.add}
                                 </button>
                               </div>
                               {v.options.length === 0 ? (
                                 <p className="text-[10px] text-stone-400 italic flex items-center gap-1">
-                                  <AlertCircle className="w-3 h-3" /> Aucune option — cliquez Ajouter
+                                  <AlertCircle className="w-3 h-3" /> {p_.noOptionClickAdd}
                                 </p>
                               ) : (
                                 <div className="flex flex-wrap gap-2">
@@ -661,14 +664,14 @@ export default function VendeurProduitsPage() {
                                         onChange={e => setVariants(vs => vs.map((x, j) => j === i
                                           ? { ...x, options: x.options.map((o, k) => k === oi ? { ...o, valeur: e.target.value } : o) }
                                           : x))}
-                                        placeholder="ex : 40"
+                                        placeholder={p_.optionPlaceholder}
                                         className="w-12 text-xs bg-transparent focus:outline-none text-stone-800 dark:text-stone-100 font-semibold" />
                                       <span className="text-stone-200 dark:text-stone-700 text-xs">|</span>
                                       <input type="number" value={opt.stock}
                                         onChange={e => setVariants(vs => vs.map((x, j) => j === i
                                           ? { ...x, options: x.options.map((o, k) => k === oi ? { ...o, stock: e.target.value } : o) }
                                           : x))}
-                                        placeholder="stk"
+                                        placeholder={p_.stockShort}
                                         className="w-10 text-xs bg-transparent focus:outline-none text-stone-400 dark:text-stone-500" />
                                       <button type="button"
                                         onClick={() => setVariants(vs => vs.map((x, j) => j === i
@@ -699,10 +702,10 @@ export default function VendeurProduitsPage() {
 
             {/* Footer */}
             <div className="sticky bottom-0 bg-[#FAF7F2] dark:bg-stone-900 flex gap-3 p-5 border-t border-stone-200 dark:border-stone-800">
-              <button onClick={() => setShowForm(false)} className={`flex-1 ${btnSecondary}`}>Annuler</button>
+              <button onClick={() => setShowForm(false)} className={`flex-1 ${btnSecondary}`}>{t.common.cancel}</button>
               <button onClick={handleSubmit} disabled={saving || !form.nom || !form.prix || !form.categoryId}
                 className={`flex-1 ${btnPrimaryEmerald}`}>
-                {saving ? 'Enregistrement…' : editing ? 'Enregistrer' : 'Ajouter'}
+                {saving ? p_.saving : editing ? p_.save : p_.add}
               </button>
             </div>
           </div>

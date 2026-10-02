@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Package, Tag, Search, X, ArrowRight } from 'lucide-react'
+import { useI18n } from '@/components/I18nProvider'
 
 type SearchResult = {
   categories: { id: string; nom: string; image: string | null }[]
@@ -19,6 +20,8 @@ export default function SearchBar({
   autoFocus?: boolean
 }) {
   const router = useRouter()
+  const { t, fmt } = useI18n()
+  const s = t.layout.searchBar
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult | null>(null)
   const [loading, setLoading] = useState(false)
@@ -96,7 +99,7 @@ export default function SearchBar({
 
       {/* Barre de recherche */}
       <form onSubmit={handleSubmit} className="relative w-full">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-500 pointer-events-none" />
+        <Search className="absolute start-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-500 pointer-events-none" />
 
         <input
           ref={inputRef}
@@ -105,19 +108,19 @@ export default function SearchBar({
           onChange={(e) => { setQuery(e.target.value); setOpen(true) }}
           onFocus={() => setOpen(true)}
           onKeyDown={handleKeyDown}
-          placeholder="Rechercher un produit, une catégorie..."
-          className="w-full bg-white dark:bg-stone-800 text-stone-800 dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-500 border border-stone-200 dark:border-stone-700 rounded-full pl-11 pr-10 py-2.5 text-sm focus:outline-none focus:border-orange-700 dark:focus:border-orange-400 focus:ring-2 focus:ring-orange-700/10 dark:focus:ring-orange-400/20 transition-colors"
+          placeholder={s.placeholder}
+          className="w-full bg-white dark:bg-stone-800 text-stone-800 dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-500 border border-stone-200 dark:border-stone-700 rounded-full ps-11 pe-10 py-2.5 text-sm focus:outline-none focus:border-orange-700 dark:focus:border-orange-400 focus:ring-2 focus:ring-orange-700/10 dark:focus:ring-orange-400/20 transition-colors"
         />
 
         {/* Indicateur droit : spinner OU bouton clear */}
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+        <div className="absolute end-3 top-1/2 -translate-y-1/2 flex items-center">
           {loading ? (
             <div className="w-4 h-4 border-2 border-orange-700 border-t-transparent rounded-full animate-spin" />
           ) : query.length > 0 ? (
             <button
               type="button"
               onClick={clear}
-              aria-label="Effacer"
+              aria-label={t.common.clear}
               className="w-5 h-5 rounded-full bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-300 dark:hover:bg-stone-600 flex items-center justify-center transition-colors"
             >
               <X className="w-3 h-3" />
@@ -128,13 +131,13 @@ export default function SearchBar({
 
       {/* Dropdown résultats */}
       {showDropdown && hasResults && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-2xl shadow-xl z-50 overflow-hidden max-h-112 overflow-y-auto">
+        <div className="absolute top-full start-0 end-0 mt-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-2xl shadow-xl z-50 overflow-hidden max-h-112 overflow-y-auto">
 
           {/* Catégories */}
           {results.categories.length > 0 && (
             <div>
               <p className="px-4 pt-3 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
-                Catégories
+                {s.categories}
               </p>
               {results.categories.map((cat) => (
                 <Link
@@ -160,7 +163,7 @@ export default function SearchBar({
           {results.produits.length > 0 && (
             <div className="border-t border-stone-100 dark:border-stone-800">
               <p className="px-4 pt-3 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
-                Produits
+                {s.products}
               </p>
               {results.produits.map((prod) => (
                 <Link
@@ -183,7 +186,7 @@ export default function SearchBar({
                     <p className="text-xs text-stone-400 dark:text-stone-500">{prod.category.nom}</p>
                   </div>
                   <span className="text-sm font-semibold text-orange-700 dark:text-orange-400 shrink-0">
-                    {prod.prix.toFixed(2)} DA
+                    {prod.prix.toFixed(2)} {fmt.currency}
                   </span>
                 </Link>
               ))}
@@ -196,8 +199,8 @@ export default function SearchBar({
               onClick={submitSearch}
               className="w-full flex items-center justify-center gap-2 py-3 text-sm font-medium text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-stone-800 transition-colors"
             >
-              Voir tous les résultats
-              <ArrowRight className="w-4 h-4" />
+              {s.seeAllResults}
+              <ArrowRight className="w-4 h-4 rtl-flip" />
             </button>
           </div>
         </div>
@@ -205,10 +208,10 @@ export default function SearchBar({
 
       {/* Aucun résultat */}
       {showDropdown && results && !hasResults && !loading && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-2xl shadow-xl z-50 p-6 text-center">
+        <div className="absolute top-full start-0 end-0 mt-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-2xl shadow-xl z-50 p-6 text-center">
           <Search className="w-6 h-6 text-stone-300 dark:text-stone-600 mx-auto mb-2" />
           <p className="text-sm text-stone-500 dark:text-stone-400">
-            Aucun résultat pour <span className="font-semibold text-stone-700 dark:text-stone-300">&quot;{query}&quot;</span>
+            {s.noResultsFor} <span className="font-semibold text-stone-700 dark:text-stone-300">&quot;{query}&quot;</span>
           </p>
         </div>
       )}

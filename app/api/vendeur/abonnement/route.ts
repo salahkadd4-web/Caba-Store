@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { getI18n } from '@/lib/i18n/server'
 import {
   SELLER_SUBSCRIPTION_PRICING,
   buildSellerInvoiceRecord,
@@ -9,8 +10,9 @@ import {
 } from '@/lib/seller-billing'
 
 export async function GET() {
+  const { t } = await getI18n()
   const session = await auth()
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+  if (!session?.user) return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
 
   const profile = await prisma.vendeurProfile.findUnique({
     where: { userId: session.user.id },
@@ -24,7 +26,7 @@ export async function GET() {
   })
 
   if (!profile?.abonnement)
-    return NextResponse.json({ error: 'Aucun abonnement trouvé' }, { status: 404 })
+    return NextResponse.json({ error: t.msg.noSubscription }, { status: 404 })
 
   const { abonnement } = profile
   const maintenant = new Date()

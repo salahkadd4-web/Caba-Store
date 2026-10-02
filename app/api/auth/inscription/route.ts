@@ -8,6 +8,8 @@ import {
   rateLimit, rateLimits,
   sanitize, isValidEmail, isValidPhone, isStrongPassword,
 } from '@/lib/security'
+import { getI18n } from '@/lib/i18n/server'
+import { validateWilayaCommune } from '@/lib/algeria/server'
 
 const IS_DEV = process.env.NODE_ENV === 'development'
 const DEV_OTP_CODE = '000000'
@@ -15,6 +17,9 @@ const DEV_OTP_CODE = '000000'
 export async function POST(req: NextRequest) {
   const limited = await rateLimit(req, rateLimits.auth)
   if (limited) return limited
+
+  const { t, locale } = await getI18n()
+  const m = t.auth.api
 
   try {
     const body = await req.json()
@@ -31,54 +36,69 @@ export async function POST(req: NextRequest) {
     const roleChoisi  = body.role === 'VENDEUR' ? 'VENDEUR' : 'CLIENT'
     // Nom de boutique — obligatoire pour les vendeurs
     const nomBoutique = body.nomBoutique ? sanitize(body.nomBoutique) : null
+    // Wilaya (code) / commune de la boutique — vendeurs uniquement, validées plus bas
+    let wilaya: string | null  = null
+    let commune: string | null = null
 
     // ── Étape 1 : Envoi du code ──────────────────────────
     if (etape === 1 || !etape) {
       if (!nom || !prenom || !motDePasse) {
         return NextResponse.json(
-          { error: 'Nom, prénom et mot de passe sont obligatoires' },
+          { error: m.requiredFields },
           { status: 400 }
         )
       }
 
       if (nom.length > 50 || prenom.length > 50) {
-        return NextResponse.json({ error: 'Nom ou prénom trop long' }, { status: 400 })
+        return NextResponse.json({ error: m.nameTooLong }, { status: 400 })
       }
 
       if (!email && !telephone) {
         return NextResponse.json(
-          { error: 'Email ou téléphone est obligatoire' },
+          { error: m.emailOrPhoneRequired },
           { status: 400 }
         )
       }
 
       if (!isStrongPassword(motDePasse)) {
         return NextResponse.json({
-          error: 'Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial',
+          error: m.weakPassword,
         }, { status: 400 })
       }
 
-      // Validation spécifique vendeur
+      // Validation spécifique vendeur (nom de boutique + wilaya/commune de la boutique)
       if (roleChoisi === 'VENDEUR') {
         if (!nomBoutique || nomBoutique.length < 2) {
           return NextResponse.json(
-            { error: 'Le nom de la boutique est obligatoire pour les vendeurs (min. 2 caractères)' },
+            { error: m.shopNameRequiredSeller },
             { status: 400 }
           )
         }
         if (nomBoutique.length > 100) {
-          return NextResponse.json({ error: 'Nom de boutique trop long (100 caractères max)' }, { status: 400 })
+          return NextResponse.json({ error: m.shopNameTooLong }, { status: 400 })
         }
+        const lieu = validateWilayaCommune(body.wilaya, body.commune)
+        if (!lieu.ok) {
+          return NextResponse.json(
+            { error: lieu.field === 'wilaya' ? t.address.invalidWilaya : t.address.invalidCommune },
+            { status: 400 }
+          )
+        }
+        if (!lieu.wilaya || !lieu.commune) {
+          return NextResponse.json({ error: m.sellerLocationRequired }, { status: 400 })
+        }
+        wilaya  = lieu.wilaya
+        commune = lieu.commune
       }
 
       // ── Inscription par email ──
       if (email) {
         if (!isValidEmail(email)) {
-          return NextResponse.json({ error: 'Format email invalide' }, { status: 400 })
+          return NextResponse.json({ error: m.invalidEmail }, { status: 400 })
         }
         const existingEmail = await prisma.user.findUnique({ where: { email } })
         if (existingEmail) {
-          return NextResponse.json({ error: 'Cet email est déjà utilisé' }, { status: 400 })
+          return NextResponse.json({ error: m.emailUsed }, { status: 400 })
         }
 
         // En dev : code fixe 000000, sinon code aléatoire
@@ -91,19 +111,19 @@ export async function POST(req: NextRequest) {
             identifiant: email,
             token: otpCode,
             expiresAt,
-            data: JSON.stringify({ nom, prenom, email, motDePasse, role: roleChoisi, nomBoutique }),
+            data: JSON.stringify({ nom, prenom, email, motDePasse, role: roleChoisi, nomBoutique, wilaya, commune }),
           },
         })
 
         // En dev : pas d'envoi d'email réel
         if (!IS_DEV) {
-          await sendConfirmationEmail(email, otpCode, nom)
+          await sendConfirmationEmail(email, otpCode, nom, locale)
         }
 
         return NextResponse.json({
           message: IS_DEV
-            ? '[DEV] Vérification désactivée — utilisez le code : 000000'
-            : 'Code envoyé par email',
+            ? m.devCode
+            : m.codeSentEmail,
           requireOTP: true,
           ...(IS_DEV && { devCode: DEV_OTP_CODE }),
         })
@@ -112,11 +132,11 @@ export async function POST(req: NextRequest) {
       // ── Inscription par téléphone ──
       if (telephone) {
         if (!isValidPhone(telephone)) {
-          return NextResponse.json({ error: 'Numéro invalide. Format: 05XX XX XX XX' }, { status: 400 })
+          return NextResponse.json({ error: m.invalidPhone }, { status: 400 })
         }
         const existingPhone = await prisma.user.findUnique({ where: { telephone } })
         if (existingPhone) {
-          return NextResponse.json({ error: 'Ce numéro est déjà utilisé' }, { status: 400 })
+          return NextResponse.json({ error: m.phoneUsed }, { status: 400 })
         }
 
         await prisma.otpToken.deleteMany({ where: { identifiant: telephone } })
@@ -126,19 +146,19 @@ export async function POST(req: NextRequest) {
             // En dev : code fixe 000000, sinon marqueur Twilio Verify
             token: IS_DEV ? DEV_OTP_CODE : 'TWILIO_VERIFY',
             expiresAt: new Date(Date.now() + 15 * 60 * 1000),
-            data: JSON.stringify({ nom, prenom, telephone, motDePasse, role: roleChoisi, nomBoutique }),
+            data: JSON.stringify({ nom, prenom, telephone, motDePasse, role: roleChoisi, nomBoutique, wilaya, commune }),
           },
         })
 
         // En dev : pas d'envoi SMS réel
         if (!IS_DEV) {
-          await sendOTP(telephone)
+          await sendOTP(telephone, locale)
         }
 
         return NextResponse.json({
           message: IS_DEV
-            ? '[DEV] Vérification désactivée — utilisez le code : 000000'
-            : 'Code envoyé par SMS',
+            ? m.devCode
+            : m.codeSentSms,
           requireOTP: true,
           ...(IS_DEV && { devCode: DEV_OTP_CODE }),
         })
@@ -152,11 +172,11 @@ export async function POST(req: NextRequest) {
 
       const identifiant = email || telephone
       if (!identifiant || !code) {
-        return NextResponse.json({ error: 'Code requis' }, { status: 400 })
+        return NextResponse.json({ error: m.codeRequired }, { status: 400 })
       }
 
       if (!/^\d{6}$/.test(String(code))) {
-        return NextResponse.json({ error: 'Code invalide' }, { status: 400 })
+        return NextResponse.json({ error: m.invalidCode }, { status: 400 })
       }
 
       const otpToken = await prisma.otpToken.findFirst({
@@ -164,7 +184,7 @@ export async function POST(req: NextRequest) {
       })
 
       if (!otpToken) {
-        return NextResponse.json({ error: 'Session expirée, recommencez' }, { status: 400 })
+        return NextResponse.json({ error: m.sessionExpired }, { status: 400 })
       }
 
       // ── Vérification OTP (bypass en dev avec le code 000000) ──
@@ -177,14 +197,14 @@ export async function POST(req: NextRequest) {
             Buffer.from(String(code))
           )
           if (!valid) {
-            return NextResponse.json({ error: 'Code invalide ou expiré' }, { status: 400 })
+            return NextResponse.json({ error: m.codeInvalidOrExpired }, { status: 400 })
           }
         }
 
         if (telephone) {
           const isValid = await verifyOTP(telephone, String(code))
           if (!isValid) {
-            return NextResponse.json({ error: 'Code invalide ou expiré' }, { status: 400 })
+            return NextResponse.json({ error: m.codeInvalidOrExpired }, { status: 400 })
           }
         }
       }
@@ -192,7 +212,7 @@ export async function POST(req: NextRequest) {
       const savedData = JSON.parse(otpToken.data)
 
       if (!isStrongPassword(savedData.motDePasse)) {
-        return NextResponse.json({ error: 'Mot de passe invalide' }, { status: 400 })
+        return NextResponse.json({ error: m.invalidPassword }, { status: 400 })
       }
 
       const hashedPassword = await bcrypt.hash(savedData.motDePasse, 12)
@@ -206,6 +226,8 @@ export async function POST(req: NextRequest) {
           telephone:  savedData.telephone || null,
           motDePasse: hashedPassword,
           role:       savedData.role || 'CLIENT',
+          wilaya:     savedData.wilaya  || null,
+          commune:    savedData.commune || null,
         },
       })
 
@@ -223,15 +245,15 @@ export async function POST(req: NextRequest) {
       await prisma.otpToken.delete({ where: { id: otpToken.id } })
 
       const message = savedData.role === 'VENDEUR'
-        ? 'Compte vendeur créé. Il sera activé après validation par notre équipe.'
-        : 'Compte créé avec succès'
+        ? m.sellerCreated
+        : m.accountCreated
 
       return NextResponse.json({ message, role: savedData.role }, { status: 201 })
     }
 
-    return NextResponse.json({ error: 'Requête invalide' }, { status: 400 })
+    return NextResponse.json({ error: m.invalidRequest }, { status: 400 })
   } catch (error) {
     console.error('Erreur inscription:', error)
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }

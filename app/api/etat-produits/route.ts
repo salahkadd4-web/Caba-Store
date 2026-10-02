@@ -10,11 +10,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
+import { getI18n } from '@/lib/i18n/server'
 
 export async function GET(req: NextRequest) {
+  const { t } = await getI18n()
   try {
     const token = await getAuthToken()
-    if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    if (!token) return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
 
     const productIds = (req.nextUrl.searchParams.get('productIds') ?? '')
       .split(',')
@@ -22,10 +24,10 @@ export async function GET(req: NextRequest) {
       .filter(Boolean)
 
     if (productIds.length === 0) {
-      return NextResponse.json({ error: 'productIds requis' }, { status: 400 })
+      return NextResponse.json({ error: t.msg.productIdsRequired }, { status: 400 })
     }
     if (productIds.length > 100) {
-      return NextResponse.json({ error: 'Trop de produits (max 100)' }, { status: 400 })
+      return NextResponse.json({ error: t.msg.tooManyProducts }, { status: 400 })
     }
 
     const userId = token.id as string
@@ -65,6 +67,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(result)
   } catch {
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }

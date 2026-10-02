@@ -13,6 +13,9 @@ import {
   statutOrderColor,
 } from '@/lib/dashboard-ui'
 import RefusLivraisonModal from './RefusLivraisonModal'
+import { useI18n } from '@/components/I18nProvider'
+import { tr } from '@/lib/i18n'
+import { formatFullAddress } from '@/lib/algeria'
 
 type OrderItem = {
   id: string
@@ -29,6 +32,8 @@ export type Commande = {
   total: number
   adresse?: string | null
   adresseLivraison?: string | null   // alias de compatibilité
+  wilaya?: string | null             // code de wilaya de livraison
+  commune?: string | null
   groupeId?: string | null           // Lien bureau de livraison (multi-vendeurs)
   user?: { nom: string | null; prenom: string | null; email: string | null; telephone?: string | null } | null
   items: OrderItem[]
@@ -37,15 +42,6 @@ export type Commande = {
   // Fonctionnalité "refusalReport" — un refus n'est signalable qu'une fois
   // (l'API Flowmerce est idempotente, mais l'UI reflète l'état localement).
   refusLivraisonSignale?: boolean
-}
-
-const STATUT_LABEL: Record<string, string> = {
-  EN_ATTENTE:     'En attente',
-  CONFIRMEE:      'Confirmée',
-  EN_PREPARATION: 'En préparation',
-  EXPEDIEE:       'Expédiée',
-  LIVREE:         'Livrée',
-  ANNULEE:        'Annulée',
 }
 
 const STATUT_ICON: Record<string, React.ElementType> = {
@@ -58,38 +54,41 @@ const STATUT_ICON: Record<string, React.ElementType> = {
 }
 
 // ── Avancement linéaire pour le vendeur ────────────────────────────────────────
-const NEXT_ACTION_VENDEUR: Record<string, { label: string; statut?: string; approuver?: boolean; color: string }> = {
-  EN_ATTENTE:     { label: 'Approuver',         approuver: true,             color: 'bg-emerald-600 hover:bg-emerald-700 text-white' },
-  CONFIRMEE:      { label: 'Mettre en prépa.',  statut: 'EN_PREPARATION',    color: 'bg-orange-600 hover:bg-orange-700 text-white' },
-  EN_PREPARATION: { label: 'Marquer expédiée',  statut: 'EXPEDIEE',          color: 'bg-indigo-600 hover:bg-indigo-700 text-white' },
-  EXPEDIEE:       { label: 'Marquer livrée',    statut: 'LIVREE',            color: 'bg-green-600 hover:bg-green-700 text-white' },
+// Libellé : t.orders.dashboard.sellerActions[statut courant]
+const NEXT_ACTION_VENDEUR: Record<string, { statut?: string; approuver?: boolean; color: string }> = {
+  EN_ATTENTE:     { approuver: true,             color: 'bg-emerald-600 hover:bg-emerald-700 text-white' },
+  CONFIRMEE:      { statut: 'EN_PREPARATION',    color: 'bg-orange-600 hover:bg-orange-700 text-white' },
+  EN_PREPARATION: { statut: 'EXPEDIEE',          color: 'bg-indigo-600 hover:bg-indigo-700 text-white' },
+  EXPEDIEE:       { statut: 'LIVREE',            color: 'bg-green-600 hover:bg-green-700 text-white' },
 }
 
 // ── Actions admin par statut (toutes transitions directes possibles) ───────────
 // Seuls les statuts de l'enum OrderStatus : EN_ATTENTE | CONFIRMEE | EN_PREPARATION | EXPEDIEE | LIVREE | ANNULEE
-const ADMIN_ACTIONS: Record<string, { label: string; statut: string; color: string }[]> = {
+type AdminActionKey = 'confirm' | 'cancel' | 'prepare' | 'ship' | 'deliver' | 'reset' | 'confirmDirect'
+// Libellé : t.orders.dashboard.adminActions[label]
+const ADMIN_ACTIONS: Record<string, { label: AdminActionKey; statut: string; color: string }[]> = {
   EN_ATTENTE: [
-    { label: '✓ Confirmer',          statut: 'CONFIRMEE',      color: 'text-emerald-600 dark:text-emerald-400' },
-    { label: '✕ Annuler',            statut: 'ANNULEE',        color: 'text-red-600    dark:text-red-400'     },
+    { label: 'confirm',       statut: 'CONFIRMEE',      color: 'text-emerald-600 dark:text-emerald-400' },
+    { label: 'cancel',        statut: 'ANNULEE',        color: 'text-red-600    dark:text-red-400'     },
   ],
   CONFIRMEE: [
-    { label: '📦 Mettre en prépa.',  statut: 'EN_PREPARATION', color: 'text-orange-600 dark:text-orange-400' },
-    { label: '✕ Annuler',            statut: 'ANNULEE',        color: 'text-red-600    dark:text-red-400'     },
+    { label: 'prepare',       statut: 'EN_PREPARATION', color: 'text-orange-600 dark:text-orange-400' },
+    { label: 'cancel',        statut: 'ANNULEE',        color: 'text-red-600    dark:text-red-400'     },
   ],
   EN_PREPARATION: [
-    { label: '🚚 Marquer expédiée',  statut: 'EXPEDIEE',       color: 'text-indigo-600 dark:text-indigo-400' },
-    { label: '✕ Annuler',            statut: 'ANNULEE',        color: 'text-red-600    dark:text-red-400'     },
+    { label: 'ship',          statut: 'EXPEDIEE',       color: 'text-indigo-600 dark:text-indigo-400' },
+    { label: 'cancel',        statut: 'ANNULEE',        color: 'text-red-600    dark:text-red-400'     },
   ],
   EXPEDIEE: [
-    { label: '✓ Marquer livrée',     statut: 'LIVREE',         color: 'text-green-600  dark:text-green-400'  },
-    { label: '✕ Annuler',            statut: 'ANNULEE',        color: 'text-red-600    dark:text-red-400'     },
+    { label: 'deliver',       statut: 'LIVREE',         color: 'text-green-600  dark:text-green-400'  },
+    { label: 'cancel',        statut: 'ANNULEE',        color: 'text-red-600    dark:text-red-400'     },
   ],
   LIVREE: [
-    { label: '↺ Remettre en attente', statut: 'EN_ATTENTE',    color: 'text-blue-600   dark:text-blue-400'   },
+    { label: 'reset',         statut: 'EN_ATTENTE',    color: 'text-blue-600   dark:text-blue-400'   },
   ],
   ANNULEE: [
-    { label: '↺ Remettre en attente', statut: 'EN_ATTENTE',    color: 'text-blue-600   dark:text-blue-400'   },
-    { label: '✓ Confirmer directement', statut: 'CONFIRMEE',   color: 'text-emerald-600 dark:text-emerald-400' },
+    { label: 'reset',         statut: 'EN_ATTENTE',    color: 'text-blue-600   dark:text-blue-400'   },
+    { label: 'confirmDirect', statut: 'CONFIRMEE',     color: 'text-emerald-600 dark:text-emerald-400' },
   ],
 }
 
@@ -107,6 +106,8 @@ function AdminActionsMenu({
   onOpenRefus: () => void
   isLoading: boolean
 }) {
+  const { t } = useI18n()
+  const d = t.orders.dashboard
   const actions = ADMIN_ACTIONS[cmd.statut] ?? []
   const canReportRefus = cmd.statut === 'EXPEDIEE' && !cmd.refusLivraisonSignale
   const [open, setOpen] = useState(false)
@@ -137,28 +138,28 @@ function AdminActionsMenu({
           ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
           : <MoreVertical className="w-3.5 h-3.5" />
         }
-        Actions
+        {d.actions}
         <ChevronDown className="w-3 h-3 opacity-60" />
       </button>
 
       {open && (
         <div
-          className="absolute right-0 top-full mt-1.5 z-50 min-w-48 rounded-xl border border-stone-200 dark:border-stone-700
+          className="absolute end-0 top-full mt-1.5 z-50 min-w-48 rounded-xl border border-stone-200 dark:border-stone-700
             bg-white dark:bg-stone-900 shadow-xl py-1 overflow-hidden"
           onClick={e => e.stopPropagation()}
         >
           {actions.length > 0 && (
             <>
               <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500 border-b border-stone-100 dark:border-stone-800 mb-1">
-                Changer le statut
+                {d.changeStatus}
               </p>
               {actions.map(a => (
                 <button
                   key={a.statut}
                   onClick={() => { setOpen(false); onAction(a.statut) }}
-                  className={`w-full text-left text-sm px-4 py-2.5 font-medium hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors ${a.color}`}
+                  className={`w-full text-start text-sm px-4 py-2.5 font-medium hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors ${a.color}`}
                 >
-                  {a.label}
+                  {d.adminActions[a.label]}
                 </button>
               ))}
             </>
@@ -166,9 +167,9 @@ function AdminActionsMenu({
           {canReportRefus && (
             <button
               onClick={() => { setOpen(false); onOpenRefus() }}
-              className="w-full text-left text-sm px-4 py-2.5 font-medium hover:bg-red-50 dark:hover:bg-red-950 transition-colors text-red-600 dark:text-red-400 border-t border-stone-100 dark:border-stone-800"
+              className="w-full text-start text-sm px-4 py-2.5 font-medium hover:bg-red-50 dark:hover:bg-red-950 transition-colors text-red-600 dark:text-red-400 border-t border-stone-100 dark:border-stone-800"
             >
-              🚫 Signaler un refus à la livraison
+              {d.reportRefusal}
             </button>
           )}
         </div>
@@ -185,6 +186,8 @@ export default function DashboardCommandesView({
   commandes: Commande[]
   isAdmin: boolean
 }) {
+  const { t, fmt, locale } = useI18n()
+  const d = t.orders.dashboard
   const [commandes, setCommandes] = useState<Commande[]>(initial)
   const [search,    setSearch]    = useState('')
   const [filtre,    setFiltre]    = useState('')
@@ -225,11 +228,11 @@ export default function DashboardCommandesView({
         body: JSON.stringify(body),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erreur')
+      if (!res.ok) throw new Error(data.error || d.error)
       setCommandes(prev => prev.map(c => c.id === cmd.id ? { ...c, ...data } : c))
-      showToast(data.message ?? 'Statut mis à jour', true)
+      showToast(data.message ?? d.statusUpdated, true)
     } catch (e) {
-      showToast(e instanceof Error ? e.message : 'Erreur', false)
+      showToast(e instanceof Error ? e.message : d.error, false)
     } finally {
       setLoading(null)
     }
@@ -245,11 +248,11 @@ export default function DashboardCommandesView({
         body: JSON.stringify({ statut }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erreur')
+      if (!res.ok) throw new Error(data.error || d.error)
       setCommandes(prev => prev.map(c => c.id === cmd.id ? { ...c, statut } : c))
-      showToast(`Statut → ${STATUT_LABEL[statut] ?? statut}`, true)
+      showToast(d.statusArrow(tr(t.orders.status, statut)), true)
     } catch (e) {
-      showToast(e instanceof Error ? e.message : 'Erreur', false)
+      showToast(e instanceof Error ? e.message : d.error, false)
     } finally {
       setLoading(null)
     }
@@ -278,7 +281,7 @@ export default function DashboardCommandesView({
 
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-4 right-4 z-[100] text-sm px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 ${
+        <div className={`fixed top-4 end-4 z-[100] text-sm px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 ${
           toast.ok ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
         }`}>
           {toast.ok
@@ -291,22 +294,22 @@ export default function DashboardCommandesView({
 
       {/* Header */}
       <div>
-        <h1 className={heading}>Commandes</h1>
+        <h1 className={heading}>{d.title}</h1>
         <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">
-          {commandes.length} commande{commandes.length !== 1 ? 's' : ''}
+          {d.count(commandes.length)}
         </p>
       </div>
 
       {/* Filtres */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
+          <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
           <input
             type="text"
-            placeholder="Rechercher par référence, client…"
+            placeholder={d.searchPlaceholder}
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className={`${inputCls} pl-9`}
+            className={`${inputCls} ps-9`}
           />
         </div>
         <select
@@ -314,9 +317,9 @@ export default function DashboardCommandesView({
           onChange={e => setFiltre(e.target.value)}
           className={`${selectCls} text-sm py-2.5 min-w-40`}
         >
-          <option value="">Tous les statuts</option>
+          <option value="">{d.allStatuses}</option>
           {STATUTS_FILTRE.filter(Boolean).map(s => (
-            <option key={s} value={s}>{STATUT_LABEL[s]}</option>
+            <option key={s} value={s}>{tr(t.orders.status, s)}</option>
           ))}
         </select>
       </div>
@@ -325,19 +328,19 @@ export default function DashboardCommandesView({
       {filtered.length === 0 ? (
         <div className={`${card} p-16 text-center`}>
           <ShoppingCart className="w-10 h-10 mx-auto mb-3 text-stone-300 dark:text-stone-700" />
-          <p className="text-stone-400 dark:text-stone-500 text-sm">Aucune commande trouvée.</p>
+          <p className="text-stone-400 dark:text-stone-500 text-sm">{d.empty}</p>
         </div>
       ) : (
         <div className={tableWrapper}>
           {/* Header desktop */}
           <div className={`hidden md:grid grid-cols-[1fr_1.5fr_1fr_1fr_1fr_1.5fr_auto] ${tableHead} border-b border-stone-100 dark:border-stone-800`}>
-            <div className={tableTh}>Référence</div>
-            <div className={tableTh}>Client</div>
-            <div className={tableTh}>Date</div>
-            <div className={tableTh}>Articles</div>
-            <div className={tableTh}>Total</div>
-            <div className={tableTh}>Statut</div>
-            <div className={tableTh}>Action</div>
+            <div className={tableTh}>{d.colRef}</div>
+            <div className={tableTh}>{d.colClient}</div>
+            <div className={tableTh}>{d.colDate}</div>
+            <div className={tableTh}>{d.colItems}</div>
+            <div className={tableTh}>{d.colTotal}</div>
+            <div className={tableTh}>{d.colStatus}</div>
+            <div className={tableTh}>{d.colAction}</div>
           </div>
 
           <div className="divide-y divide-stone-100 dark:divide-stone-800">
@@ -348,7 +351,11 @@ export default function DashboardCommandesView({
               const isExp        = expanded === cmd.id
               const isLoading    = loading === cmd.id
               const montant      = cmd.totalVendeur ?? cmd.total
-              const adresse      = cmd.adresse ?? cmd.adresseLivraison
+              const adresse      = formatFullAddress(
+                { adresse: cmd.adresse ?? cmd.adresseLivraison, commune: cmd.commune, wilaya: cmd.wilaya },
+                locale,
+              )
+              const vendeurLabel = d.sellerActions[cmd.statut]
 
               return (
                 <div key={cmd.id}>
@@ -366,14 +373,14 @@ export default function DashboardCommandesView({
                           </span>
                           <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${statutOrderColor[cmd.statut] ?? 'bg-stone-100 text-stone-600'}`}>
                             <StatusIcon className="w-3 h-3" />
-                            {STATUT_LABEL[cmd.statut] ?? cmd.statut}
+                            {tr(t.orders.status, cmd.statut)}
                           </span>
                         </div>
                         <p className="text-sm font-medium text-stone-800 dark:text-stone-100">
                           {cmd.user?.prenom} {cmd.user?.nom}
                         </p>
                         <p className="text-xs text-stone-400">
-                          {new Date(cmd.createdAt).toLocaleDateString('fr-DZ')} · {cmd.items.length} art. · <span className="font-semibold text-stone-700 dark:text-stone-200">{Number(montant).toLocaleString('fr-DZ')} DA</span>
+                          {new Date(cmd.createdAt).toLocaleDateString(fmt.intl)} · {cmd.items.length} {d.itemsShort} · <span className="font-semibold text-stone-700 dark:text-stone-200">{fmt.price(Number(montant))}</span>
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-2 shrink-0" onClick={e => e.stopPropagation()}>
@@ -387,12 +394,12 @@ export default function DashboardCommandesView({
                               className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1 ${vendeurAction.color}`}
                             >
                               {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-                              {vendeurAction.label}
+                              {vendeurLabel}
                             </button>
                             {canReportRefus && (
                               <button
                                 onClick={() => setRefusCmd(cmd)}
-                                title="Signaler un refus à la livraison"
+                                title={d.reportRefusalTitle}
                                 className="p-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
                               >
                                 <AlertTriangle className="w-3.5 h-3.5" />
@@ -413,7 +420,7 @@ export default function DashboardCommandesView({
                           </span>
                           {isExp
                             ? <ChevronUp className="w-3.5 h-3.5 text-stone-400" />
-                            : <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
+                            : <ChevronRight className="w-3.5 h-3.5 text-stone-400 rtl-flip" />
                           }
                         </div>
                       </div>
@@ -424,18 +431,18 @@ export default function DashboardCommandesView({
                         {isAdmin && <p className="text-xs text-stone-400">{cmd.user?.email}</p>}
                       </div>
                       <div className={`${tableTd} text-stone-500 dark:text-stone-400 text-sm whitespace-nowrap`}>
-                        {new Date(cmd.createdAt).toLocaleDateString('fr-DZ', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {new Date(cmd.createdAt).toLocaleDateString(fmt.intl, { day: '2-digit', month: 'short', year: 'numeric' })}
                       </div>
                       <div className={`${tableTd} text-stone-600 dark:text-stone-400 text-sm`}>
-                        {cmd.items.length} article{cmd.items.length !== 1 ? 's' : ''}
+                        {d.itemsCount(cmd.items.length)}
                       </div>
                       <div className={`${tableTd} font-semibold text-stone-800 dark:text-stone-100 text-sm whitespace-nowrap`}>
-                        {Number(montant).toLocaleString('fr-DZ')} DA
+                        {fmt.price(Number(montant))}
                       </div>
                       <div className={tableTd}>
                         <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium ${statutOrderColor[cmd.statut] ?? 'bg-stone-100 text-stone-600'}`}>
                           <StatusIcon className="w-3 h-3" />
-                          {STATUT_LABEL[cmd.statut] ?? cmd.statut}
+                          {tr(t.orders.status, cmd.statut)}
                         </span>
                       </div>
                       <div className={`${tableTd}`} onClick={e => e.stopPropagation()}>
@@ -449,12 +456,12 @@ export default function DashboardCommandesView({
                               className={`text-xs px-3 py-2 rounded-xl font-semibold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1 whitespace-nowrap ${vendeurAction.color}`}
                             >
                               {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-                              {vendeurAction.label}
+                              {vendeurLabel}
                             </button>
                             {canReportRefus && (
                               <button
                                 onClick={() => setRefusCmd(cmd)}
-                                title="Signaler un refus à la livraison"
+                                title={d.reportRefusalTitle}
                                 className="p-2 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
                               >
                                 <AlertTriangle className="w-3.5 h-3.5" />
@@ -473,11 +480,11 @@ export default function DashboardCommandesView({
                         {/* Infos client */}
                         <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-stone-500 dark:text-stone-400">
                           {cmd.user?.email     && <span>✉ {cmd.user.email}</span>}
-                          {cmd.user?.telephone && <span>☎ {cmd.user.telephone}</span>}
+                          {cmd.user?.telephone && <span>☎ <span dir="ltr">{cmd.user.telephone}</span></span>}
                           {adresse             && <span>📍 {adresse}</span>}
                           {cmd.groupeId        && (
                             <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 font-medium">
-                              🏢 Groupe bureau · {cmd.groupeId.slice(0, 8)}…
+                              🏢 {d.officeGroup} · {cmd.groupeId.slice(0, 8)}…
                             </span>
                           )}
                         </div>
@@ -512,9 +519,9 @@ export default function DashboardCommandesView({
                                   </div>
                                 )}
                               </div>
-                              <div className="text-right shrink-0">
+                              <div className="text-end shrink-0">
                                 <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">
-                                  {Number(item.prix).toLocaleString('fr-DZ')} DA
+                                  {fmt.price(Number(item.prix))}
                                 </p>
                                 <p className="text-xs text-stone-400">× {item.quantite}</p>
                               </div>
@@ -524,9 +531,9 @@ export default function DashboardCommandesView({
 
                         {/* Total */}
                         <div className="flex items-center justify-between pt-2 border-t border-stone-200 dark:border-stone-700">
-                          <span className="text-xs text-stone-400">Total commande</span>
+                          <span className="text-xs text-stone-400">{d.orderTotal}</span>
                           <span className="text-sm font-bold text-stone-800 dark:text-stone-100">
-                            {Number(cmd.total).toLocaleString('fr-DZ')} DA
+                            {fmt.price(Number(cmd.total))}
                           </span>
                         </div>
                       </div>

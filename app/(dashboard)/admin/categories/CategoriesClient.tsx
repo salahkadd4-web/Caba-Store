@@ -9,6 +9,7 @@ import {
   cardSm, heading, inputCls, btnPrimaryPurple, btnSecondary, btnDangerSolid,
   modalOverlay, modalBox, toastCls,
 } from '@/lib/dashboard-ui'
+import { useI18n } from '@/components/I18nProvider'
 
 export type Category = {
   id: string; nom: string; description: string | null; image: string | null
@@ -22,6 +23,8 @@ const inputBase = `${inputCls} mb-0`
 const textarea  = `w-full border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-800 dark:text-stone-100 placeholder-stone-400 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 transition resize-none`
 
 export default function CategoriesClient({ initialData }: { initialData: Category[] }) {
+  const { t } = useI18n()
+  const c_ = t.cm
   const [categories,  setCategories]  = useState<Category[]>(initialData.filter(c => c.statut === 'APPROUVEE'))
   const [enAttente,   setEnAttente]   = useState<Category[]>(initialData.filter(c => c.statut === 'EN_ATTENTE'))
   const [showModal,   setShowModal]   = useState(false)
@@ -50,7 +53,7 @@ export default function CategoriesClient({ initialData }: { initialData: Categor
     try {
       const res  = await fetch(`/api/admin/categories/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) })
       const data = await res.json()
-      showToast(res.ok ? (action === 'approuver' ? '✅ Catégorie approuvée' : '❌ Catégorie refusée') : (data.error || 'Erreur'))
+      showToast(res.ok ? (action === 'approuver' ? c_.approvedToast : c_.refusedToast) : (data.error || c_.error))
       if (res.ok) refresh()
     } finally { setApprovingId(null) }
   }
@@ -65,7 +68,7 @@ export default function CategoriesClient({ initialData }: { initialData: Categor
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
       setShowModal(false); refresh()
-    } catch { setError('Erreur serveur') }
+    } catch { setError(t.common.serverError) }
     finally { setSubmitting(false) }
   }
 
@@ -83,13 +86,13 @@ export default function CategoriesClient({ initialData }: { initialData: Categor
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className={heading}>Catégories</h1>
+          <h1 className={heading}>{c_.title}</h1>
           <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">
-            {categories.length} approuvée{categories.length > 1 ? 's' : ''}
-            {enAttente.length > 0 && <span className="ml-2 bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full text-xs">{enAttente.length} en attente</span>}
+            {c_.approvedCount(categories.length)}
+            {enAttente.length > 0 && <span className="ms-2 bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full text-xs">{c_.pendingCount(enAttente.length)}</span>}
           </p>
         </div>
-        <button onClick={openCreate} className={btnPrimaryPurple}>+ Ajouter</button>
+        <button onClick={openCreate} className={btnPrimaryPurple}>{c_.add}</button>
       </div>
 
       {enAttente.length > 0 && (
@@ -97,7 +100,7 @@ export default function CategoriesClient({ initialData }: { initialData: Categor
           <div className="flex items-center gap-2 mb-3">
             <span className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" />
             <h2 className="text-sm font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wide">
-              Proposées par les vendeurs — En attente
+              {c_.proposedPending}
             </h2>
           </div>
           <div className="space-y-2.5">
@@ -110,18 +113,18 @@ export default function CategoriesClient({ initialData }: { initialData: Categor
                   <p className="font-semibold text-stone-800 dark:text-stone-100">{cat.nom}</p>
                   {cat.description && <p className="text-xs text-stone-500 dark:text-stone-400 truncate">{cat.description}</p>}
                   <p className="text-xs text-orange-600 dark:text-orange-400 mt-0.5 font-medium">
-                    <Store className="w-3 h-3 inline mr-1" />
+                    <Store className="w-3 h-3 inline me-1" />
                     {cat.vendeur?.nomBoutique ?? `${cat.vendeur?.user.prenom} ${cat.vendeur?.user.nom}`}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button onClick={() => handleCatAction(cat.id, 'approuver')} disabled={approvingId === cat.id}
                     className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 active:scale-95">
-                    {approvingId === cat.id ? '…' : <><CheckCircle2 className="w-4 h-4" /> Approuver</>}
+                    {approvingId === cat.id ? '…' : <><CheckCircle2 className="w-4 h-4" /> {c_.approve}</>}
                   </button>
                   <button onClick={() => handleCatAction(cat.id, 'refuser')} disabled={approvingId === cat.id}
                     className="bg-red-50 dark:bg-red-950 hover:bg-red-100 dark:hover:bg-red-900 disabled:opacity-50 text-red-600 dark:text-red-400 text-xs font-semibold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 active:scale-95">
-                    {approvingId === cat.id ? '…' : <><XCircle className="w-4 h-4" /> Refuser</>}
+                    {approvingId === cat.id ? '…' : <><XCircle className="w-4 h-4" /> {c_.refuse}</>}
                   </button>
                 </div>
               </div>
@@ -134,7 +137,7 @@ export default function CategoriesClient({ initialData }: { initialData: Categor
       {categories.length === 0 ? (
         <div className="text-center py-20 text-stone-400 dark:text-stone-500">
           <Tag className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p>Aucune catégorie approuvée</p>
+          <p>{c_.noApproved}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -147,10 +150,10 @@ export default function CategoriesClient({ initialData }: { initialData: Categor
                 <h3 className="font-semibold text-stone-800 dark:text-stone-100">{cat.nom}</h3>
                 {cat.description && <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5 line-clamp-1">{cat.description}</p>}
                 <div className="flex items-center gap-2 mt-1.5">
-                  <span className="text-xs text-orange-600 dark:text-orange-400 font-medium">{cat._count?.products ?? 0} produit{(cat._count?.products ?? 0) > 1 ? 's' : ''}</span>
+                  <span className="text-xs text-orange-600 dark:text-orange-400 font-medium">{c_.productsCount(cat._count?.products ?? 0)}</span>
                   {cat.vendeurId
-                    ? <span className="text-xs bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-900">Vendeur</span>
-                    : <span className="text-xs bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400 px-1.5 py-0.5 rounded-full">Admin</span>
+                    ? <span className="text-xs bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-900">{c_.seller}</span>
+                    : <span className="text-xs bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400 px-1.5 py-0.5 rounded-full">{c_.admin}</span>
                   }
                 </div>
               </div>
@@ -171,23 +174,23 @@ export default function CategoriesClient({ initialData }: { initialData: Categor
         <div className={modalOverlay}>
           <div className={`${modalBox} max-w-md p-6`}>
             <h2 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-5">
-              {editCat ? '✏️ Modifier la catégorie' : '+ Ajouter une catégorie'}
+              {editCat ? c_.editTitle : c_.addTitle}
             </h2>
             {error && <div className="bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 text-sm px-4 py-3 rounded-xl mb-4">{error}</div>}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-stone-600 dark:text-stone-300 mb-1.5">Nom *</label>
-                <input type="text" value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} required placeholder="Nom de la catégorie" className={inputBase} />
+                <label className="block text-xs font-medium text-stone-600 dark:text-stone-300 mb-1.5">{c_.name}</label>
+                <input type="text" value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} required placeholder={c_.namePlaceholder} className={inputBase} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-stone-600 dark:text-stone-300 mb-1.5">Description</label>
-                <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} placeholder="Description…" className={textarea} />
+                <label className="block text-xs font-medium text-stone-600 dark:text-stone-300 mb-1.5">{c_.description}</label>
+                <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} placeholder={c_.descriptionPlaceholder} className={textarea} />
               </div>
-              <ImageUpload value={form.image} onChange={(url) => setForm({ ...form, image: url })} label="Image de la catégorie" />
+              <ImageUpload value={form.image} onChange={(url) => setForm({ ...form, image: url })} label={c_.image} />
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowModal(false)} className={`flex-1 ${btnSecondary}`}>Annuler</button>
+                <button type="button" onClick={() => setShowModal(false)} className={`flex-1 ${btnSecondary}`}>{t.common.cancel}</button>
                 <button type="submit" disabled={submitting} className={`flex-1 ${btnPrimaryPurple}`}>
-                  {submitting ? 'En cours…' : editCat ? 'Enregistrer' : 'Ajouter'}
+                  {submitting ? c_.inProgress : editCat ? c_.save : c_.addShort}
                 </button>
               </div>
             </form>
@@ -201,12 +204,12 @@ export default function CategoriesClient({ initialData }: { initialData: Categor
             <div className="w-14 h-14 bg-red-50 dark:bg-red-950 rounded-full flex items-center justify-center mx-auto mb-4">
               <Trash2 className="w-6 h-6 text-red-500" />
             </div>
-            <h2 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-2">Supprimer cette catégorie ?</h2>
-            <p className="text-stone-500 dark:text-stone-400 text-sm mb-4">Cette action est irréversible.</p>
+            <h2 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-2">{c_.deleteQ}</h2>
+            <p className="text-stone-500 dark:text-stone-400 text-sm mb-4">{c_.irreversible}</p>
             {deleteError && <div className="bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 text-sm px-4 py-3 rounded-xl mb-4">{deleteError}</div>}
             <div className="flex gap-3">
-              <button onClick={() => { setDeleteId(null); setDeleteError('') }} className={`flex-1 ${btnSecondary}`}>Annuler</button>
-              <button onClick={() => handleDelete(deleteId)} className={`flex-1 ${btnDangerSolid}`}>Supprimer</button>
+              <button onClick={() => { setDeleteId(null); setDeleteError('') }} className={`flex-1 ${btnSecondary}`}>{t.common.cancel}</button>
+              <button onClick={() => handleDelete(deleteId)} className={`flex-1 ${btnDangerSolid}`}>{c_.delete}</button>
             </div>
           </div>
         </div>

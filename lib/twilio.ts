@@ -23,11 +23,12 @@ export function validatePhone(telephone: string): boolean {
 }
 
 // Envoyer le code OTP
-export async function sendOTP(telephone: string): Promise<void> {
+// locale : langue du SMS envoyé par Twilio Verify ('fr' | 'ar')
+export async function sendOTP(telephone: string, locale?: 'fr' | 'ar'): Promise<void> {
   const phone = formatPhone(telephone)
   await client.verify.v2
     .services(serviceSid)
-    .verifications.create({ to: phone, channel: 'sms' })
+    .verifications.create({ to: phone, channel: 'sms', ...(locale ? { locale } : {}) })
 }
 
 // Vérifier le code OTP

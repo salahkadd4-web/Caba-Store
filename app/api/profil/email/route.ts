@@ -4,40 +4,42 @@ import { getAuthToken } from '@/lib/getAuthToken'
 import bcrypt from 'bcryptjs'
 import { sendConfirmationEmail } from '@/lib/mail'
 import crypto from 'crypto'
+import { getI18n } from '@/lib/i18n/server'
 
 export async function POST(req: NextRequest) {
+  const { t, locale } = await getI18n()
   try {
     const token = await getAuthToken()
-    if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    if (!token) return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
 
     const body = await req.json()
     const { etape } = body
 
     const user = await prisma.user.findUnique({ where: { id: token.id as string } })
-    if (!user) return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 })
+    if (!user) return NextResponse.json({ error: t.api.userNotFound }, { status: 404 })
 
     // ── Étape 1 : Vérifier l'identité puis envoyer codes aux deux emails ──────
     if (etape === 1) {
       const { motDePasse, nouvelEmail } = body
 
       if (!nouvelEmail) {
-        return NextResponse.json({ error: 'Champs requis manquants' }, { status: 400 })
+        return NextResponse.json({ error: t.msg.missingFields }, { status: 400 })
       }
 
       if (user.motDePasse) {
         // Compte avec mot de passe : vérification classique
         if (!motDePasse) {
-          return NextResponse.json({ error: 'Mot de passe requis' }, { status: 400 })
+          return NextResponse.json({ error: t.msg.passwordRequired }, { status: 400 })
         }
         const valid = await bcrypt.compare(motDePasse, user.motDePasse)
-        if (!valid) return NextResponse.json({ error: 'Mot de passe incorrect' }, { status: 400 })
+        if (!valid) return NextResponse.json({ error: t.api.wrongPassword }, { status: 400 })
       }
       // Compte Google (sans mot de passe) : pas de vérification par mot de passe.
       // La confirmation double (code email actuel + code nouvel email) suffit.
 
       // Vérifier que le nouvel email n'est pas déjà utilisé
       const existing = await prisma.user.findFirst({ where: { email: nouvelEmail } })
-      if (existing) return NextResponse.json({ error: 'Cet email est déjà utilisé' }, { status: 400 })
+      if (existing) return NextResponse.json({ error: t.auth.api.emailUsed }, { status: 400 })
 
       // Générer deux codes
       const codeAncien  = crypto.randomInt(100000, 999999).toString()
@@ -56,11 +58,11 @@ export async function POST(req: NextRequest) {
       })
 
       if (user.email) {
-        await sendConfirmationEmail(user.email, codeAncien, user.prenom ?? '')
+        await sendConfirmationEmail(user.email, codeAncien, user.prenom ?? '', locale)
       }
-      await sendConfirmationEmail(nouvelEmail, codeNouveau, user.prenom ?? '')
+      await sendConfirmationEmail(nouvelEmail, codeNouveau, user.prenom ?? '', locale)
 
-      return NextResponse.json({ message: 'Codes envoyés' })
+      return NextResponse.json({ message: t.msg.codesSent })
     }
 
     // ── Étape 2 : Vérifier le code de l'ancien email ──────────────────────────
@@ -74,19 +76,19 @@ export async function POST(req: NextRequest) {
         },
       })
 
-      if (!otpToken) return NextResponse.json({ error: 'Session expirée, recommencez' }, { status: 400 })
+      if (!otpToken) return NextResponse.json({ error: t.auth.api.sessionExpired }, { status: 400 })
 
       const [storedAncien] = otpToken.token.split(':')
       const savedData = JSON.parse(otpToken.data)
 
       if (savedData.nouvelEmail !== nouvelEmail) {
-        return NextResponse.json({ error: 'Email invalide' }, { status: 400 })
+        return NextResponse.json({ error: t.msg.invalidEmail }, { status: 400 })
       }
       if (codeAncien !== storedAncien) {
-        return NextResponse.json({ error: "Code de l'ancien email incorrect" }, { status: 400 })
+        return NextResponse.json({ error: t.msg.oldEmailCodeWrong }, { status: 400 })
       }
 
-      return NextResponse.json({ message: 'Code vérifié, continuez' })
+      return NextResponse.json({ message: t.msg.codeVerifiedContinue })
     }
 
     // ── Étape 3 : Vérifier le code du nouvel email et mettre à jour ───────────
@@ -100,16 +102,16 @@ export async function POST(req: NextRequest) {
         },
       })
 
-      if (!otpToken) return NextResponse.json({ error: 'Session expirée, recommencez' }, { status: 400 })
+      if (!otpToken) return NextResponse.json({ error: t.auth.api.sessionExpired }, { status: 400 })
 
       const [, storedNouveau] = otpToken.token.split(':')
       const savedData = JSON.parse(otpToken.data)
 
       if (savedData.nouvelEmail !== nouvelEmail) {
-        return NextResponse.json({ error: 'Email invalide' }, { status: 400 })
+        return NextResponse.json({ error: t.msg.invalidEmail }, { status: 400 })
       }
       if (codeNouveau !== storedNouveau) {
-        return NextResponse.json({ error: 'Code du nouvel email incorrect' }, { status: 400 })
+        return NextResponse.json({ error: t.msg.newEmailCodeWrong }, { status: 400 })
       }
 
       await prisma.user.update({
@@ -119,12 +121,12 @@ export async function POST(req: NextRequest) {
 
       await prisma.otpToken.delete({ where: { id: otpToken.id } })
 
-      return NextResponse.json({ message: 'Email modifié avec succès' })
+      return NextResponse.json({ message: t.msg.emailChanged })
     }
 
-    return NextResponse.json({ error: 'Étape invalide' }, { status: 400 })
+    return NextResponse.json({ error: t.msg.invalidStep }, { status: 400 })
   } catch (error) {
     console.error('Erreur changement email:', error)
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }

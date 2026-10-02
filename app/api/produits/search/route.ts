@@ -1,21 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { VENDEUR_SUSPENDU_PRIORITE } from '@/lib/constants'
+import { normalizeWilayaCode } from '@/lib/algeria'
+import { rankProducts, VENDEUR_RANK_SELECT, wilayaDbValues } from '@/lib/product-ranking'
 
+// Paramètres :
+//   recherche  texte libre (nom du produit)
+//   categorie  id de catégorie
+//   wilaya     filtre : code de la wilaya du vendeur
+//   proche     classement : code de la wilaya du visiteur (ses vendeurs passent en premier
+//              à priorité d'abonnement égale). Passé dans l'URL et non lu depuis la
+//              session, pour que le cache CDN reste correct.
 export async function GET(req: NextRequest) {
-  const recherche = req.nextUrl.searchParams.get('recherche')?.trim()
-  const categorie = req.nextUrl.searchParams.get('categorie')?.trim()
+  const params    = req.nextUrl.searchParams
+  const recherche = params.get('recherche')?.trim()
+  const categorie = params.get('categorie')?.trim()
+  const wilaya    = normalizeWilayaCode(params.get('wilaya'))
+  const proche    = normalizeWilayaCode(params.get('proche'))
 
   const produitsRaw = await prisma.product.findMany({
     where: {
       actif: true,
-      OR: [
-        { vendeurId: null },
-        { vendeur: { prioriteAffichage: { lt: 99 } } },
-      ],
+      ...(wilaya
+        // Filtre wilaya : uniquement les vendeurs de cette wilaya (exclut le catalogue sans vendeur)
+        ? { vendeur: {
+            prioriteAffichage: { lt: VENDEUR_SUSPENDU_PRIORITE },
+            user: { wilaya: { in: wilayaDbValues(wilaya) } },
+          } }
+        : { OR: [
+            { vendeurId: null },
+            { vendeur: { prioriteAffichage: { lt: VENDEUR_SUSPENDU_PRIORITE } } },
+          ] }),
       ...(categorie ? { categoryId: categorie } : {}),
       ...(recherche ? { nom: { contains: recherche, mode: 'insensitive' } } : {}),
     },
-    // Tri DB par date ; le tri priorité se fait en JS ci-dessous
+    // Tri DB par date ; le classement complet se fait en JS (rankProducts)
     orderBy: [{ createdAt: 'desc' }],
     select: {
       id: true,
@@ -24,16 +43,15 @@ export async function GET(req: NextRequest) {
       prix: true,
       stock: true,
       prixVariables: true,
+      createdAt: true,
       category: { select: { nom: true } },
       variants: { select: { id: true, couleur: true, nom: true }, orderBy: { createdAt: 'asc' } },
-      vendeur: { select: { prioriteAffichage: true } },
+      vendeur: VENDEUR_RANK_SELECT,
     },
   })
 
-  // Tri priorité applicatif : admin (null → 0) avant vendeurs
-  const produits = [...produitsRaw].sort(
-    (a, b) => (a.vendeur?.prioriteAffichage ?? 0) - (b.vendeur?.prioriteAffichage ?? 0)
-  )
+  // Priorité d'abonnement → wilaya du visiteur → date
+  const produits = rankProducts(produitsRaw, proche)
 
   return NextResponse.json(produits, {
     headers: {

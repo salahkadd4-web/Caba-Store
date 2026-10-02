@@ -12,6 +12,7 @@ import 'server-only'
 import { NextRequest, NextResponse } from 'next/server'
 import { createHmac, timingSafeEqual } from 'crypto'
 import { prisma } from '@/lib/prisma'
+import { getI18n } from '@/lib/i18n/server'
 
 const FLOWMERCE_WEBHOOK_SECRET = process.env.FLOWMERCE_WEBHOOK_SECRET || ''
 
@@ -24,9 +25,10 @@ type FlowmerceEvent = {
 }
 
 export async function POST(req: NextRequest) {
+  const { t } = await getI18n()
   if (!FLOWMERCE_WEBHOOK_SECRET) {
     console.error('[flowmerce:webhook] 503 — FLOWMERCE_WEBHOOK_SECRET manquant')
-    return NextResponse.json({ error: 'Webhook non configuré' }, { status: 503 })
+    return NextResponse.json({ error: t.msg.webhookNotConfigured }, { status: 503 })
   }
 
   // ── 1. Lire le body brut (necessaire pour HMAC) ──────────────────────────
@@ -36,13 +38,13 @@ export async function POST(req: NextRequest) {
   const signature = req.headers.get('x-flowmerce-signature') ?? ''
   if (!signature || !verifySignature(rawBody, signature)) {
     console.warn('[flowmerce:webhook] signature invalide')
-    return NextResponse.json({ error: 'Signature invalide' }, { status: 401 })
+    return NextResponse.json({ error: t.msg.invalidSignature }, { status: 401 })
   }
 
   // ── 3. Parser ────────────────────────────────────────────────────────────
   let event: FlowmerceEvent
   try { event = JSON.parse(rawBody) }
-  catch { return NextResponse.json({ error: 'JSON invalide' }, { status: 400 }) }
+  catch { return NextResponse.json({ error: t.msg.invalidJson }, { status: 400 }) }
 
   const claimId  = event.claim?.id
   const rawState = event.claim?.status?.toUpperCase()

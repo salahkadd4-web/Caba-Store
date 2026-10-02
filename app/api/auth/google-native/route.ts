@@ -10,13 +10,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import crypto from 'crypto'
+import { getI18n } from '@/lib/i18n/server'
 
 export async function POST(req: NextRequest) {
+  const { t } = await getI18n()
   try {
     const { idToken } = await req.json()
 
     if (!idToken) {
-      return NextResponse.json({ ok: false, error: 'Token manquant.' }, { status: 400 })
+      return NextResponse.json({ ok: false, error: t.auth.api.tokenMissing }, { status: 400 })
     }
 
     // ── 1. Vérifier le idToken auprès de Google ──────────────────────────────
@@ -25,7 +27,7 @@ export async function POST(req: NextRequest) {
     )
 
     if (!googleRes.ok) {
-      return NextResponse.json({ ok: false, error: 'Token Google invalide.' }, { status: 401 })
+      return NextResponse.json({ ok: false, error: t.auth.api.googleTokenInvalid }, { status: 401 })
     }
 
     const payload = await googleRes.json()
@@ -36,14 +38,14 @@ export async function POST(req: NextRequest) {
     ].filter(Boolean)
 
     if (!validAudiences.includes(payload.aud)) {
-      return NextResponse.json({ ok: false, error: 'Audience invalide.' }, { status: 401 })
+      return NextResponse.json({ ok: false, error: t.auth.api.audienceInvalid }, { status: 401 })
     }
 
     const email: string = payload.email
     const name: string  = payload.name ?? ''
 
     if (!email) {
-      return NextResponse.json({ ok: false, error: 'Email introuvable dans le token.' }, { status: 400 })
+      return NextResponse.json({ ok: false, error: t.auth.api.emailMissingInToken }, { status: 400 })
     }
 
     // ── 2. Vérifier si le compte existe déjà ────────────────────────────────
@@ -80,6 +82,6 @@ export async function POST(req: NextRequest) {
 
   } catch (err) {
     console.error('[google-native] Erreur:', err)
-    return NextResponse.json({ ok: false, error: 'Erreur serveur.' }, { status: 500 })
+    return NextResponse.json({ ok: false, error: t.api.serverError }, { status: 500 })
   }
 }

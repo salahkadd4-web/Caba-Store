@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
+import { getI18n } from '@/lib/i18n/server'
+import { tr } from '@/lib/i18n'
 
 async function checkAdmin() {
   const token = await getAuthToken()
@@ -14,9 +16,10 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { t } = await getI18n()
   try {
     const token = await checkAdmin()
-    if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    if (!token) return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
 
     const { id } = await params
     const body = await req.json()
@@ -35,9 +38,9 @@ export async function PATCH(
         },
       })
 
-      if (!commande) return NextResponse.json({ error: 'Commande introuvable' }, { status: 404 })
+      if (!commande) return NextResponse.json({ error: t.msg.orderNotFound }, { status: 404 })
       if (commande.statut !== 'EN_ATTENTE') {
-        return NextResponse.json({ error: 'La commande est déjà traitée.' }, { status: 403 })
+        return NextResponse.json({ error: t.msg.orderAlreadyProcessed }, { status: 403 })
       }
 
       const vendeurIds = [
@@ -70,15 +73,15 @@ export async function PATCH(
       return NextResponse.json({
         ...updated,
         message: tousOk
-          ? 'Commande confirmée — tous les vendeurs ont approuvé.'
-          : 'Approbation enregistrée — en attente des autres vendeurs.',
+          ? t.msg.orderConfirmedAll
+          : t.msg.approvalSaved,
       })
     }
 
     // ── Cas 2 : l'admin change directement le statut global ───────────────
     if (!statut || !(VALID_STATUTS as readonly string[]).includes(statut)) {
       return NextResponse.json(
-        { error: `Statut invalide. Valeurs acceptées : ${VALID_STATUTS.join(', ')}` },
+        { error: t.msg.invalidStatus(VALID_STATUTS.join(', ')) },
         { status: 400 }
       )
     }
@@ -101,7 +104,7 @@ export async function PATCH(
           data: { statut: 'LIVREE' },
         })
         return NextResponse.json({
-          message: `Groupe de livraison marqué comme livré (${orderRef.groupeId.slice(0, 8)}…)`,
+          message: t.msg.groupDelivered(orderRef.groupeId.slice(0, 8)),
         })
       }
     }
@@ -114,9 +117,9 @@ export async function PATCH(
 
     return NextResponse.json({
       ...commande,
-      message: `Statut mis à jour : ${statut}`,
+      message: t.msg.statusUpdated(tr(t.orders.status, statut)),
     })
   } catch {
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }

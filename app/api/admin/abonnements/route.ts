@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { getI18n } from '@/lib/i18n/server'
 //app\api\admin\abonnements\route.ts
 export async function GET(req: NextRequest) {
+  const { t } = await getI18n()
   const session = await auth()
   if (!session?.user || session.user.role !== 'ADMIN')
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
 
   const statut = req.nextUrl.searchParams.get('statut') || undefined
   const now = new Date()

@@ -10,6 +10,8 @@
 import { AlertTriangle } from 'lucide-react'
 import type { ReturnForm, ReturnAnswer, ReturnField } from '@/lib/flowmerce-types'
 import { normalizeOption } from '@/lib/flowmerce-validation'
+import { useI18n } from '@/components/I18nProvider'
+import type { I18n } from '@/lib/i18n'
 
 interface ReturnConfirmationProps {
   form: ReturnForm
@@ -17,7 +19,7 @@ interface ReturnConfirmationProps {
   error?: string | null
 }
 
-function formatAnswer(field: ReturnField, value: unknown): string {
+function formatAnswer(field: ReturnField, value: unknown, { t, fmt }: Pick<I18n, 't' | 'fmt'>): string {
   if (value === undefined || value === null || value === '') return '—'
 
   if ((field.type === 'select' || field.type === 'radio') && typeof value === 'string') {
@@ -30,22 +32,24 @@ function formatAnswer(field: ReturnField, value: unknown): string {
     return value.map(v => opts.find(o => o.value === v)?.label ?? String(v)).join(', ') || '—'
   }
 
-  if (field.type === 'boolean' || field.type === 'switch') return value ? 'Oui' : 'Non'
+  if (field.type === 'boolean' || field.type === 'switch') return value ? t.common.yes : t.common.no
 
   if (field.type === 'date' && typeof value === 'string') {
     const d = new Date(value)
-    return isNaN(d.getTime()) ? value : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+    return isNaN(d.getTime()) ? value : fmt.date(d)
   }
 
   return String(value)
 }
 
 export default function ReturnConfirmation({ form, answers, error }: ReturnConfirmationProps) {
+  const i18n = useI18n()
+  const c = i18n.t.returns.confirmation
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-bold text-stone-800 dark:text-stone-100">Récapitulatif de la demande</h2>
-        <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">Vérifiez les informations avant l&apos;envoi.</p>
+        <h2 className="text-lg font-bold text-stone-800 dark:text-stone-100">{c.title}</h2>
+        <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">{c.subtitle}</p>
       </div>
 
       {form.sections.map(section => (
@@ -55,8 +59,8 @@ export default function ReturnConfirmation({ form, answers, error }: ReturnConfi
             {section.fields.map(field => (
               <div key={field.id} className="flex items-baseline justify-between gap-4">
                 <dt className="text-sm text-stone-500 dark:text-stone-400 shrink-0">{field.label ?? field.id}</dt>
-                <dd className="text-sm font-semibold text-stone-800 dark:text-stone-100 text-right">
-                  {formatAnswer(field, answers[field.id])}
+                <dd className="text-sm font-semibold text-stone-800 dark:text-stone-100 text-end">
+                  {formatAnswer(field, answers[field.id], i18n)}
                 </dd>
               </div>
             ))}

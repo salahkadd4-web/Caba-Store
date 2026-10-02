@@ -20,7 +20,8 @@ model User {
   updatedAt      DateTime        @updatedAt
   age            Int?
   genre          Genre?
-  wilaya         String?
+  wilaya         String?   // code de wilaya ("16"), cf. lib/algeria
+  commune        String?
   adresse String?
   cart           Cart?
   favorites      Favorite[]
@@ -188,6 +189,8 @@ model Order {
   statut                OrderStatus @default(EN_ATTENTE)
   total                 Float
   adresse               String
+  wilaya                String?     // code de wilaya de livraison
+  commune               String?
   createdAt             DateTime    @default(now())
   updatedAt             DateTime    @updatedAt
   userId                String

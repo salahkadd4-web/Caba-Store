@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
+import { getI18n } from '@/lib/i18n/server'
 
 async function checkAdmin() {
   const token = await getAuthToken()
@@ -8,8 +9,9 @@ async function checkAdmin() {
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { t } = await getI18n()
   try {
-    if (!await checkAdmin()) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    if (!await checkAdmin()) return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
     const { id } = await params
     const { nom, description, prix, stock, images, categoryId, prixVariables, typeOption, variants } = await req.json()
 
@@ -53,18 +55,19 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json(updated)
   } catch (e) {
     console.error(e)
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { t } = await getI18n()
   try {
-    if (!await checkAdmin()) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    if (!await checkAdmin()) return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
     const { id } = await params
     const { actif } = await req.json()
     const produit = await prisma.product.update({ where: { id }, data: { actif } })
     return NextResponse.json(produit)
   } catch {
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }

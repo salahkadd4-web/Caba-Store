@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { getI18n } from '@/lib/i18n/server'
 
 async function getVendeur() {
   const session = await auth()
@@ -10,8 +11,9 @@ async function getVendeur() {
 }
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { t } = await getI18n()
   const vendeur = await getVendeur()
-  if (!vendeur) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+  if (!vendeur) return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
   const { id } = await params
   const produit = await prisma.product.findFirst({
     where: { id, vendeurId: vendeur.id },
@@ -21,16 +23,17 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       _count: { select: { orderItems: true, favorites: true } },
     },
   })
-  if (!produit) return NextResponse.json({ error: 'Produit introuvable' }, { status: 404 })
+  if (!produit) return NextResponse.json({ error: t.msg.productNotFound }, { status: 404 })
   return NextResponse.json(produit)
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { t } = await getI18n()
   const vendeur = await getVendeur()
-  if (!vendeur) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+  if (!vendeur) return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
   const { id } = await params
   const produit = await prisma.product.findFirst({ where: { id, vendeurId: vendeur.id } })
-  if (!produit) return NextResponse.json({ error: 'Produit introuvable' }, { status: 404 })
+  if (!produit) return NextResponse.json({ error: t.msg.productNotFound }, { status: 404 })
 
   const { nom, description, prix, stock, images, categoryId, actif, prixVariables, typeOption, variants } = await req.json()
 
@@ -73,19 +76,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { t } = await getI18n()
   const vendeur = await getVendeur()
-  if (!vendeur) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+  if (!vendeur) return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
   const { id } = await params
   const produit = await prisma.product.findFirst({
     where: { id, vendeurId: vendeur.id },
     include: { _count: { select: { orderItems: true } } },
   })
-  if (!produit) return NextResponse.json({ error: 'Produit introuvable' }, { status: 404 })
+  if (!produit) return NextResponse.json({ error: t.msg.productNotFound }, { status: 404 })
 
   if (produit._count.orderItems > 0) {
     await prisma.product.update({ where: { id }, data: { actif: false } })
-    return NextResponse.json({ message: 'Produit désactivé (commandes existantes)' })
+    return NextResponse.json({ message: t.msg.productDeactivated })
   }
   await prisma.product.delete({ where: { id } })
-  return NextResponse.json({ message: 'Produit supprimé' })
+  return NextResponse.json({ message: t.msg.productDeleted })
 }

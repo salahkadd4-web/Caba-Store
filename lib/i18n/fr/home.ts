@@ -1,0 +1,37 @@
+const home = {
+  heroBadge: 'Nouveau · Livraison 48h en Algérie',
+  heroTitle: 'Vos produits préférés,',
+  heroTitleAccent: 'livrés chez vous.',
+  heroDesc: 'Paiement à la livraison, retours gratuits sous 14 jours. Partout en Algérie, des produits sélectionnés avec soin.',
+  buyNow: 'Acheter maintenant',
+  seeCategories: 'Voir les catégories',
+  delivery48: 'Livraison 48h',
+  welcome: 'Bienvenue',
+  mobileTitle1: 'Vos produits',
+  mobileTitle2: 'livrés chez vous',
+  browse: 'Parcourir',
+  categories: 'Catégories',
+  popular: 'Populaires',
+  bestSellers: 'Meilleures Ventes',
+  newArrivalsEyebrow: 'Nouveautés',
+  newArrivals: 'Dernières Arrivées',
+  seeAll: 'Voir Tout',
+  seeAllShort: 'Voir tout',
+  bestSellersSoon: 'Bientôt nos meilleures ventes.',
+  noCategories: 'Aucune catégorie disponible.',
+  noProducts: 'Aucun produit disponible.',
+  productsCount: (n: number): string => `${n} produits`,
+  trust: [
+    { title: 'Livraison 48h', desc: 'Partout en Algérie' },
+    { title: 'Paiement à la livraison', desc: 'Payez à la réception' },
+    { title: 'Retours gratuits', desc: "14 jours pour changer d'avis" },
+  ],
+  trustMobile: ['Livraison 48h', 'Paiement livraison', 'Retour 14j', 'Sécurisé'],
+  reassurance: [
+    { title: 'Paiement sécurisé', desc: 'Vos transactions sont protégées de bout en bout.' },
+    { title: 'Livraison rapide', desc: 'Expédition sous 24h, réception en 48h dans toutes les wilayas.' },
+    { title: 'Support 7j/7', desc: 'Une question ? Notre équipe vous répond chaque jour.' },
+  ],
+}
+
+export default home

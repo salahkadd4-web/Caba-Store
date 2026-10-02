@@ -8,6 +8,9 @@ import type { ReturnForm, ReturnAnswer, ReturnPrefill } from '@/lib/flowmerce-ty
 import { mapPaymentMethod } from '@/lib/flowmerce-mapping'
 import FlowmerceReturnForm, { type FlowmerceReturnFormHandle } from './flowmerce/FlowmerceReturnForm'
 import ReturnConfirmation from './flowmerce/ReturnConfirmation'
+import { useI18n } from '@/components/I18nProvider'
+import { tr } from '@/lib/i18n'
+import { wilayaName } from '@/lib/algeria'
 
 type OrderItem = {
   id: string
@@ -32,9 +35,9 @@ type Order = {
 
 type Profil = { nom: string; prenom: string; email: string | null; telephone: string | null; age: number | null; genre: 'HOMME' | 'FEMME' | null; wilaya: string | null }
 
-const STEPS = ['Commande', 'Article', 'Motif', 'Confirmation']
-
 function Stepper({ current }: { current: number }) {
+  const { t } = useI18n()
+  const STEPS = t.returns.steps
   return (
     <div className="flex items-center mb-8">
       {STEPS.map((label, i) => (
@@ -62,14 +65,16 @@ function Stepper({ current }: { current: number }) {
   )
 }
 
-function chipLabel(item: OrderItem): string {
+function chipLabel(item: OrderItem, fallback: string): string {
   const parts = []
   if (item.variantNom) parts.push(item.variantNom)
   if (item.variantOptionValeur) parts.push(item.variantOptionValeur)
-  return parts.join(' / ') || 'Sans variante'
+  return parts.join(' / ') || fallback
 }
 
 function RetourContent({ orderId: preOrderId }: { orderId: string }) {
+  const { t, fmt } = useI18n()
+  const r = t.returns
   const [step,          setStep]          = useState(0)
   const [commandes,     setCommandes]     = useState<Order[]>([])
   const [loading,       setLoading]       = useState(true)
@@ -131,7 +136,7 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
         product_category: selectedItem.product.category?.nom ?? undefined,
         customer_gender:  profil?.genre === 'HOMME' ? 'Male' : profil?.genre === 'FEMME' ? 'Female' : undefined,
         customer_age:     profil?.age ?? undefined,
-        customer_wilaya:  profil?.wilaya ?? undefined,
+        customer_wilaya:  profil?.wilaya ? wilayaName(profil.wilaya, 'fr') : undefined,
       }
     : {}
 
@@ -159,12 +164,12 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
       const data = await res.json().catch(() => ({})) as { claimId?: string; status?: string; error?: string }
 
       if (!res.ok) {
-        setSubmitError(data.error ?? 'Erreur lors de l\u2019envoi de la demande')
+        setSubmitError(data.error ?? r.sendError)
         return
       }
       setResult({ success: true, claimId: data.claimId, status: data.status })
     } catch {
-      setSubmitError('Erreur réseau, réessayez.')
+      setSubmitError(r.networkRetry)
     } finally {
       setSubmitting(false)
     }
@@ -172,20 +177,20 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
 
   if (result?.success) {
     const statusLabel =
-      result.status?.toUpperCase() === 'APPROVED' ? { text: 'Approuvée', color: 'text-green-600 dark:text-green-400' }
-      : result.status?.toUpperCase() === 'REJECTED' ? { text: 'Refusée', color: 'text-red-600 dark:text-red-400' }
-      : { text: 'En attente de traitement', color: 'text-amber-600 dark:text-amber-400' }
+      result.status?.toUpperCase() === 'APPROVED' ? { text: r.statusApproved, color: 'text-green-600 dark:text-green-400' }
+      : result.status?.toUpperCase() === 'REJECTED' ? { text: r.statusRejected, color: 'text-red-600 dark:text-red-400' }
+      : { text: r.statusPending, color: 'text-amber-600 dark:text-amber-400' }
     return (
       <div className="max-w-lg mx-auto px-4 py-16 text-center">
         <div className="bg-green-50 dark:bg-green-950 rounded-2xl p-8 border border-green-200 dark:border-green-800">
           <CheckCircle2 className="w-14 h-14 text-green-500 mx-auto mb-3" />
-          <h2 className="text-xl font-bold text-green-800 dark:text-green-300 mb-2">Demande enregistrée</h2>
+          <h2 className="text-xl font-bold text-green-800 dark:text-green-300 mb-2">{r.requestSaved}</h2>
           <div className="bg-white dark:bg-stone-900 rounded-xl p-3 mb-4 border border-green-100 dark:border-green-900 space-y-1">
-            <p className="text-xs text-stone-500">Statut</p>
+            <p className="text-xs text-stone-500">{r.status}</p>
             <p className={`font-bold ${statusLabel.color}`}>{statusLabel.text}</p>
-            {result.claimId && <p className="text-xs font-mono text-stone-400">Réf. {result.claimId}</p>}
+            {result.claimId && <p className="text-xs font-mono text-stone-400">{r.ref(result.claimId)}</p>}
           </div>
-          <Link href="/mes-commandes" className="inline-block px-6 py-2.5 bg-orange-700 text-white text-sm font-semibold rounded-xl hover:bg-orange-800 transition">← Mes commandes</Link>
+          <Link href="/mes-commandes" className="inline-block px-6 py-2.5 bg-orange-700 text-white text-sm font-semibold rounded-xl hover:bg-orange-800 transition">{r.myOrdersBack}</Link>
         </div>
       </div>
     )
@@ -194,24 +199,24 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
   if (loading) return (
     <div className="max-w-xl mx-auto px-4 py-20 text-center text-stone-400">
       <div className="w-8 h-8 border-2 border-stone-200 dark:border-stone-700 border-t-orange-700 rounded-full animate-spin mx-auto mb-3" />
-      Chargement…
+      {t.common.loading}
     </div>
   )
 
   if (commandes.length === 0) return (
     <div className="max-w-lg mx-auto px-4 py-16 text-center">
       <Package className="w-16 h-16 mx-auto mb-4 text-stone-300 dark:text-stone-600" />
-      <h2 className="text-xl font-bold text-stone-800 dark:text-stone-100 mb-2">Aucune commande éligible</h2>
-      <p className="text-sm text-stone-500 mb-6">Les retours sont soumis à la politique de Flowmerce.</p>
-      <Link href="/mes-commandes" className="text-orange-700 dark:text-orange-500 text-sm font-medium hover:underline">← Mes commandes</Link>
+      <h2 className="text-xl font-bold text-stone-800 dark:text-stone-100 mb-2">{r.noEligible}</h2>
+      <p className="text-sm text-stone-500 mb-6">{r.policyNote}</p>
+      <Link href="/mes-commandes" className="text-orange-700 dark:text-orange-500 text-sm font-medium hover:underline">{r.myOrdersBack}</Link>
     </div>
   )
 
   return (
     <div className="max-w-xl mx-auto px-4 py-10">
       <div className="mb-6">
-        <Link href="/mes-commandes" className="text-sm text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 flex items-center gap-1 mb-4">← Retour</Link>
-        <h1 className="text-2xl font-bold text-stone-800 dark:text-stone-100">Demande de retour</h1>
+        <Link href="/mes-commandes" className="text-sm text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 flex items-center gap-1 mb-4">{t.common.backWithArrow}</Link>
+        <h1 className="text-2xl font-bold text-stone-800 dark:text-stone-100">{r.title}</h1>
       </div>
 
       <Stepper current={step} />
@@ -219,7 +224,7 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
       {/* Étape 0 — Choisir la commande */}
       {step === 0 && (
         <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-100 dark:border-stone-800 p-5">
-          <p className="text-sm font-semibold text-stone-700 dark:text-stone-200 mb-4">Quelle commande souhaitez-vous retourner ?</p>
+          <p className="text-sm font-semibold text-stone-700 dark:text-stone-200 mb-4">{r.whichOrder}</p>
           <div className="space-y-2">
             {commandes.map(c => (
               <label key={c.id} className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${selectedOrder?.id === c.id ? 'border-orange-700 bg-orange-50 dark:bg-orange-950/60' : 'border-stone-100 dark:border-stone-800 hover:border-stone-200 dark:hover:border-stone-700'}`}>
@@ -227,12 +232,12 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-stone-800 dark:text-stone-100">#{c.id.slice(-8).toUpperCase()}</p>
                   <p className="text-xs text-stone-500 mt-0.5">
-                    {new Date(c.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                    {' · '}{c.items.length} article{c.items.length > 1 ? 's' : ''}
-                    {' · '}{c.total.toFixed(2)} DA
+                    {fmt.date(c.createdAt)}
+                    {' · '}{r.itemsCount(c.items.length)}
+                    {' · '}{c.total.toFixed(2)} {fmt.currency}
                   </p>
                 </div>
-                <span className="text-xs bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full font-medium shrink-0">{c.statut}</span>
+                <span className="text-xs bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full font-medium shrink-0">{tr(t.orders.status, c.statut)}</span>
               </label>
             ))}
           </div>
@@ -244,12 +249,12 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
         <div className="space-y-3">
           <div className="bg-orange-50 dark:bg-orange-950/40 border border-orange-100 dark:border-orange-900 rounded-xl px-4 py-2.5 flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-orange-700 dark:text-orange-500 shrink-0 mt-0.5" />
-            <p className="text-xs text-orange-700 dark:text-orange-500 leading-relaxed">Sélectionnez l&apos;article à retourner. Une seule demande par commande est possible.</p>
+            <p className="text-xs text-orange-700 dark:text-orange-500 leading-relaxed">{r.selectItemHint}</p>
           </div>
           <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-100 dark:border-stone-800 overflow-hidden">
             {selectedOrder.items.map((item, idx) => {
               const isSelected = selectedItemId === item.id
-              const label      = chipLabel(item)
+              const label      = chipLabel(item, r.noVariant)
               const image      = item.product.images?.[0] ?? null
               return (
                 <label key={item.id} className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-all ${idx < selectedOrder.items.length - 1 ? 'border-b border-stone-100 dark:border-stone-800' : ''} ${isSelected ? 'bg-orange-50 dark:bg-orange-950/30' : 'hover:bg-stone-50 dark:hover:bg-stone-800/50'}`}>
@@ -264,9 +269,9 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
                     <p className={`text-sm font-semibold leading-snug line-clamp-1 ${isSelected ? 'text-orange-700 dark:text-orange-400' : 'text-stone-800 dark:text-stone-100'}`}>{item.product.nom}</p>
                     <p className="text-xs text-stone-400 mt-0.5">{label}</p>
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className={`text-sm font-bold ${isSelected ? 'text-orange-700 dark:text-orange-400' : 'text-stone-700 dark:text-stone-200'}`}>{item.prix.toFixed(2)} DA</p>
-                    <p className="text-[11px] text-stone-400">Qté commandée : {item.quantite}</p>
+                  <div className="text-end shrink-0">
+                    <p className={`text-sm font-bold ${isSelected ? 'text-orange-700 dark:text-orange-400' : 'text-stone-700 dark:text-stone-200'}`}>{item.prix.toFixed(2)} {fmt.currency}</p>
+                    <p className="text-[11px] text-stone-400">{r.qtyOrdered(item.quantite)}</p>
                   </div>
                 </label>
               )
@@ -293,7 +298,7 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
       <div className="flex gap-3 mt-6">
         {step > 0 && (
           <button type="button" onClick={() => setStep(s => Math.max(s - 1, 0))} disabled={submitting} className="flex-1 border-2 border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 text-sm font-semibold py-3.5 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800 transition disabled:opacity-40">
-            ← Précédent
+            {r.previous}
           </button>
         )}
         {step < 3 && (
@@ -303,7 +308,7 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
             disabled={step === 0 ? !selectedOrder : step === 1 ? !selectedItemId : step === 2 ? !formValid : false}
             className="flex-1 bg-orange-700 hover:bg-orange-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold py-3.5 rounded-xl transition flex items-center justify-center gap-2"
           >
-            Suivant →
+            {r.next}
           </button>
         )}
         {step === 3 && (
@@ -313,7 +318,7 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
             disabled={submitting}
             className="flex-1 bg-orange-700 hover:bg-orange-800 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold py-3.5 rounded-xl transition flex items-center justify-center gap-2"
           >
-            {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Envoi en cours…</> : <><Send className="w-4 h-4" /> Confirmer et envoyer</>}
+            {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> {r.sending}</> : <><Send className="w-4 h-4 rtl-flip" /> {r.confirmAndSend}</>}
           </button>
         )}
       </div>

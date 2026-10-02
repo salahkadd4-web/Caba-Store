@@ -11,20 +11,8 @@ import {
   ShoppingCart, Store, User, X,
 } from 'lucide-react'
 import { APP_URL } from '@/lib/constants'
-
-const navItems = [
-  { href: '/',           label: 'Accueil' },
-  { href: '/categories', label: 'Catégories' },
-  { href: '/produits',   label: 'Produits' },
-]
-
-const userMenuItems = [
-  { href: '/profil',        label: 'Mon Profil',    icon: User },
-  { href: '/favoris',       label: 'Mes Favoris',   icon: Heart },
-  { href: '/panier',        label: 'Mon Panier',    icon: ShoppingCart },
-  { href: '/mes-commandes', label: 'Mes Commandes', icon: Package },
-  { href: '/mes-retours',   label: 'Mes Retours',   icon: RefreshCw },
-]
+import { useI18n } from '@/components/I18nProvider'
+import LanguageSwitcher from '@/components/LanguageSwitcher'
 
 function ChevronDown({ open }: { open: boolean }) {
   return (
@@ -38,7 +26,22 @@ function ChevronDown({ open }: { open: boolean }) {
 
 export default function Nav() {
   const { data: session, status } = useSession()
+  const { t }             = useI18n()
   const router            = useRouter()
+
+  const navItems = [
+    { href: '/',           label: t.layout.nav.home },
+    { href: '/categories', label: t.layout.nav.categories },
+    { href: '/produits',   label: t.layout.nav.products },
+  ]
+
+  const userMenuItems = [
+    { href: '/profil',        label: t.layout.nav.myProfile,   icon: User },
+    { href: '/favoris',       label: t.layout.nav.myFavorites, icon: Heart },
+    { href: '/panier',        label: t.layout.nav.myCart,      icon: ShoppingCart },
+    { href: '/mes-commandes', label: t.layout.nav.myOrders,    icon: Package },
+    { href: '/mes-retours',   label: t.layout.nav.myReturns,   icon: RefreshCw },
+  ]
   const pathname          = usePathname()
   const userMenuRef       = useRef<HTMLDivElement>(null)
 
@@ -153,7 +156,7 @@ export default function Nav() {
       <header
         className={`
           bg-[#FAF7F2]/95 dark:bg-stone-900/95 backdrop-blur-sm
-          fixed top-0 left-0 right-0 z-50
+          fixed top-0 start-0 end-0 z-50
           border-b border-stone-200 dark:border-stone-800
           transition-transform duration-300 ease-in-out
           ${headerVisible ? 'translate-y-0' : '-translate-y-full'}
@@ -166,7 +169,7 @@ export default function Nav() {
           <button
             className="md:hidden shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-stone-800 dark:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
             onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Menu"
+            aria-label={t.layout.nav.menu}
           >
             {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -196,7 +199,7 @@ export default function Nav() {
                   >
                     {item.label}
                     {active && (
-                      <span className="absolute left-3 right-3 -bottom-0.5 h-0.5 bg-orange-700 dark:bg-orange-400 rounded-full" />
+                      <span className="absolute start-3 end-3 -bottom-0.5 h-0.5 bg-orange-700 dark:bg-orange-400 rounded-full" />
                     )}
                   </Link>
                 )
@@ -208,17 +211,17 @@ export default function Nav() {
           </div>
 
           {/* ── Actions droite ── */}
-          <div className="flex items-center gap-1 md:gap-2 shrink-0 ml-auto">
+          <div className="flex items-center gap-1 md:gap-2 shrink-0 ms-auto">
 
             {/* Dashboard Admin — desktop uniquement */}
             {isAdmin && (
               <Link
                 href="/admin"
-                title="Dashboard admin"
+                title={t.layout.nav.adminDashboard}
                 className="hidden md:flex items-center gap-1.5 text-sm font-medium text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900 px-3 py-2 rounded-full hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-all"
               >
                 <LayoutDashboard className="w-4 h-4" />
-                <span>Dashboard</span>
+                <span>{t.layout.nav.dashboard}</span>
               </Link>
             )}
 
@@ -226,7 +229,7 @@ export default function Nav() {
             {isAdmin && (
               <Link
                 href="/admin"
-                title="Dashboard admin"
+                title={t.layout.nav.adminDashboard}
                 className="md:hidden flex items-center justify-center w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 shrink-0"
               >
                 <LayoutDashboard className="w-4 h-4" />
@@ -237,11 +240,11 @@ export default function Nav() {
             {isVendeur && (
               <Link
                 href="/vendeur"
-                title="Dashboard vendeur"
+                title={t.layout.nav.sellerDashboard}
                 className="hidden md:flex items-center gap-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 px-3 py-2 rounded-full hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-all"
               >
                 <Store className="w-4 h-4" />
-                <span>Dashboard</span>
+                <span>{t.layout.nav.dashboard}</span>
               </Link>
             )}
 
@@ -249,7 +252,7 @@ export default function Nav() {
             {isVendeur && (
               <Link
                 href="/vendeur"
-                title="Dashboard vendeur"
+                title={t.layout.nav.sellerDashboard}
                 className="md:hidden flex items-center justify-center w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 shrink-0"
               >
                 <Store className="w-4 h-4" />
@@ -259,21 +262,24 @@ export default function Nav() {
             {/* Raccourcis client — desktop seulement */}
             {isClient && (
               <div className="hidden md:flex items-center gap-1">
-                <IconLink href="/favoris"       title="Mes favoris"><Heart   className="w-4 h-4" /></IconLink>
-                <IconLink href="/mes-commandes" title="Mes commandes"><Package className="w-4 h-4" /></IconLink>
+                <IconLink href="/favoris"       title={t.layout.nav.myFavorites}><Heart   className="w-4 h-4" /></IconLink>
+                <IconLink href="/mes-commandes" title={t.layout.nav.myOrders}><Package className="w-4 h-4" /></IconLink>
               </div>
             )}
+
+            {/* Langue — desktop et mobile */}
+            <LanguageSwitcher />
 
             {/* Panier */}
             {session && (isClient || cartCount > 0) && (
               <Link
                 href="/panier"
-                title="Mon panier"
+                title={t.layout.nav.myCart}
                 className="relative shrink-0 flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 transition-all active:scale-95"
               >
                 <ShoppingCart className="w-4 h-4 text-stone-700 dark:text-stone-200" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-orange-700 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 shadow-md">
+                  <span className="absolute -top-0.5 -end-0.5 min-w-[18px] h-[18px] bg-orange-700 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 shadow-md">
                     {cartCount > 99 ? '99+' : cartCount}
                   </span>
                 )}
@@ -287,7 +293,7 @@ export default function Nav() {
               <div className="relative shrink-0" ref={userMenuRef}>
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-1 md:gap-1.5 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-full pl-0.5 pr-1.5 md:pr-2.5 py-0.5 transition-colors"
+                  className="flex items-center gap-1 md:gap-1.5 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-full ps-0.5 pe-1.5 md:pe-2.5 py-0.5 transition-colors"
                 >
                   <div className="w-7 h-7 rounded-full bg-orange-700 flex items-center justify-center shrink-0">
                     <span className="text-white text-xs font-semibold">
@@ -303,7 +309,7 @@ export default function Nav() {
                 </button>
 
                 {userMenuOpen && (
-                  <div className="absolute right-0 top-12 w-56 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-2xl shadow-xl overflow-hidden z-50">
+                  <div className="absolute end-0 top-12 w-56 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-2xl shadow-xl overflow-hidden z-50">
                     <div className="px-4 py-3 border-b border-stone-100 dark:border-stone-800 bg-orange-50/50 dark:bg-orange-950/20">
                       <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 truncate">{session.user?.name}</p>
                       <p className="text-xs text-stone-500 dark:text-stone-400 truncate">{session.user?.email}</p>
@@ -326,20 +332,20 @@ export default function Nav() {
                       {isVendeur && (
                         <Link href="/vendeur" onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950 transition-colors">
-                          <Store className="w-4 h-4" /><span>Dashboard vendeur</span>
+                          <Store className="w-4 h-4" /><span>{t.layout.nav.sellerDashboard}</span>
                         </Link>
                       )}
                       {isAdmin && (
                         <Link href="/admin" onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950 transition-colors">
-                          <LayoutDashboard className="w-4 h-4" /><span>Dashboard admin</span>
+                          <LayoutDashboard className="w-4 h-4" /><span>{t.layout.nav.adminDashboard}</span>
                         </Link>
                       )}
                     </div>
                     <div className="border-t border-stone-100 dark:border-stone-800 py-1">
                       <button onClick={handleSignOut}
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
-                        <LogOut className="w-4 h-4" /><span>Déconnexion</span>
+                        <LogOut className="w-4 h-4" /><span>{t.layout.nav.logout}</span>
                       </button>
                     </div>
                   </div>
@@ -350,7 +356,7 @@ export default function Nav() {
                 href="/connexion"
                 className="shrink-0 bg-orange-700 hover:bg-orange-800 text-white text-xs md:text-sm font-semibold px-3 md:px-5 py-2 md:py-2.5 rounded-full transition-colors shadow-sm whitespace-nowrap"
               >
-                Connexion
+                {t.layout.nav.login}
               </Link>
             )}
           </div>
@@ -364,10 +370,10 @@ export default function Nav() {
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Rechercher un produit..."
-                className="w-full border border-stone-300 dark:border-stone-700 focus:border-orange-700 dark:focus:border-orange-400 outline-none py-2.5 pl-4 pr-10 text-sm rounded-full bg-white dark:bg-stone-800 placeholder-stone-400"
+                placeholder={t.layout.nav.searchProduct}
+                className="w-full border border-stone-300 dark:border-stone-700 focus:border-orange-700 dark:focus:border-orange-400 outline-none py-2.5 ps-4 pe-10 text-sm rounded-full bg-white dark:bg-stone-800 placeholder-stone-400"
               />
-              <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-orange-700" aria-label="Rechercher">
+              <button type="submit" className="absolute end-3 top-1/2 -translate-y-1/2 text-orange-700" aria-label={t.common.search}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                 </svg>
@@ -401,13 +407,13 @@ export default function Nav() {
             <div className="pt-3 border-t border-stone-200 dark:border-stone-800">
               {session ? (
                 <button onClick={handleSignOut}
-                  className="w-full text-left px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors">
-                  Déconnexion
+                  className="w-full text-start px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors">
+                  {t.layout.nav.logout}
                 </button>
               ) : (
                 <Link href="/connexion" onClick={() => setMenuOpen(false)}
                   className="inline-block bg-orange-700 hover:bg-orange-800 text-white text-sm font-medium px-5 py-2.5 rounded-full transition-colors">
-                  Connexion
+                  {t.layout.nav.login}
                 </Link>
               )}
             </div>

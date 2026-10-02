@@ -7,8 +7,14 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Check, Store, Phone, ShieldCheck } from 'lucide-react'
 import CabaLogo from '@/components/CabaLogo'
+import LanguageSwitcher from '@/components/LanguageSwitcher'
+import WilayaCommuneSelect from '@/components/WilayaCommuneSelect'
+import { useI18n } from '@/components/I18nProvider'
 
 function FinaliserVendeurContent() {
+  const { t } = useI18n()
+  const a = t.auth
+  const v = t.auth.sellerFinalize
   const router       = useRouter()
   const searchParams = useSearchParams()
   const skipPhone    = searchParams.get('skipPhone') === 'true'
@@ -17,6 +23,8 @@ function FinaliserVendeurContent() {
 
   const [etape,       setEtape]       = useState<1 | 2>(1)
   const [nomBoutique, setNomBoutique] = useState('')
+  // Localisation de la boutique : sert au classement des produits
+  const [lieu,        setLieu]        = useState({ wilaya: '', commune: '' })
   const [telephone,   setTelephone]   = useState('')
   const [code,        setCode]        = useState('')
   const [loading,     setLoading]     = useState(false)
@@ -35,14 +43,14 @@ function FinaliserVendeurContent() {
     try {
       const res  = await fetch('/api/auth/finaliser-vendeur', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ etape: 1, telephone, nomBoutique }),
+        body: JSON.stringify({ etape: 1, telephone, nomBoutique, wilaya: lieu.wilaya, commune: lieu.commune }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       setTestMode(!!data.testMode)
       setEtape(2)
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Erreur inconnue')
+      setError(e instanceof Error ? e.message : a.unknownError)
     } finally { setLoading(false) }
   }
 
@@ -59,7 +67,7 @@ function FinaliserVendeurContent() {
       await update()
       setTimeout(() => { router.push('/vendeur'); router.refresh() }, 2000)
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Erreur inconnue')
+      setError(e instanceof Error ? e.message : a.unknownError)
     } finally { setLoading(false) }
   }
 
@@ -68,7 +76,7 @@ function FinaliserVendeurContent() {
     try {
       const res  = await fetch('/api/auth/finaliser-vendeur', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ etape: 1, nomBoutique, skipPhone: true }),
+        body: JSON.stringify({ etape: 1, nomBoutique, wilaya: lieu.wilaya, commune: lieu.commune, skipPhone: true }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
@@ -76,12 +84,15 @@ function FinaliserVendeurContent() {
       await update()
       setTimeout(() => { router.push('/vendeur'); router.refresh() }, 2000)
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Erreur inconnue')
+      setError(e instanceof Error ? e.message : a.unknownError)
     } finally { setLoading(false) }
   }
 
+  const lieuComplet = !!(lieu.wilaya && lieu.commune)
+
   const canSubmitNormal =
     nomBoutique.trim().length >= 2 &&
+    lieuComplet &&
     /^(05|06|07)\d{8}$/.test(telephone.replace(/\s/g, ''))
 
   // ── Styles ────────────────────────────────────────────────────────────────
@@ -92,8 +103,8 @@ function FinaliserVendeurContent() {
   const Stepper = () => (
     <div className="flex items-center gap-3 mb-10">
       {([
-        { n: 1, label: 'Boutique & Tél.' },
-        { n: 2, label: 'Confirmation' },
+        { n: 1, label: v.stepShopPhone },
+        { n: 2, label: v.stepConfirm },
       ] as const).map(({ n, label }) => (
         <div key={n} className="flex items-center gap-3">
           <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium transition-colors duration-300 ${
@@ -128,7 +139,7 @@ function FinaliserVendeurContent() {
     <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex flex-col lg:flex-row transition-colors duration-300">
 
       {/* ── Panneau gauche ── */}
-      <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-stone-900 dark:bg-stone-950 items-center justify-center p-12 border-r border-stone-800">
+      <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-stone-900 dark:bg-stone-950 items-center justify-center p-12 border-e border-stone-800">
         <div className="absolute inset-0 flex items-center justify-center opacity-[0.06]">
           <CabaLogo className="w-120 h-120 text-white" />
         </div>
@@ -136,13 +147,13 @@ function FinaliserVendeurContent() {
           <CabaLogo className="w-16 h-16 text-orange-500 mx-auto" />
           <div className="w-10 h-px bg-stone-700 mx-auto" />
           <p className="text-stone-400 font-light text-sm tracking-wider">
-            Finalisez votre compte vendeur
+            {v.sideTitle}
           </p>
-          <div className="space-y-4 text-left mt-8">
+          <div className="space-y-4 text-start mt-8">
             {[
-              { icon: Store,       text: 'Votre boutique en ligne' },
-              { icon: Phone,       text: skipPhone ? 'Téléphone déjà vérifié ✓' : 'Vérification par SMS' },
-              { icon: ShieldCheck, text: 'Validation par notre équipe' },
+              { icon: Store,       text: v.sideShop },
+              { icon: Phone,       text: skipPhone ? v.sidePhoneVerified : v.sideSms },
+              { icon: ShieldCheck, text: v.sideValidation },
             ].map(({ icon: Icon, text }) => (
               <div key={text} className="flex items-center gap-3 text-stone-400">
                 <Icon className="w-4 h-4 shrink-0 text-orange-500/60" />
@@ -157,12 +168,16 @@ function FinaliserVendeurContent() {
       <div className="flex-1 flex flex-col items-center justify-center p-8 overflow-y-auto">
         <div className="w-full max-w-sm py-8">
 
+          <div className="flex justify-end mb-6 -mt-2">
+            <LanguageSwitcher className="border border-stone-200 dark:border-stone-700" />
+          </div>
+
           <div className="mb-8">
             <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500 mb-2">
-              {skipPhone ? 'Dernière étape' : 'Presque terminé'}
+              {skipPhone ? v.lastStep : v.almostDone}
             </p>
             <h2 className="text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">
-              Compte Vendeur
+              {v.title}
             </h2>
             <div className="w-8 h-px bg-orange-700 dark:bg-orange-500 mt-4" />
           </div>
@@ -183,7 +198,7 @@ function FinaliserVendeurContent() {
                 <p className="text-xs text-stone-400 dark:text-stone-500 truncate">{session.user.email}</p>
               </div>
               {skipPhone && session.user.telephone && (
-                <div className="ml-auto flex items-center gap-1 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 px-2 py-1 rounded-lg shrink-0">
+                <div className="ms-auto flex items-center gap-1 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 px-2 py-1 rounded-lg shrink-0">
                   <Check className="w-3 h-3 text-green-600 dark:text-green-400" />
                   <span className="text-[10px] text-green-700 dark:text-green-400 font-medium">
                     {session.user.telephone}
@@ -200,14 +215,14 @@ function FinaliserVendeurContent() {
                 <Check className="w-7 h-7 text-white" />
               </div>
               <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500">
-                Boutique créée
+                {v.shopCreated}
               </p>
               <p className="text-sm font-light text-stone-800 dark:text-stone-100">{success}</p>
               <p className="text-xs text-stone-500 dark:text-stone-400 border border-stone-200 dark:border-stone-700 rounded-xl px-4 py-3 tracking-wide">
-                Votre compte sera activé après validation par notre équipe.
+                {v.activationNote}
               </p>
               <p className="text-xs text-stone-400 dark:text-stone-600 tracking-wide mt-4">
-                Redirection en cours...
+                {v.redirecting}
               </p>
             </div>
           ) : (
@@ -216,23 +231,32 @@ function FinaliserVendeurContent() {
               {skipPhone ? (
                 <div className="space-y-7">
                   <div>
-                    <label className={labelCls}>Nom de la boutique *</label>
+                    <label className={labelCls}>{a.shopName}</label>
                     <input type="text" value={nomBoutique} onChange={e => setNomBoutique(e.target.value)}
-                      placeholder="Ma Super Boutique" className={baseInput} />
+                      placeholder={a.shopPlaceholder} className={baseInput} />
                     <p className="mt-1.5 text-xs text-stone-400 dark:text-stone-600 tracking-wide">
-                      Ce nom sera affiché sur votre boutique publique.
+                      {v.shopPublicHint}
                     </p>
                   </div>
+                  <WilayaCommuneSelect
+                    wilaya={lieu.wilaya}
+                    commune={lieu.commune}
+                    onChange={setLieu}
+                    required
+                    selectClassName={baseInput}
+                    labelClassName={labelCls}
+                    className="grid grid-cols-1 sm:grid-cols-2 gap-6"
+                  />
 
                   {error && (
                     <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 text-xs px-4 py-3 rounded-xl tracking-wide">{error}</div>
                   )}
 
-                  <button onClick={handleEtape1Skip} disabled={loading || nomBoutique.trim().length < 2}
+                  <button onClick={handleEtape1Skip} disabled={loading || nomBoutique.trim().length < 2 || !lieuComplet}
                     className={btnPrimary}>
                     {loading
-                      ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Création...</>
-                      : 'Créer ma boutique'
+                      ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {a.creating}</>
+                      : v.createShop
                     }
                   </button>
                 </div>
@@ -245,16 +269,25 @@ function FinaliserVendeurContent() {
                 {etape === 1 && (
                   <div className="space-y-7">
                     <div>
-                      <label className={labelCls}>Nom de la boutique *</label>
+                      <label className={labelCls}>{a.shopName}</label>
                       <input type="text" value={nomBoutique} onChange={e => setNomBoutique(e.target.value)}
-                        placeholder="Ma Super Boutique" className={baseInput} />
+                        placeholder={a.shopPlaceholder} className={baseInput} />
                     </div>
+                    <WilayaCommuneSelect
+                      wilaya={lieu.wilaya}
+                      commune={lieu.commune}
+                      onChange={setLieu}
+                      required
+                      selectClassName={baseInput}
+                      labelClassName={labelCls}
+                      className="grid grid-cols-1 sm:grid-cols-2 gap-6"
+                    />
                     <div>
-                      <label className={labelCls}>Numéro de téléphone *</label>
+                      <label className={labelCls}>{a.phoneNumber}</label>
                       <input type="tel" value={telephone} onChange={e => setTelephone(e.target.value)}
                         placeholder="05 XX XX XX XX" className={baseInput} />
                       <p className="mt-1.5 text-xs text-stone-400 dark:text-stone-600 tracking-wide">
-                        Un code de confirmation vous sera envoyé par SMS.
+                        {a.smsCodeHint}
                       </p>
                     </div>
 
@@ -265,15 +298,15 @@ function FinaliserVendeurContent() {
                     <button onClick={handleEtape1Normal} disabled={loading || !canSubmitNormal}
                       className={btnPrimary}>
                       {loading
-                        ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Envoi...</>
-                        : 'Recevoir le code'
+                        ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {a.sending}</>
+                        : a.receiveCode
                       }
                     </button>
 
                     <p className="text-center text-xs text-stone-400 dark:text-stone-500 tracking-wide">
-                      Vous souhaitez créer un compte client ?{' '}
+                      {v.clientQuestion}{' '}
                       <Link href="/" className="text-orange-700 dark:text-orange-500 underline underline-offset-4 font-medium">
-                        Continuer sans boutique
+                        {v.continueWithoutShop}
                       </Link>
                     </p>
                   </div>
@@ -283,18 +316,18 @@ function FinaliserVendeurContent() {
                 {etape === 2 && (
                   <div className="space-y-7">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400 mb-1">Code envoyé au</p>
-                      <p className="text-sm text-stone-900 dark:text-stone-100 font-medium">{telephone}</p>
+                      <p className="text-xs uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400 mb-1">{a.codeSentToPhone}</p>
+                      <p dir="ltr" className="text-sm text-stone-900 dark:text-stone-100 font-medium text-start">{telephone}</p>
                       {testMode && (
                         <p className="mt-2 text-xs text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 px-3 py-2 rounded-lg tracking-wide">
-                          Mode test — entrez <span className="font-mono font-bold">000000</span>
+                          {a.testMode} <span className="font-mono font-bold">000000</span>
                         </p>
                       )}
                     </div>
 
                     <div>
                       <label className="block text-xs uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400 mb-4">
-                        Code de confirmation *
+                        {a.confirmationCode}
                       </label>
                       <input type="text" inputMode="numeric" value={code}
                         onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
@@ -316,14 +349,14 @@ function FinaliserVendeurContent() {
                     <button onClick={handleEtape2Normal} disabled={loading || code.length !== 6}
                       className={btnPrimary}>
                       {loading
-                        ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Vérification...</>
-                        : 'Activer mon compte vendeur'
+                        ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {a.verifying}</>
+                        : v.activateSeller
                       }
                     </button>
 
                     <button onClick={() => { setEtape(1); setCode(''); setError(null) }}
                       className="w-full text-xs text-stone-400 dark:text-stone-600 hover:text-orange-700 dark:hover:text-orange-500 uppercase tracking-[0.2em] transition-colors py-2">
-                      ← Modifier mes informations
+                      {a.editMyInfo}
                     </button>
                   </div>
                 )}
@@ -337,7 +370,7 @@ function FinaliserVendeurContent() {
         <div className="lg:hidden mt-12 flex flex-col items-center gap-3 pb-8">
           <div className="w-16 h-px bg-stone-200 dark:bg-stone-800" />
           <CabaLogo className="w-12 h-12 text-orange-700 dark:text-orange-500 opacity-60" />
-          <p className="text-xs text-stone-300 dark:text-stone-700 uppercase tracking-[0.3em]">Caba Store</p>
+          <p className="text-xs text-stone-300 dark:text-stone-700 uppercase tracking-[0.3em]">{t.common.appName}</p>
         </div>
       </div>
     </div>

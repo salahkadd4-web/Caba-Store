@@ -18,6 +18,14 @@ import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
 import { sendOTP, verifyOTP, formatPhone, validatePhone } from '@/lib/twilio'
 import { sanitize } from '@/lib/security'
+import { getI18n } from '@/lib/i18n/server'
+import { validateWilayaCommune, type WilayaCommuneResult } from '@/lib/algeria/server'
+
+/** Wilaya + commune de la boutique obligatoires. Retourne le message d'erreur ou les valeurs. */
+function lieuBoutique(body: { wilaya?: unknown; commune?: unknown }): WilayaCommuneResult & { complete: boolean } {
+  const res = validateWilayaCommune(body.wilaya, body.commune)
+  return { ...res, complete: res.ok && !!res.wilaya && !!res.commune }
+}
 
 const UNIVERSAL_CODE  = '000000'
 const TWILIO_TEST_NUM = process.env.TWILIO_TEST_NUMBER
@@ -33,14 +41,18 @@ function isTwilioTestNumber(telephone: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
+  const { t, locale } = await getI18n()
+  const m = t.auth.api
+  const erreurLieu = (l: ReturnType<typeof lieuBoutique>) =>
+    !l.ok ? (l.field === 'wilaya' ? t.address.invalidWilaya : t.address.invalidCommune) : m.sellerLocationRequired
   try {
     const token = await getAuthToken()
     if (!token) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+      return NextResponse.json({ error: t.api.unauthenticated }, { status: 401 })
     }
 
     if (token.role === 'VENDEUR' || token.role === 'ADMIN') {
-      return NextResponse.json({ error: 'Compte déjà activé' }, { status: 400 })
+      return NextResponse.json({ error: m.alreadyActivated }, { status: 400 })
     }
 
     const body      = await req.json()
@@ -57,25 +69,29 @@ export async function POST(req: NextRequest) {
 
       if (!nomBoutique || nomBoutique.length < 2) {
         return NextResponse.json(
-          { error: 'Nom de boutique requis (min. 2 caractères)' },
+          { error: m.shopNameRequired },
           { status: 400 }
         )
       }
       if (nomBoutique.length > 100) {
         return NextResponse.json(
-          { error: 'Nom de boutique trop long (100 caractères max)' },
+          { error: m.shopNameTooLong },
           { status: 400 }
         )
+      }
+      const lieu = lieuBoutique(body)
+      if (!lieu.ok || !lieu.complete) {
+        return NextResponse.json({ error: erreurLieu(lieu) }, { status: 400 })
       }
 
       // Vérifier que l'utilisateur a bien un téléphone défini (garanti par google-finaliser)
       const user = await prisma.user.findUnique({ where: { id: userId } })
       if (!user) {
-        return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 })
+        return NextResponse.json({ error: t.api.userNotFound }, { status: 404 })
       }
       if (!user.telephone) {
         return NextResponse.json(
-          { error: 'Numéro de téléphone manquant. Recommencez l\'inscription.' },
+          { error: m.phoneMissing },
           { status: 400 }
         )
       }
@@ -84,7 +100,7 @@ export async function POST(req: NextRequest) {
       await prisma.$transaction(async (tx) => {
         await tx.user.update({
           where: { id: userId },
-          data:  { role: 'VENDEUR' },
+          data:  { role: 'VENDEUR', wilaya: lieu.wilaya, commune: lieu.commune },
         })
 
         const existing = await tx.vendeurProfile.findUnique({ where: { userId } })
@@ -101,7 +117,7 @@ export async function POST(req: NextRequest) {
       })
 
       return NextResponse.json({
-        message:   'Compte vendeur créé. Il sera activé après validation par notre équipe.',
+        message:   m.sellerCreated,
         role:      'VENDEUR',
         skipPhone: true,
       }, { status: 201 })
@@ -115,23 +131,27 @@ export async function POST(req: NextRequest) {
       const nomBoutique = body.nomBoutique ? sanitize(body.nomBoutique) : null
 
       if (!telephone) {
-        return NextResponse.json({ error: 'Numéro de téléphone requis' }, { status: 400 })
+        return NextResponse.json({ error: m.phoneRequired }, { status: 400 })
       }
       if (!validatePhone(telephone)) {
-        return NextResponse.json({ error: 'Format invalide. Ex : 05 XX XX XX XX' }, { status: 400 })
+        return NextResponse.json({ error: m.invalidPhoneFormat }, { status: 400 })
       }
       if (!nomBoutique || nomBoutique.length < 2) {
-        return NextResponse.json({ error: 'Nom de boutique requis (min. 2 caractères)' }, { status: 400 })
+        return NextResponse.json({ error: m.shopNameRequired }, { status: 400 })
       }
       if (nomBoutique.length > 100) {
-        return NextResponse.json({ error: 'Nom de boutique trop long (100 caractères max)' }, { status: 400 })
+        return NextResponse.json({ error: m.shopNameTooLong }, { status: 400 })
+      }
+      const lieu = lieuBoutique(body)
+      if (!lieu.ok || !lieu.complete) {
+        return NextResponse.json({ error: erreurLieu(lieu) }, { status: 400 })
       }
 
       const existingPhone = await prisma.user.findFirst({
         where: { telephone, NOT: { id: userId } },
       })
       if (existingPhone) {
-        return NextResponse.json({ error: 'Ce numéro est déjà associé à un autre compte' }, { status: 400 })
+        return NextResponse.json({ error: m.phoneUsedOther }, { status: 400 })
       }
 
       const useRealSMS = isTwilioTestNumber(telephone)
@@ -143,17 +163,17 @@ export async function POST(req: NextRequest) {
           identifiant: `vendeur_google_${userId}`,
           token:       tokenValue,
           expiresAt:   new Date(Date.now() + 15 * 60 * 1000),
-          data:        JSON.stringify({ telephone, nomBoutique, userId }),
+          data:        JSON.stringify({ telephone, nomBoutique, userId, wilaya: lieu.wilaya, commune: lieu.commune }),
         },
       })
 
       if (useRealSMS) {
-        await sendOTP(telephone)
-        return NextResponse.json({ message: 'Code envoyé par SMS' })
+        await sendOTP(telephone, locale)
+        return NextResponse.json({ message: m.codeSentSms })
       }
 
       return NextResponse.json({
-        message:  'Code de test — entrez 000000 pour continuer',
+        message:  m.testCode,
         testMode: true,
       })
     }
@@ -163,7 +183,7 @@ export async function POST(req: NextRequest) {
       const code = String(body.code || '').trim()
 
       if (!/^\d{6}$/.test(code)) {
-        return NextResponse.json({ error: 'Code invalide (6 chiffres)' }, { status: 400 })
+        return NextResponse.json({ error: m.invalidCode6 }, { status: 400 })
       }
 
       const otpToken = await prisma.otpToken.findFirst({
@@ -174,23 +194,25 @@ export async function POST(req: NextRequest) {
       })
 
       if (!otpToken) {
-        return NextResponse.json({ error: 'Session expirée, recommencez' }, { status: 400 })
+        return NextResponse.json({ error: m.sessionExpired }, { status: 400 })
       }
 
       const savedData = JSON.parse(otpToken.data) as {
         telephone:   string
         nomBoutique: string
         userId:      string
+        wilaya?:     string | null
+        commune?:    string | null
       }
 
       if (otpToken.token === 'TWILIO_VERIFY') {
         const isValid = await verifyOTP(savedData.telephone, code)
         if (!isValid) {
-          return NextResponse.json({ error: 'Code invalide ou expiré' }, { status: 400 })
+          return NextResponse.json({ error: m.codeInvalidOrExpired }, { status: 400 })
         }
       } else {
         if (code !== UNIVERSAL_CODE) {
-          return NextResponse.json({ error: 'Code invalide' }, { status: 400 })
+          return NextResponse.json({ error: m.invalidCode }, { status: 400 })
         }
       }
 
@@ -200,6 +222,8 @@ export async function POST(req: NextRequest) {
           data: {
             role:      'VENDEUR',
             telephone: savedData.telephone,
+            wilaya:    savedData.wilaya  ?? null,
+            commune:   savedData.commune ?? null,
           },
         })
 
@@ -219,15 +243,15 @@ export async function POST(req: NextRequest) {
       await prisma.otpToken.delete({ where: { id: otpToken.id } })
 
       return NextResponse.json({
-        message: 'Compte vendeur créé. Il sera activé après validation par notre équipe.',
+        message: m.sellerCreated,
         role:    'VENDEUR',
       }, { status: 201 })
     }
 
-    return NextResponse.json({ error: 'Requête invalide' }, { status: 400 })
+    return NextResponse.json({ error: m.invalidRequest }, { status: 400 })
 
   } catch (err) {
     console.error('Erreur finaliser-vendeur:', err)
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }

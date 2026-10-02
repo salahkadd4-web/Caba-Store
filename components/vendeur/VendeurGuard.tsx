@@ -3,11 +3,13 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import VendeurDocumentsClient from './VendeurDocumentsClient'
 import { Ban, Loader2 } from 'lucide-react'
+import { getI18n } from '@/lib/i18n/server'
 
 // Composant serveur qui protège toutes les pages vendeur
 // Si le vendeur n'est pas approuvé → on affiche la page de statut
 export async function VendeurGuard({ children }: { children: React.ReactNode }) {
-  const session = await auth()
+  const [session, { t }] = await Promise.all([auth(), getI18n()])
+  const s = t.seller.status
 
   if (!session?.user || session.user.role !== 'VENDEUR') {
     redirect('/connexion')
@@ -34,11 +36,10 @@ export async function VendeurGuard({ children }: { children: React.ReactNode }) 
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
               <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">
-                Compte en attente de validation
+                {s.pendingTitle}
               </h1>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                Votre demande d'inscription en tant que vendeur est en cours d'examen.
-                Notre équipe vous contactera prochainement.
+                {s.pendingDesc}
               </p>
               {vendeur.adminNote && (
                 <p className="text-xs bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300 rounded-xl p-3 mb-4">
@@ -50,14 +51,14 @@ export async function VendeurGuard({ children }: { children: React.ReactNode }) 
             <>
               <Ban className="w-14 h-14" />
               <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">
-                Compte suspendu
+                {s.suspendedTitle}
               </h1>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                Votre compte vendeur a été suspendu. Contactez le support pour plus d'informations.
+                {s.suspendedDesc}
               </p>
               {vendeur.adminNote && (
-                <div className="text-xs bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 rounded-xl p-3 mb-4 text-left">
-                  <p className="font-semibold mb-1">Motif :</p>
+                <div className="text-xs bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 rounded-xl p-3 mb-4 text-start">
+                  <p className="font-semibold mb-1">{s.reason}</p>
                   <p>{vendeur.adminNote}</p>
                 </div>
               )}
@@ -67,7 +68,7 @@ export async function VendeurGuard({ children }: { children: React.ReactNode }) 
             href="/"
             className="inline-block mt-2 text-sm text-emerald-600 dark:text-emerald-400 hover:underline"
           >
-            ← Retour à la boutique
+            {s.backToShopArrow}
           </a>
         </div>
       </div>

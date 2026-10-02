@@ -8,6 +8,8 @@ import Link from 'next/link'
 import { Check } from 'lucide-react'
 import CabaLogo from '@/components/CabaLogo'
 import GoogleIcon from '@/components/client/GoogleIcon'
+import LanguageSwitcher from '@/components/LanguageSwitcher'
+import { useI18n } from '@/components/I18nProvider'
 
 const GOOGLE_WEB_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? ''
 
@@ -20,6 +22,7 @@ const DEV_ACCOUNTS = [
 ] as const
 
 function GuestLink() {
+  const { t } = useI18n()
   const [isNative, setIsNative] = useState(false)
 
   useEffect(() => {
@@ -34,20 +37,23 @@ function GuestLink() {
     <div className="mt-6 text-center">
       <div className="flex items-center gap-3 mb-4">
         <div className="flex-1 h-px bg-stone-100 dark:bg-stone-800" />
-        <span className="text-[10px] text-stone-300 dark:text-stone-700 uppercase tracking-[0.25em]">ou</span>
+        <span className="text-[10px] text-stone-300 dark:text-stone-700 uppercase tracking-[0.25em]">{t.auth.or}</span>
         <div className="flex-1 h-px bg-stone-100 dark:bg-stone-800" />
       </div>
       <Link
         href="/"
         className="inline-flex items-center gap-1.5 text-xs text-stone-400 dark:text-stone-500 hover:text-orange-700 dark:hover:text-orange-500 transition-colors tracking-wide underline underline-offset-4"
       >
-        Parcourir en tant qu&apos;invité
+        {t.auth.signin.guest}
       </Link>
     </div>
   )
 }
 
 function ConnexionContent() {
+  const { t } = useI18n()
+  const a = t.auth
+  const s = t.auth.signin
   const router       = useRouter()
   const searchParams = useSearchParams()
   const inscription  = searchParams.get('inscription')
@@ -99,14 +105,14 @@ function ConnexionContent() {
           })
           const checkData = await checkRes.json()
           if (checkData.isGoogleAccount) {
-            setError('Ce compte utilise la connexion Google.')
+            setError(s.googleAccount)
           } else {
-            setError('Identifiant ou mot de passe incorrect.')
+            setError(s.badCredentials)
           }
         } else if (result.error === 'Configuration') {
-          setError('Erreur de configuration serveur. Contactez l\'administrateur.')
+          setError(s.configError)
         } else {
-          setError(`Erreur : ${result.error}`)  // ← montre le vrai message pour déboguer
+          setError(s.errorPrefix(result.error))  // ← montre le vrai message pour déboguer
         }
         return
       }
@@ -122,7 +128,7 @@ function ConnexionContent() {
         else                                         window.location.href = '/'
       }
     } catch {
-      setError('Erreur serveur, veuillez réessayer.')
+      setError(a.serverRetry)
     } finally {
       setLoading(false)
     }
@@ -173,7 +179,7 @@ function ConnexionContent() {
 
         const googleResult = result.result
         if (!googleResult || !('idToken' in googleResult) || !googleResult.idToken) {
-          setError('Impossible de récupérer le token Google.')
+          setError(a.googleTokenError)
           return
         }
 
@@ -185,7 +191,7 @@ function ConnexionContent() {
         const data = await res.json()
 
         if (!res.ok || !data.ok) {
-          setError(data.error || 'Erreur connexion Google.')
+          setError(data.error || a.googleError)
           return
         }
 
@@ -203,7 +209,7 @@ function ConnexionContent() {
             else if (session?.user?.role === 'VENDEUR') window.location.href = '/vendeur'
             else                                         window.location.href = '/'
           } else {
-            setError('Erreur de session. Veuillez réessayer.')
+            setError(a.sessionError)
           }
         } else {
           router.push(`/inscription/finaliser-google?token=${data.tempToken}`)
@@ -229,7 +235,7 @@ function ConnexionContent() {
     <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex flex-col lg:flex-row transition-colors duration-300">
 
       {/* ── Panneau gauche (desktop) ── */}
-      <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-stone-900 dark:bg-stone-950 items-center justify-center p-12 border-r border-stone-800">
+      <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-stone-900 dark:bg-stone-950 items-center justify-center p-12 border-e border-stone-800">
         {/* Logo watermark */}
         <div className="absolute inset-0 flex items-center justify-center opacity-[0.06]">
           <CabaLogo className="w-120 h-120 text-white" />
@@ -239,7 +245,7 @@ function ConnexionContent() {
           <CabaLogo className="w-20 h-20 text-orange-500 mx-auto mb-6" />
           <div className="w-10 h-px bg-stone-700 mx-auto mb-5" />
           <p className="text-stone-400 font-light text-sm tracking-wider">
-            L&apos;excellence à portée de main
+            {a.tagline}
           </p>
         </div>
       </div>
@@ -248,10 +254,14 @@ function ConnexionContent() {
       <div className="flex-1 flex flex-col items-center justify-center p-8 overflow-y-auto">
         <div className="w-full max-w-sm py-8">
 
+          <div className="flex justify-end mb-6 -mt-2">
+            <LanguageSwitcher className="border border-stone-200 dark:border-stone-700" />
+          </div>
+
           {/* Header */}
           <div className="mb-10">
-            <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500 mb-2">Bienvenue</p>
-            <h2 className="text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">Connexion</h2>
+            <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500 mb-2">{s.welcome}</p>
+            <h2 className="text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">{s.title}</h2>
             <div className="w-8 h-px bg-orange-700 dark:bg-orange-500 mt-4" />
           </div>
 
@@ -260,10 +270,10 @@ function ConnexionContent() {
             <div className="border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950 px-4 py-3 mb-6 rounded-xl space-y-1">
               <p className="text-xs font-medium text-green-700 dark:text-green-400 flex items-center gap-1.5">
                 <Check className="w-3.5 h-3.5" />
-                Compte créé avec succès !
+                {s.clientCreated}
               </p>
               <p className="text-xs text-green-600 dark:text-green-500 tracking-wide">
-                Connectez-vous pour accéder à votre espace.
+                {s.clientCreatedDesc}
               </p>
             </div>
           )}
@@ -273,13 +283,13 @@ function ConnexionContent() {
             <div className="border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950 px-4 py-3 mb-6 rounded-xl space-y-1.5">
               <p className="text-xs font-medium text-green-700 dark:text-green-400 flex items-center gap-1.5">
                 <Check className="w-3.5 h-3.5" />
-                Boutique créée avec succès !
+                {s.shopCreated}
               </p>
               <p className="text-xs text-green-600 dark:text-green-500 tracking-wide">
-                Votre compte vendeur sera activé après validation par notre équipe.
+                {s.shopCreatedDesc1}
               </p>
               <p className="text-xs text-green-600 dark:text-green-500 tracking-wide">
-                Connectez-vous dès maintenant pour accéder à votre espace.
+                {s.shopCreatedDesc2}
               </p>
             </div>
           )}
@@ -287,7 +297,7 @@ function ConnexionContent() {
           {/* ── Bannière succès reset mot de passe ── */}
           {reset === 'success' && (
             <div className="border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 text-xs px-4 py-3 mb-6 rounded-xl tracking-wide">
-              Mot de passe mis à jour avec succès.
+              {s.passwordReset}
             </div>
           )}
 
@@ -302,7 +312,7 @@ function ConnexionContent() {
           {IS_DEV && (
             <div className="border border-dashed border-amber-400 dark:border-amber-600 bg-amber-50 dark:bg-amber-950/40 p-3 mb-6 rounded-xl">
               <p className="text-[10px] uppercase tracking-[0.2em] text-amber-700 dark:text-amber-400 mb-2 text-center">
-                Dev — Connexion rapide
+                {s.devQuickLogin}
               </p>
               <div className="grid grid-cols-3 gap-2">
                 {DEV_ACCOUNTS.map((acc) => (
@@ -330,13 +340,13 @@ function ConnexionContent() {
               ? <span className="w-4 h-4 border-2 border-stone-200 border-t-stone-500 rounded-full animate-spin" />
               : <GoogleIcon />
             }
-            Continuer avec Google
+            {a.continueWithGoogle}
           </button>
 
           {/* ── Séparateur ── */}
           <div className="flex items-center gap-4 mb-6">
             <div className="flex-1 h-px bg-stone-200 dark:bg-stone-800" />
-            <span className="text-xs text-stone-400 dark:text-stone-600 uppercase tracking-[0.2em]">ou</span>
+            <span className="text-xs text-stone-400 dark:text-stone-600 uppercase tracking-[0.2em]">{a.or}</span>
             <div className="flex-1 h-px bg-stone-200 dark:bg-stone-800" />
           </div>
 
@@ -344,7 +354,7 @@ function ConnexionContent() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-xs uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400 mb-2">
-                Email ou Téléphone
+                {s.identifier}
               </label>
               <input
                 type="text"
@@ -353,19 +363,20 @@ function ConnexionContent() {
                 onChange={handleChange}
                 required
                 className="w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-3 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors duration-300"
-                placeholder="votre@email.com"
+                placeholder={s.identifierPlaceholder}
+                dir="ltr"
               />
             </div>
             <div>
               <div className="flex justify-between items-center mb-2">
                 <label className="block text-xs uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
-                  Mot de Passe
+                  {s.password}
                 </label>
                 <Link
                   href="/recuperer-mot-de-passe"
                   className="text-xs text-stone-400 dark:text-stone-500 hover:text-orange-700 dark:hover:text-orange-500 transition-colors tracking-wide"
                 >
-                  Oublié ?
+                  {s.forgot}
                 </Link>
               </div>
               <input
@@ -384,20 +395,20 @@ function ConnexionContent() {
               className="w-full bg-orange-700 hover:bg-orange-800 text-white text-xs uppercase tracking-[0.3em] py-4 rounded-xl transition-colors duration-300 disabled:opacity-50 mt-4 flex items-center justify-center gap-2"
             >
               {loading
-                ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Connexion...</>
-                : 'Se Connecter'
+                ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {s.loggingIn}</>
+                : s.submit
               }
             </button>
           </form>
 
           {/* ── Lien inscription ── */}
           <p className="text-center text-xs text-stone-400 dark:text-stone-500 mt-8 tracking-wide">
-            Pas encore de compte ?{' '}
+            {s.noAccount}{' '}
             <Link
               href="/inscription"
               className="text-orange-700 dark:text-orange-500 hover:text-orange-800 dark:hover:text-orange-400 underline underline-offset-4 transition-colors font-medium"
             >
-              S&apos;inscrire
+              {s.register}
             </Link>
           </p>
 
@@ -408,7 +419,7 @@ function ConnexionContent() {
         <div className="lg:hidden mt-12 flex flex-col items-center gap-3 pb-8">
           <div className="w-16 h-px bg-stone-200 dark:bg-stone-800" />
           <CabaLogo className="w-12 h-12 text-orange-700 dark:text-orange-500 opacity-60" />
-          <p className="text-xs text-stone-300 dark:text-stone-700 uppercase tracking-[0.3em]">Caba Store</p>
+          <p className="text-xs text-stone-300 dark:text-stone-700 uppercase tracking-[0.3em]">{t.common.appName}</p>
         </div>
       </div>
     </div>

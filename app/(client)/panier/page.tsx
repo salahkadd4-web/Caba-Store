@@ -13,6 +13,7 @@ import {
 import { getPrixUnitaire as getPrixUnitaireLib, parsePrixTiers } from '@/lib/prix'
 import QteInput from '@/components/client/QteInput'
 import VendeurButton from '@/components/client/VendeurButton'
+import { useI18n } from '@/components/I18nProvider'
 
 /* ══════════════════════════════════════════
    TYPES
@@ -109,8 +110,10 @@ function ProductEditor({
   onDelete: (itemId: string) => Promise<void>
   onAddNew: (productId: string, variantId: string, optionId: string | undefined, qte: number) => Promise<void>
 }) {
+  const { t, fmt } = useI18n()
+  const c = t.cart
   const { product, items } = group
-  const typeOpt    = product.typeOption || 'Taille'
+  const typeOpt    = product.typeOption || t.product.sizeDefault
   const hasOptions = product.variants.some(v => v.options.length > 0)
   const isColor    = product.variants.some(v => v.couleur)
 
@@ -161,7 +164,7 @@ function ProductEditor({
 
         <div className="flex-1">
           <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-2">
-            {isColor ? 'Couleur' : 'Variante'}
+            {isColor ? c.color : c.variant}
           </p>
           <div className="flex flex-wrap gap-2">
             {product.variants.map(v => {
@@ -190,7 +193,7 @@ function ProductEditor({
                   )}
                   {v.nom}
                   {qteV > 0 && (
-                    <span className="ml-1 bg-orange-700 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shrink-0">
+                    <span className="ms-1 bg-orange-700 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shrink-0">
                       {qteV}
                     </span>
                   )}
@@ -208,7 +211,7 @@ function ProductEditor({
             <>
               <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-2 flex items-center gap-1">
                 <Ruler className="w-3 h-3" /> {typeOpt}
-                <span className="font-normal normal-case text-stone-400 ml-1">— cliquez pour ajouter, tapez la quantité</span>
+                <span className="font-normal normal-case text-stone-400 ms-1">{c.clickToAdd}</span>
               </p>
               <div className="flex flex-wrap gap-2">
                 {activeVariant.options.map(opt => {
@@ -236,7 +239,7 @@ function ProductEditor({
                         {opt.valeur}
                       </button>
                       {qt > 0 && (
-                        <div className="pr-1.5 flex items-center gap-1">
+                        <div className="pe-1.5 flex items-center gap-1">
                           {isPending
                             ? <Loader2 className="w-4 h-4 animate-spin text-orange-700 mx-2" />
                             : <QteInput size="sm" value={qt} stockMax={opt.stock}
@@ -247,7 +250,7 @@ function ProductEditor({
                         </div>
                       )}
                       {maxReach && qt > 0 && (
-                        <span className="absolute -top-1.5 -right-1.5 bg-orange-700 text-white text-[9px] font-bold px-1 rounded-full shadow leading-tight">MAX</span>
+                        <span className="absolute -top-1.5 -end-1.5 bg-orange-700 text-white text-[9px] font-bold px-1 rounded-full shadow leading-tight">MAX</span>
                       )}
                     </div>
                   )
@@ -256,7 +259,7 @@ function ProductEditor({
             </>
           ) : (
             <div className="flex items-center gap-3">
-              <p className="text-xs font-semibold text-stone-600 dark:text-stone-400">Quantité</p>
+              <p className="text-xs font-semibold text-stone-600 dark:text-stone-400">{c.quantity}</p>
               {pending[`${activeVariant.id}__`]
                 ? <Loader2 className="w-4 h-4 animate-spin text-orange-700" />
                 : <QteInput
@@ -266,7 +269,7 @@ function ProductEditor({
                     onZero={() => handleChange(activeVariant.id, undefined, 0)}
                   />
               }
-              <span className="text-xs text-stone-400">{activeVariant.stock} dispo.</span>
+              <span className="text-xs text-stone-400">{c.available(activeVariant.stock)}</span>
             </div>
           )}
         </div>
@@ -276,7 +279,7 @@ function ProductEditor({
       {items.length > 0 && (
         <div className="bg-stone-50 dark:bg-stone-800/50 rounded-xl overflow-hidden">
           <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest px-3 pt-2.5 pb-1.5">
-            Dans votre panier
+            {c.inYourCart}
           </p>
           <div className="divide-y divide-stone-100 dark:divide-stone-800">
             {items.map(item => {
@@ -300,8 +303,8 @@ function ProductEditor({
                         onZero={() => handleChange(item.variant?.id ?? '', item.variantOption?.id, 0)}
                       />
                   }
-                  <span className="text-xs font-semibold text-stone-700 dark:text-stone-300 w-20 text-right tabular-nums shrink-0">
-                    {(prixU * item.quantite).toFixed(2)} DA
+                  <span className="text-xs font-semibold text-stone-700 dark:text-stone-300 w-20 text-end tabular-nums shrink-0">
+                    {(prixU * item.quantite).toFixed(2)} {fmt.currency}
                   </span>
                   <button type="button" onClick={() => onDelete(item.id)}
                     className="text-stone-300 dark:text-stone-600 hover:text-red-500 dark:hover:text-red-400 transition shrink-0 p-0.5 rounded">
@@ -329,9 +332,12 @@ function ProductCard({
   onAddNew:      (pid: string, vid: string, oid: string | undefined, q: number) => Promise<void>
   onDeleteGroup: (items: CartItem[]) => Promise<void>
 }) {
+  const { t, fmt } = useI18n()
+  const c  = t.cart
+  const DA = fmt.currency
   const { product, items } = group
   const [open, setOpen] = useState(false)
-  const typeOpt = product.typeOption || 'Taille'
+  const typeOpt = product.typeOption || t.product.sizeDefault
 
   const totalQte = items.reduce((s, i) => s + i.quantite, 0)
   const prixUnit = getPrixUnitaire(product, totalQte)
@@ -360,7 +366,7 @@ function ProductCard({
           {items.filter(i => i.variant?.couleur).slice(0, 3).map((i, idx) => (
             <span key={i.id}
               className="absolute bottom-1 border-2 border-white dark:border-stone-900 rounded-full shadow-sm w-4 h-4"
-              style={{ right: `${4 + idx * 10}px`, backgroundColor: i.variant!.couleur! }} />
+              style={{ insetInlineEnd: `${4 + idx * 10}px`, backgroundColor: i.variant!.couleur! }} />
           ))}
         </div>
 
@@ -371,7 +377,7 @@ function ProductCard({
               <h3 className="font-semibold text-stone-800 dark:text-stone-100 text-sm leading-snug line-clamp-2">{product.nom}</h3>
             </div>
             <button type="button" onClick={() => onDeleteGroup(items)}
-              title="Retirer ce produit"
+              title={c.removeProduct}
               className="text-stone-300 dark:text-stone-600 hover:text-red-500 dark:hover:text-red-400 transition p-1 shrink-0 rounded-lg hover:bg-red-50 dark:hover:bg-red-950">
               <Trash2 className="w-4 h-4" />
             </button>
@@ -388,7 +394,7 @@ function ProductCard({
                 )}
                 {item.variant?.nom ?? product.nom}
                 {item.variantOption && <> · {typeOpt} {item.variantOption.valeur}</>}
-                <span className="font-bold text-stone-500 dark:text-stone-400 ml-0.5">×{item.quantite}</span>
+                <span className="font-bold text-stone-500 dark:text-stone-400 ms-0.5">×{item.quantite}</span>
               </span>
             ))}
           </div>
@@ -396,11 +402,11 @@ function ProductCard({
           {/* Prix unitaire */}
           <div className="flex items-baseline gap-2 mt-2.5 flex-wrap">
             <span className={`text-base font-semibold ${isReduit ? 'text-green-700 dark:text-green-400' : 'text-stone-900 dark:text-stone-50'}`}>
-              {prixUnit.toFixed(2)} DA<span className="text-xs font-normal text-stone-400 ml-0.5">/u.</span>
+              {prixUnit.toFixed(2)} {DA}<span className="text-xs font-normal text-stone-400 ms-0.5">{c.perUnit}</span>
             </span>
             {isReduit && (
               <>
-                <span className="text-xs text-stone-400 line-through">{prixBase.toFixed(2)} DA</span>
+                <span className="text-xs text-stone-400 line-through">{prixBase.toFixed(2)} {DA}</span>
                 <span className="text-[10px] bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-300 font-semibold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                   <TrendingDown className="w-2.5 h-2.5" />−{Math.round((1 - prixUnit / prixBase) * 100)}%
                 </span>
@@ -412,7 +418,7 @@ function ProductCard({
           {prochainPalier && (
             <p className="text-[11px] text-orange-700 dark:text-orange-400 flex items-center gap-1 mt-1">
               <TrendingDown className="w-3 h-3 shrink-0" />
-              +{prochainPalier.minQte - totalQte} art. → {prochainPalier.prix.toFixed(2)} DA/u.
+              {c.nextTier(prochainPalier.minQte - totalQte, `${prochainPalier.prix.toFixed(2)} ${DA}`)}
             </p>
           )}
         </div>
@@ -432,11 +438,11 @@ function ProductCard({
       <div className="border-t border-stone-100 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-800/40 px-4 py-2.5 flex items-center justify-between gap-3">
         <div>
           <p className="text-[10px] text-stone-400 uppercase tracking-wide">
-            Sous-total — {totalQte} art.{isReduit && economie > 0 && ` · éco. ${economie.toFixed(0)} DA`}
+            {c.subtotalLine(totalQte)}{isReduit && economie > 0 && c.savingsShort(`${economie.toFixed(0)} ${DA}`)}
           </p>
           <div className="flex items-baseline gap-1.5">
-            <p className="font-semibold text-stone-800 dark:text-stone-100">{sousTotal.toFixed(2)} DA</p>
-            {isReduit && <p className="text-[10px] text-stone-400 line-through">{(prixBase * totalQte).toFixed(2)} DA</p>}
+            <p className="font-semibold text-stone-800 dark:text-stone-100">{sousTotal.toFixed(2)} {DA}</p>
+            {isReduit && <p className="text-[10px] text-stone-400 line-through">{(prixBase * totalQte).toFixed(2)} {DA}</p>}
           </div>
         </div>
 
@@ -448,8 +454,8 @@ function ProductCard({
               : 'border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400 hover:border-orange-400 dark:hover:border-orange-500 hover:text-orange-700 dark:hover:text-orange-400'
           }`}>
           {open
-            ? <><ChevronUp className="w-3.5 h-3.5" /> Fermer</>
-            : <><Pencil className="w-3.5 h-3.5" /> Modifier la sélection <ChevronDown className="w-3.5 h-3.5" /></>
+            ? <><ChevronUp className="w-3.5 h-3.5" /> {c.close}</>
+            : <><Pencil className="w-3.5 h-3.5" /> {c.editSelection} <ChevronDown className="w-3.5 h-3.5" /></>
           }
         </button>
       </div>
@@ -461,6 +467,9 @@ function ProductCard({
    PAGE PANIER
 ══════════════════════════════════════════ */
 export default function PanierPage() {
+  const { t, fmt } = useI18n()
+  const c  = t.cart
+  const DA = fmt.currency
   const [panier,   setPanier]   = useState<Cart | null>(null)
   const [loading,  setLoading]  = useState(true)
   const [deleting, setDeleting] = useState(false)
@@ -547,7 +556,7 @@ export default function PanierPage() {
   if (loading) return (
     <div className="max-w-5xl mx-auto px-4 py-16 text-center text-stone-400">
       <div className="w-8 h-8 border-2 border-stone-200 border-t-orange-700 rounded-full animate-spin mx-auto mb-3" />
-      Chargement du panier…
+      {c.loading}
     </div>
   )
 
@@ -558,15 +567,15 @@ export default function PanierPage() {
       </div>
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-stone-900 dark:text-stone-50 mb-1">
-          Votre panier est vide
+          {c.emptyTitle}
         </h1>
         <p className="text-stone-500 dark:text-stone-400 max-w-xs">
-          Ajoutez des produits pour commencer vos achats.
+          {c.emptyDesc}
         </p>
       </div>
       <Link href="/produits"
         className="mt-2 inline-flex items-center gap-2 bg-orange-700 hover:bg-orange-800 text-white font-semibold px-8 py-3 rounded-xl transition">
-        <ShoppingBag className="w-4 h-4" /> Découvrir les produits
+        <ShoppingBag className="w-4 h-4" /> {c.discover}
       </Link>
     </div>
   )
@@ -578,19 +587,19 @@ export default function PanierPage() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-400 mb-0.5">
-            Shopping
+            {c.eyebrow}
           </p>
           <h1 className="text-2xl font-semibold tracking-tight text-stone-900 dark:text-stone-50 flex items-center gap-2">
-            Mon panier
-            <span className="text-base font-normal text-stone-400 ml-1">
-              ({totalProduits} produit{totalProduits > 1 ? 's' : ''} · {totalArticles} art.)
+            {c.title}
+            <span className="text-base font-normal text-stone-400 ms-1">
+              {c.counts(totalProduits, totalArticles)}
             </span>
           </h1>
         </div>
         <button onClick={viderPanier} disabled={deleting}
           className="text-xs text-stone-400 hover:text-red-500 transition flex items-center gap-1 disabled:opacity-50">
           <Trash2 className="w-3.5 h-3.5" />
-          {deleting ? 'Vidage…' : 'Vider le panier'}
+          {deleting ? c.emptying : c.emptyCart}
         </button>
       </div>
 
@@ -605,10 +614,10 @@ export default function PanierPage() {
               <div className="bg-stone-50 dark:bg-stone-800/60 border border-b-0 border-stone-200 dark:border-stone-700 rounded-t-2xl px-4 py-3">
                 <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
                   <Store className="w-3 h-3" />
-                  {vg.products.length} produit{vg.products.length > 1 ? 's' : ''}
+                  {c.productsCount(vg.products.length)}
                   {vg.vendeurId === null && (
-                    <span className="ml-1 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400 px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide">
-                      Officiel
+                    <span className="ms-1 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400 px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide">
+                      {c.official}
                     </span>
                   )}
                 </p>
@@ -633,22 +642,22 @@ export default function PanierPage() {
           ))}
           <Link href="/produits"
             className="flex items-center gap-1.5 text-sm text-stone-400 hover:text-orange-700 dark:hover:text-orange-400 transition mt-1">
-            <ArrowLeft className="w-4 h-4" /> Continuer les achats
+            <ArrowLeft className="w-4 h-4 rtl-flip" /> {c.continueShopping}
           </Link>
         </div>
 
         {/* ── Résumé commande ── */}
         <div className="lg:sticky lg:top-24 h-fit space-y-3">
           <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-5">
-            <h2 className="font-semibold text-stone-800 dark:text-stone-100 mb-4">Résumé</h2>
+            <h2 className="font-semibold text-stone-800 dark:text-stone-100 mb-4">{c.summary}</h2>
 
-            <div className="space-y-3 mb-4 max-h-64 overflow-y-auto pr-1">
+            <div className="space-y-3 mb-4 max-h-64 overflow-y-auto pe-1">
               {vendeurGroups.map(vg => (
                 <div key={vg.vendeurId ?? '__admin__'}>
                   {/* Mini-header vendeur dans le résumé */}
                   <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest flex items-center gap-1 mb-1.5">
                     <Store className="w-3 h-3" />
-                    {vg.vendeurInfo?.nomBoutique ?? 'Caba Store'}
+                    {vg.vendeurInfo?.nomBoutique ?? t.common.appName}
                   </p>
                   {vg.products.map(group => {
                     const qte   = group.items.reduce((s, i) => s + i.quantite, 0)
@@ -658,11 +667,11 @@ export default function PanierPage() {
                         <div className="flex justify-between items-start gap-2 text-xs">
                           <span className="text-stone-700 dark:text-stone-300 font-medium flex-1 line-clamp-1">{group.product.nom}</span>
                           <span className="text-stone-800 dark:text-stone-200 font-semibold shrink-0 tabular-nums">
-                            {(prixU * qte).toFixed(2)} DA
+                            {(prixU * qte).toFixed(2)} {DA}
                           </span>
                         </div>
                         {group.items.map(item => (
-                          <div key={item.id} className="flex justify-between text-[11px] text-stone-400 pl-2">
+                          <div key={item.id} className="flex justify-between text-[11px] text-stone-400 ps-2">
                             <span className="flex items-center gap-1 flex-wrap">
                               {item.variant?.couleur && (
                                 <span className="w-2.5 h-2.5 rounded-full border border-stone-300 inline-block shrink-0"
@@ -673,7 +682,7 @@ export default function PanierPage() {
                               {' '}×{item.quantite}
                             </span>
                             <span className="tabular-nums shrink-0">
-                              {(prixU * item.quantite).toFixed(2)} DA
+                              {(prixU * item.quantite).toFixed(2)} {DA}
                             </span>
                           </div>
                         ))}
@@ -686,19 +695,19 @@ export default function PanierPage() {
 
             <div className="border-t border-stone-100 dark:border-stone-800 pt-4 space-y-2.5">
               <div className="flex justify-between text-sm text-stone-500 dark:text-stone-400">
-                <span>Sous-total</span>
-                <span className="tabular-nums">{sousTotal.toFixed(2)} DA</span>
+                <span>{c.subtotal}</span>
+                <span className="tabular-nums">{sousTotal.toFixed(2)} {DA}</span>
               </div>
               {totalEconomies > 0 && (
                 <div className="flex justify-between text-sm text-green-700 dark:text-green-400">
-                  <span className="flex items-center gap-1"><Tag className="w-3.5 h-3.5" /> Réductions</span>
-                  <span className="tabular-nums font-semibold">−{totalEconomies.toFixed(2)} DA</span>
+                  <span className="flex items-center gap-1"><Tag className="w-3.5 h-3.5" /> {c.discounts}</span>
+                  <span className="tabular-nums font-semibold">−{totalEconomies.toFixed(2)} {DA}</span>
                 </div>
               )}
-              <p className="text-xs text-stone-400">+ Livraison calculée à l&apos;étape suivante</p>
+              <p className="text-xs text-stone-400">{c.deliveryNext}</p>
               <div className="flex justify-between font-semibold text-lg pt-1 border-t border-stone-100 dark:border-stone-800">
-                <span className="text-stone-800 dark:text-stone-100">Total articles</span>
-                <span className="text-orange-700 dark:text-orange-400 tabular-nums">{sousTotal.toFixed(2)} DA</span>
+                <span className="text-stone-800 dark:text-stone-100">{c.totalItems}</span>
+                <span className="text-orange-700 dark:text-orange-400 tabular-nums">{sousTotal.toFixed(2)} {DA}</span>
               </div>
             </div>
           </div>
@@ -710,8 +719,8 @@ export default function PanierPage() {
                 <TrendingDown className="w-4 h-4 text-green-700 dark:text-green-400" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-green-700 dark:text-green-400">Vous économisez !</p>
-                <p className="text-sm font-semibold text-green-800 dark:text-green-300">{totalEconomies.toFixed(2)} DA</p>
+                <p className="text-xs font-semibold text-green-700 dark:text-green-400">{c.youSave}</p>
+                <p className="text-sm font-semibold text-green-800 dark:text-green-300">{totalEconomies.toFixed(2)} {DA}</p>
               </div>
             </div>
           )}
@@ -721,10 +730,10 @@ export default function PanierPage() {
             <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/50 rounded-xl px-4 py-3">
               <p className="text-[11px] text-amber-700 dark:text-amber-400 font-semibold mb-1 flex items-center gap-1">
                 <Store className="w-3 h-3" />
-                {vendeurGroups.length} vendeurs dans votre panier
+                {c.sellersInCart(vendeurGroups.length)}
               </p>
               <p className="text-[11px] text-amber-600 dark:text-amber-500">
-                Les frais de livraison seront calculés séparément pour chaque vendeur à l&apos;étape suivante.
+                {c.sellersInCartDesc}
               </p>
             </div>
           )}
@@ -732,7 +741,7 @@ export default function PanierPage() {
           {/* CTA commander */}
           <Link href="/commandes/nouveau"
             className="flex items-center justify-center gap-2 w-full bg-orange-700 hover:bg-orange-800 text-white font-semibold py-4 rounded-xl transition text-base shadow-lg shadow-orange-700/20">
-            <ShoppingBag className="w-5 h-5" /> Passer la commande
+            <ShoppingBag className="w-5 h-5" /> {c.checkout}
           </Link>
         </div>
 

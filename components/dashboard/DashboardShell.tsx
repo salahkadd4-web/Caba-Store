@@ -11,29 +11,36 @@ import {
   Settings, ShoppingCart, Store, Tag, TrendingUp, Users, X,
 } from 'lucide-react'
 import { APP_URL } from '@/lib/constants'
+import { useI18n } from '@/components/I18nProvider'
+import LanguageSwitcher from '@/components/LanguageSwitcher'
+import type { Dictionary } from '@/lib/i18n'
 
 // ─── Nav items par rôle ────────────────────────────────────────────────────────
 
-const adminNavItems = [
-  { href: '/admin',             label: 'Tableau de bord', icon: BarChart2    },
-  { href: '/admin/produits',    label: 'Produits',        icon: Package      },
-  { href: '/admin/categories',  label: 'Catégories',      icon: Tag          },
-  { href: '/admin/clients',     label: 'Clients',         icon: Users        },
-  { href: '/admin/vendeurs',    label: 'Vendeurs',        icon: Store        },
-  { href: '/admin/abonnements', label: 'Abonnements',     icon: CreditCard   },
-  { href: '/commandes',         label: 'Commandes',       icon: ShoppingCart },
-  { href: '/retours',           label: 'Retours',         icon: RefreshCw    },
-  { href: '/admin/stats',       label: 'Statistiques',    icon: TrendingUp   },
-]
+type NavItem = { href: string; label: string; icon: React.ElementType }
 
-const vendeurNavItems = [
-  { href: '/vendeur',            label: 'Tableau de bord', icon: BarChart2    },
-  { href: '/vendeur/produits',   label: 'Mes Produits',    icon: Package      },
-  { href: '/vendeur/categories', label: 'Catégories',      icon: Tag          },
-  { href: '/commandes',          label: 'Commandes',       icon: ShoppingCart },
-  { href: '/retours',            label: 'Retours',         icon: RefreshCw    },
-  { href: '/vendeur/abonnement', label: 'Abonnement',      icon: CreditCard   },
-]
+function getNavItems(role: 'ADMIN' | 'VENDEUR', t: Dictionary): NavItem[] {
+  const n = t.dashboard.nav
+  if (role === 'ADMIN') return [
+    { href: '/admin',             label: n.overview,      icon: BarChart2    },
+    { href: '/admin/produits',    label: n.products,      icon: Package      },
+    { href: '/admin/categories',  label: n.categories,    icon: Tag          },
+    { href: '/admin/clients',     label: n.clients,       icon: Users        },
+    { href: '/admin/vendeurs',    label: n.sellers,       icon: Store        },
+    { href: '/admin/abonnements', label: n.subscriptions, icon: CreditCard   },
+    { href: '/commandes',         label: n.orders,        icon: ShoppingCart },
+    { href: '/retours',           label: n.returns,       icon: RefreshCw    },
+    { href: '/admin/stats',       label: n.stats,         icon: TrendingUp   },
+  ]
+  return [
+    { href: '/vendeur',            label: n.overview,     icon: BarChart2    },
+    { href: '/vendeur/produits',   label: n.myProducts,   icon: Package      },
+    { href: '/vendeur/categories', label: n.categories,   icon: Tag          },
+    { href: '/commandes',          label: n.orders,       icon: ShoppingCart },
+    { href: '/retours',            label: n.returns,      icon: RefreshCw    },
+    { href: '/vendeur/abonnement', label: n.subscription, icon: CreditCard   },
+  ]
+}
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
@@ -51,8 +58,9 @@ function Sidebar({
   onClose: () => void
 }) {
   const pathname  = usePathname()
+  const { t }     = useI18n()
   const isAdmin   = role === 'ADMIN'
-  const navItems  = isAdmin ? adminNavItems : vendeurNavItems
+  const navItems  = getNavItems(role, t)
 
   // Couleurs d'accentuation selon le rôle
   const accentActive = isAdmin
@@ -65,7 +73,7 @@ function Sidebar({
   const badgeCls = isAdmin
     ? 'bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-900'
     : 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900'
-  const badgeLabel = isAdmin ? 'Admin' : 'Vendeur'
+  const badgeLabel = isAdmin ? t.dashboard.roleAdmin : t.dashboard.roleSeller
   const RoleIcon = isAdmin ? Settings : Store
 
   const normalize = (p: string) => p.replace(/\/$/, '') || '/'
@@ -82,13 +90,13 @@ function Sidebar({
       )}
 
       <aside className={`
-        fixed top-0 left-0 h-full z-40 w-64
+        fixed top-0 start-0 h-full z-40 w-64
         bg-[#FAF7F2] dark:bg-stone-900
-        border-r border-stone-200 dark:border-stone-800
+        border-e border-stone-200 dark:border-stone-800
         flex flex-col shadow-xl
         transition-transform duration-300
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full rtl:translate-x-full'}
+        lg:translate-x-0 lg:rtl:translate-x-0
       `}>
 
         {/* ── Header sidebar ── */}
@@ -167,7 +175,7 @@ function Sidebar({
             className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-800 dark:hover:text-stone-100 transition-all active:scale-[0.98]"
           >
             <LayoutDashboard className="w-4 h-4 shrink-0" />
-            <span>Retour à la boutique</span>
+            <span>{t.dashboard.backToShop}</span>
           </Link>
         </div>
       </aside>
@@ -184,11 +192,12 @@ function TopBar({
   onMenuOpen,
 }: {
   role: 'ADMIN' | 'VENDEUR'
-  navItems: typeof adminNavItems
+  navItems: NavItem[]
   userName: string
   onMenuOpen: () => void
 }) {
   const pathname     = usePathname()
+  const { t }        = useI18n()
   const normalize    = (p: string) => p.replace(/\/$/, '') || '/'
   const currentItem  = navItems.find(i => normalize(i.href) === normalize(pathname ?? ''))
   const CurrentIcon  = currentItem?.icon
@@ -210,8 +219,8 @@ function TopBar({
         <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={onMenuOpen}
-            aria-label="Ouvrir le menu"
-            className="lg:hidden p-2 -ml-1 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition active:scale-95"
+            aria-label={t.dashboard.openMenu}
+            className="lg:hidden p-2 -ms-1 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition active:scale-95"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="3" y1="6" x2="21" y2="6"/>
@@ -245,11 +254,11 @@ function TopBar({
           {/* Badge rôle — desktop */}
           <span className={`hidden sm:flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full ${pillCls}`}>
             {isAdmin ? <Settings className="w-3 h-3" /> : <Store className="w-3 h-3" />}
-            {isAdmin ? 'Admin' : 'Vendeur'}
+            {isAdmin ? t.dashboard.roleAdmin : t.dashboard.roleSeller}
           </span>
 
           {/* Avatar + nom */}
-          <div className="hidden sm:flex items-center gap-2 bg-stone-100 dark:bg-stone-800 rounded-full pl-1 pr-3 py-1">
+          <div className="hidden sm:flex items-center gap-2 bg-stone-100 dark:bg-stone-800 rounded-full ps-1 pe-3 py-1">
             <div className="w-6 h-6 rounded-full bg-orange-700 dark:bg-orange-600 flex items-center justify-center shrink-0">
               <span className="text-white text-[10px] font-bold">
                 {userName?.charAt(0)?.toUpperCase() || '?'}
@@ -266,18 +275,21 @@ function TopBar({
             className="hidden lg:flex items-center gap-1.5 text-xs font-medium text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white px-3 py-2 rounded-full border border-stone-200 dark:border-stone-700 hover:border-stone-400 dark:hover:border-stone-500 transition-all active:scale-95 bg-white/60 dark:bg-stone-800/60"
           >
             <LayoutDashboard className="w-3.5 h-3.5" />
-            <span>Boutique</span>
+            <span>{t.dashboard.shop}</span>
           </Link>
+
+          {/* Langue */}
+          <LanguageSwitcher size="sm" className="border border-stone-200 dark:border-stone-700" />
 
           {/* Déconnexion */}
           <button
             onClick={handleSignOut}
-            title="Déconnexion"
-            aria-label="Déconnexion"
+            title={t.dashboard.logout}
+            aria-label={t.dashboard.logout}
             className="flex items-center gap-1.5 text-xs font-medium text-red-500 hover:text-red-600 px-3 py-2 rounded-full border border-red-200 dark:border-red-900/60 hover:border-red-400 dark:hover:border-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all active:scale-95"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Déconnexion</span>
+            <span className="hidden sm:inline">{t.dashboard.logout}</span>
           </button>
         </div>
       </div>
@@ -299,10 +311,11 @@ export default function DashboardShell({
   children: React.ReactNode
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { t } = useI18n()
 
   useScrollLock(sidebarOpen)
 
-  const navItems = role === 'ADMIN' ? adminNavItems : vendeurNavItems
+  const navItems = getNavItems(role, t)
 
   return (
     <div className="min-h-screen bg-stone-100 dark:bg-stone-950 transition-colors duration-300">
@@ -314,7 +327,7 @@ export default function DashboardShell({
         onClose={() => setSidebarOpen(false)}
       />
 
-      <div className="lg:ml-64 flex flex-col min-h-screen">
+      <div className="lg:ms-64 flex flex-col min-h-screen">
         <TopBar
           role={role}
           navItems={navItems}

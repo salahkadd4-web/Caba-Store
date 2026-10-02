@@ -9,6 +9,7 @@
 import { useRef, useState } from 'react'
 import { AlertCircle, Check, FileText, Loader2, Trash2, X } from 'lucide-react'
 import type { ReturnField } from '@/lib/flowmerce-types'
+import { useI18n } from '@/components/I18nProvider'
 import { acceptFor, formatBytes, normalizeOption, validateFileSelection } from '@/lib/flowmerce-validation'
 
 export type UploadFn = (field: ReturnField, file: File) => Promise<string>
@@ -42,7 +43,7 @@ export default function DynamicField({ field, value, error, onChange, onUpload }
       <div className="mb-1.5 flex items-baseline justify-between gap-2">
         <label className="text-sm font-semibold text-stone-700 dark:text-stone-200">
           {label}
-          {isRequired(field) && <span className="text-orange-600 dark:text-orange-500 ml-0.5">*</span>}
+          {isRequired(field) && <span className="text-orange-600 dark:text-orange-500 ms-0.5">*</span>}
         </label>
       </div>
 
@@ -143,7 +144,7 @@ function TextareaField({ field, value, error, onChange }: DynamicFieldProps) {
         className={`${inputCls} resize-none ${error ? errorCls : ''}`}
       />
       {maxLength != null && (
-        <p className="text-[10px] text-stone-400 mt-1 text-right">{text.length}/{maxLength}</p>
+        <p className="text-[10px] text-stone-400 mt-1 text-end">{text.length}/{maxLength}</p>
       )}
     </div>
   )
@@ -154,6 +155,7 @@ function TextareaField({ field, value, error, onChange }: DynamicFieldProps) {
 // ═════════════════════════════════════════════════════════════════════════════
 
 function SelectField({ field, value, error, onChange }: DynamicFieldProps) {
+  const { t } = useI18n()
   const options = (field.options ?? []).map(normalizeOption)
 
   return (
@@ -162,7 +164,7 @@ function SelectField({ field, value, error, onChange }: DynamicFieldProps) {
       onChange={e => onChange(e.target.value)}
       className={`${inputCls} ${error ? errorCls : ''}`}
     >
-      <option value="" disabled>{field.placeholder ?? 'Sélectionnez…'}</option>
+      <option value="" disabled>{field.placeholder ?? t.returns.form.selectPlaceholder}</option>
       {options.map(opt => (
         <option key={opt.value} value={opt.value}>{opt.label}</option>
       ))}
@@ -278,6 +280,7 @@ function CheckboxField({ field, value, error, onChange }: DynamicFieldProps) {
 // ═════════════════════════════════════════════════════════════════════════════
 
 function SwitchField({ field, value, error, onChange }: DynamicFieldProps) {
+  const { t } = useI18n()
   const on = value === true
 
   return (
@@ -292,10 +295,10 @@ function SwitchField({ field, value, error, onChange }: DynamicFieldProps) {
       } ${error ? 'border-red-400 dark:border-red-600' : ''}`}
     >
       <span className={`relative w-11 h-6 rounded-full transition-colors ${on ? 'bg-orange-700' : 'bg-stone-300 dark:bg-stone-600'}`}>
-        <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${on ? 'translate-x-5' : ''}`} />
+        <span className={`absolute top-0.5 start-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${on ? 'translate-x-5 rtl:-translate-x-5' : ''}`} />
       </span>
       <span className={`text-sm font-medium ${on ? 'text-orange-700 dark:text-orange-400' : 'text-stone-700 dark:text-stone-200'}`}>
-        {field.helpText ?? (on ? 'Oui' : 'Non')}
+        {field.helpText ?? (on ? t.common.yes : t.common.no)}
       </span>
     </button>
   )
@@ -309,6 +312,8 @@ function SwitchField({ field, value, error, onChange }: DynamicFieldProps) {
 function FileField({
   field, value, error, onChange, onUpload, accept, capture,
 }: DynamicFieldProps & { accept?: string; capture?: 'environment' }) {
+  const { t } = useI18n()
+  const f = t.returns.form
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -321,7 +326,7 @@ function FileField({
     setUploadError(null)
 
     for (const file of Array.from(files)) {
-      const selectionError = validateFileSelection(field, file)
+      const selectionError = validateFileSelection(field, file, t.returns.validation)
       if (selectionError) {
         setUploadError(selectionError)
         continue
@@ -336,7 +341,7 @@ function FileField({
           onChange(url)
         }
       } catch {
-        setUploadError('Échec de l\'upload, réessayez.')
+        setUploadError(f.uploadRetry)
       } finally {
         setUploading(false)
       }
@@ -359,15 +364,15 @@ function FileField({
             onClick={() => inputRef.current?.click()}
             className="flex-1 text-sm text-stone-500 dark:text-stone-400 hover:text-orange-700 dark:hover:text-orange-500 transition py-2"
           >
-            {multiple ? 'Choisir des fichiers…' : 'Choisir un fichier…'}
+            {multiple ? f.chooseFiles : f.chooseFile}
             {field.validation?.maxFileSize != null && (
-              <span className="block text-[10px] mt-0.5">Max {formatBytes(field.validation.maxFileSize)}</span>
+              <span className="block text-[10px] mt-0.5">{f.max(formatBytes(field.validation.maxFileSize, t.returns.validation))}</span>
             )}
           </button>
         )}
         {uploading && (
           <span className="flex-1 flex items-center justify-center gap-2 text-sm text-stone-500 dark:text-stone-400 py-2">
-            <Loader2 className="w-4 h-4 animate-spin" /> Envoi en cours…
+            <Loader2 className="w-4 h-4 animate-spin" /> {t.returns.sending}
           </span>
         )}
         <input
@@ -399,6 +404,7 @@ function FileField({
 }
 
 function FilePreview({ url, onRemove }: { url: string; onRemove: () => void }) {
+  const { t } = useI18n()
   const isImage = /\.(jpe?g|png|webp|gif|bmp)(\?|$)/i.test(url) || url.startsWith('data:image')
   const isVideo = /\.(mp4|webm|mov|m4v)(\?|$)/i.test(url)
 
@@ -421,7 +427,7 @@ function FilePreview({ url, onRemove }: { url: string; onRemove: () => void }) {
         type="button"
         onClick={onRemove}
         className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 text-stone-400 hover:text-red-600 transition shrink-0"
-        aria-label="Supprimer le fichier"
+        aria-label={t.returns.form.removeFile}
       >
         <Trash2 className="w-4 h-4" />
       </button>
@@ -437,6 +443,8 @@ const SIGNATURE_WIDTH  = 560
 const SIGNATURE_HEIGHT = 160
 
 function SignatureField({ field, value, error, onChange, onUpload }: DynamicFieldProps) {
+  const { t } = useI18n()
+  const f = t.returns.form
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const drawing   = useRef(false)
   const [uploading, setUploading] = useState(false)
@@ -501,7 +509,7 @@ function SignatureField({ field, value, error, onChange, onUpload }: DynamicFiel
       const url  = await onUpload(field, file)
       onChange(url)
     } catch {
-      setUploadError('Échec de l\'envoi de la signature, réessayez.')
+      setUploadError(f.signatureFailed)
     } finally {
       setUploading(false)
     }
@@ -523,12 +531,12 @@ function SignatureField({ field, value, error, onChange, onUpload }: DynamicFiel
         <div className="flex items-center gap-3 p-2.5 rounded-xl border border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-900">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={String(value)} alt="Signature" className="h-14 object-contain shrink-0" />
-          <span className="flex-1 text-xs text-green-600 dark:text-green-400 font-medium">Signature enregistrée</span>
+          <span className="flex-1 text-xs text-green-600 dark:text-green-400 font-medium">{f.signatureSaved}</span>
           <button
             type="button"
             onClick={clear}
             className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 text-stone-400 hover:text-red-600 transition shrink-0"
-            aria-label="Effacer la signature"
+            aria-label={f.clearSignature}
           >
             <X className="w-4 h-4" />
           </button>
@@ -547,7 +555,7 @@ function SignatureField({ field, value, error, onChange, onUpload }: DynamicFiel
           />
           <div className="flex items-center justify-between gap-2 p-2 bg-stone-50 dark:bg-stone-900 border-t border-stone-100 dark:border-stone-800">
             <button type="button" onClick={clear} className="text-xs text-stone-500 hover:text-red-600 transition px-2 py-1">
-              Effacer
+              {f.clear}
             </button>
             <button
               type="button"
@@ -556,7 +564,7 @@ function SignatureField({ field, value, error, onChange, onUpload }: DynamicFiel
               className="flex items-center gap-1.5 text-xs font-semibold bg-orange-700 hover:bg-orange-800 disabled:opacity-50 text-white px-3 py-1.5 rounded-lg transition"
             >
               {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-              Valider la signature
+              {f.validateSignature}
             </button>
           </div>
         </div>

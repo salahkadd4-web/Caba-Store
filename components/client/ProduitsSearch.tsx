@@ -8,7 +8,9 @@ import Image from 'next/image'
 import FavoriIconButton from '@/components/client/FavoriIconButton'
 import CartIconButton from '@/components/client/CartIconButton'
 import { getPrixMin, hasPrixDegressif, getPourcentageReduction } from '@/lib/prix'
-import { Banknote, Package, Search, SlidersHorizontal, X } from 'lucide-react'
+import { Banknote, MapPin, Package, Search, SlidersHorizontal, X } from 'lucide-react'
+import { useI18n } from '@/components/I18nProvider'
+import { WILAYAS, wilayaLabel } from '@/lib/algeria'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -37,8 +39,11 @@ type SidebarContentProps = {
   loading:         boolean
   categories:      Category[]
   categorieActive: string
+  wilayaActive:    string
+  viewerWilaya:    string | null
   hasFilters:      boolean
   onCategorie:     (id: string) => void
+  onWilaya:        (code: string) => void
   onReset:         () => void
   onSubmit:        (e: React.FormEvent) => void
 }
@@ -49,35 +54,40 @@ function SidebarContent({
   loading,
   categories,
   categorieActive,
+  wilayaActive,
+  viewerWilaya,
   hasFilters,
   onCategorie,
+  onWilaya,
   onReset,
   onSubmit,
 }: SidebarContentProps) {
+  const { t, locale } = useI18n()
+  const f = t.catalog.filters
   return (
     <>
       {/* Recherche */}
       <div className="mb-6">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-3">
-          Recherche
+          {f.search}
         </p>
         <form onSubmit={onSubmit}>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400 pointer-events-none" />
+            <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400 pointer-events-none" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Rechercher..."
-              className="w-full pl-9 pr-9 py-2 text-sm border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-800 dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-700/20 focus:border-orange-700 dark:focus:border-orange-400 transition-colors"
+              placeholder={f.searchPlaceholder}
+              className="w-full ps-9 pe-9 py-2 text-sm border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-800 dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-700/20 focus:border-orange-700 dark:focus:border-orange-400 transition-colors"
             />
             {loading ? (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-orange-700 border-t-transparent rounded-full animate-spin" />
+              <div className="absolute end-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-orange-700 border-t-transparent rounded-full animate-spin" />
             ) : query.length > 0 ? (
               <button
                 type="button"
                 onClick={() => setQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
+                className="absolute end-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -88,27 +98,58 @@ function SidebarContent({
 
       <div className="h-px bg-stone-100 dark:bg-stone-800 mb-6" />
 
+      {/* Wilaya du vendeur */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-3 gap-2">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+            {f.sellerWilaya}
+          </p>
+          {viewerWilaya && wilayaActive !== viewerWilaya && (
+            <button
+              type="button"
+              onClick={() => onWilaya(viewerWilaya)}
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-orange-700 dark:text-orange-400 hover:underline"
+            >
+              <MapPin className="w-3 h-3" />
+              {f.nearMe}
+            </button>
+          )}
+        </div>
+        <select
+          value={wilayaActive}
+          onChange={(e) => onWilaya(e.target.value)}
+          className="w-full px-3 py-2 text-sm border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-800 dark:text-stone-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-700/20 focus:border-orange-700 dark:focus:border-orange-400 transition-colors"
+        >
+          <option value="">{f.allWilayas}</option>
+          {WILAYAS.map((w) => (
+            <option key={w.code} value={w.code}>{wilayaLabel(w, locale)}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="h-px bg-stone-100 dark:bg-stone-800 mb-6" />
+
       {/* Catégories */}
       <div>
         <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-3">
-          Catégories
+          {f.categories}
         </p>
         <div className="space-y-0.5">
           <button
             onClick={() => onCategorie('')}
-            className={`w-full text-left text-sm px-3 py-2 rounded-lg transition-colors ${
+            className={`w-full text-start text-sm px-3 py-2 rounded-lg transition-colors ${
               !categorieActive
                 ? 'bg-orange-700 text-white font-medium'
                 : 'text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
             }`}
           >
-            Toutes les catégories
+            {f.allCategories}
           </button>
           {categories.map((cat) => (
             <button
               key={cat.id}
               onClick={() => onCategorie(cat.id)}
-              className={`w-full text-left text-sm px-3 py-2 rounded-lg transition-colors ${
+              className={`w-full text-start text-sm px-3 py-2 rounded-lg transition-colors ${
                 categorieActive === cat.id
                   ? 'bg-orange-700 text-white font-medium'
                   : 'text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
@@ -127,7 +168,7 @@ function SidebarContent({
             onClick={onReset}
             className="w-full text-sm text-stone-500 dark:text-stone-400 hover:text-orange-700 dark:hover:text-orange-400 transition-colors text-center"
           >
-            Réinitialiser les filtres
+            {f.reset}
           </button>
         </>
       )}
@@ -142,23 +183,31 @@ export default function ProduitsSearch({
   initialProduits,
   initialRecherche,
   initialCategorie,
+  initialWilaya,
+  viewerWilaya = null,
 }: {
   categories:        Category[]
   initialProduits:   ProduitSearch[]
   initialRecherche?: string
   initialCategorie?: string
+  /** Filtre : code de wilaya du vendeur */
+  initialWilaya?:    string
+  /** Wilaya du visiteur connecté (classement « proche de moi ») */
+  viewerWilaya?:     string | null
 }) {
   const router = useRouter()
+  const { t } = useI18n()
 
   const [query,           setQuery]           = useState(initialRecherche ?? '')
   const [produits,        setProduits]        = useState<ProduitSearch[]>(initialProduits)
   const [loading,         setLoading]         = useState(false)
   const [categorieActive, setCategorieActive] = useState(initialCategorie ?? '')
+  const [wilayaActive,    setWilayaActive]    = useState(initialWilaya ?? '')
   const [sidebarOpen,     setSidebarOpen]     = useState(false)
 
   useScrollLock(sidebarOpen)
 
-  const hasFilters = query.trim() !== '' || categorieActive !== ''
+  const hasFilters = query.trim() !== '' || categorieActive !== '' || wilayaActive !== ''
 
   // Recherche AJAX avec debounce
   useEffect(() => {
@@ -168,6 +217,8 @@ export default function ProduitsSearch({
         const params = new URLSearchParams()
         if (query.trim()) params.set('recherche', query.trim())
         if (categorieActive) params.set('categorie', categorieActive)
+        if (wilayaActive) params.set('wilaya', wilayaActive)
+        if (viewerWilaya) params.set('proche', viewerWilaya)
 
         const res  = await fetch(`/api/produits/search?${params.toString()}`)
         const data = await res.json() as ProduitSearch[]
@@ -180,12 +231,15 @@ export default function ProduitsSearch({
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [query, categorieActive])
+  }, [query, categorieActive, wilayaActive, viewerWilaya])
 
-  const buildParams = () => {
+  const buildParams = (over: { categorie?: string; wilaya?: string } = {}) => {
     const params = new URLSearchParams()
+    const categorie = over.categorie ?? categorieActive
+    const wilaya    = over.wilaya    ?? wilayaActive
     if (query.trim()) params.set('recherche', query.trim())
-    if (categorieActive) params.set('categorie', categorieActive)
+    if (categorie) params.set('categorie', categorie)
+    if (wilaya) params.set('wilaya', wilaya)
     return params.toString()
   }
 
@@ -197,15 +251,19 @@ export default function ProduitsSearch({
   const handleCategorie = (id: string) => {
     setCategorieActive(id)
     setSidebarOpen(false)
-    const params = new URLSearchParams()
-    if (query.trim()) params.set('recherche', query.trim())
-    if (id) params.set('categorie', id)
-    router.push(`/produits?${params.toString()}`, { scroll: false })
+    router.push(`/produits?${buildParams({ categorie: id })}`, { scroll: false })
+  }
+
+  const handleWilaya = (code: string) => {
+    setWilayaActive(code)
+    setSidebarOpen(false)
+    router.push(`/produits?${buildParams({ wilaya: code })}`, { scroll: false })
   }
 
   const resetFilters = () => {
     setQuery('')
     setCategorieActive('')
+    setWilayaActive('')
   }
 
   const sidebarProps: SidebarContentProps = {
@@ -214,8 +272,11 @@ export default function ProduitsSearch({
     loading,
     categories,
     categorieActive,
+    wilayaActive,
+    viewerWilaya,
     hasFilters,
     onCategorie: handleCategorie,
+    onWilaya:    handleWilaya,
     onReset:     resetFilters,
     onSubmit:    handleSubmit,
   }
@@ -231,7 +292,7 @@ export default function ProduitsSearch({
           className="flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-700 rounded-xl px-4 py-2 hover:border-orange-700 dark:hover:border-orange-400 transition-colors"
         >
           <SlidersHorizontal className="w-4 h-4" />
-          Filtres
+          {t.catalog.filters.filters}
           {hasFilters && <span className="w-2 h-2 rounded-full bg-orange-700" />}
         </button>
       </div>
@@ -240,9 +301,9 @@ export default function ProduitsSearch({
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setSidebarOpen(false)} />
-          <div className="absolute bottom-0 left-0 right-0 bg-white dark:bg-stone-900 rounded-t-3xl p-6 max-h-[85vh] overflow-y-auto">
+          <div className="absolute bottom-0 start-0 end-0 bg-white dark:bg-stone-900 rounded-t-3xl p-6 max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="font-semibold text-stone-900 dark:text-stone-50">Filtres</h2>
+              <h2 className="font-semibold text-stone-900 dark:text-stone-50">{t.catalog.filters.filters}</h2>
               <button onClick={() => setSidebarOpen(false)}>
                 <X className="w-5 h-5 text-stone-500" />
               </button>
@@ -269,7 +330,7 @@ export default function ProduitsSearch({
               onClick={resetFilters}
               className="text-orange-700 dark:text-orange-400 hover:underline text-xs"
             >
-              Effacer les filtres
+              {t.catalog.filters.clear}
             </button>
           )}
         </div>
@@ -295,6 +356,7 @@ export default function ProduitsSearch({
 // ─── Sous-composants internes stables ─────────────────────────────────────────
 
 function ProduitCard({ produit }: { produit: ProduitSearch }) {
+  const { t, fmt } = useI18n()
   const hasTiers  = hasPrixDegressif(produit.prixVariables)
   const prixMin   = getPrixMin(produit.prixVariables, produit.prix)
   const reduction = getPourcentageReduction(produit.prixVariables, produit.prix)
@@ -321,14 +383,14 @@ function ProduitCard({ produit }: { produit: ProduitSearch }) {
         )}
 
         {hasTiers && (
-          <div className="absolute top-2 left-2">
+          <div className="absolute top-2 start-2">
             <span className="inline-flex items-center gap-1 text-[10px] bg-orange-700 text-white font-semibold px-2 py-0.5 rounded-full shadow">
-              <Banknote className="w-3 h-3" /> Dégressif
+              <Banknote className="w-3 h-3" /> {t.common.degressive}
             </span>
           </div>
         )}
 
-        <div className="absolute top-2 right-2 flex flex-col gap-2">
+        <div className="absolute top-2 end-2 flex flex-col gap-2">
           <FavoriIconButton produitId={produit.id} />
           <CartIconButton produitId={produit.id} stock={produit.stock} />
         </div>
@@ -344,14 +406,14 @@ function ProduitCard({ produit }: { produit: ProduitSearch }) {
 
         <div className="flex items-baseline gap-1.5 flex-wrap mb-1.5">
           {hasTiers && (
-            <span className="text-[10px] text-stone-400 dark:text-stone-500">à partir de</span>
+            <span className="text-[10px] text-stone-400 dark:text-stone-500">{t.common.fromPrice}</span>
           )}
           <span
             className={`text-base font-semibold ${
               estReduit ? 'text-green-700 dark:text-green-400' : 'text-stone-900 dark:text-stone-50'
             }`}
           >
-            {prixMin.toFixed(2)} DA
+            {prixMin.toFixed(2)} {fmt.currency}
           </span>
           {estReduit && (
             <>
@@ -395,7 +457,7 @@ function ProduitCard({ produit }: { produit: ProduitSearch }) {
             produit.stock > 0 ? 'text-green-700 dark:text-green-400' : 'text-red-500 dark:text-red-400'
           }`}
         >
-          {produit.stock > 0 ? 'En stock' : 'Rupture de stock'}
+          {produit.stock > 0 ? t.common.inStock : t.common.outOfStock}
         </p>
       </div>
     </Link>
@@ -411,39 +473,43 @@ function ResultCount({
   count:   number
   full?:   boolean
 }) {
+  const { t } = useI18n()
+  const f = t.catalog.filters
   if (loading) {
     return (
       <span className="flex items-center gap-2 text-sm text-stone-500 dark:text-stone-400">
         <span className="w-3 h-3 border-2 border-orange-700 border-t-transparent rounded-full animate-spin inline-block" />
-        {full ? 'Recherche en cours…' : 'Recherche…'}
+        {full ? f.searchingFull : f.searching}
       </span>
     )
   }
   return (
     <span className="text-sm text-stone-500 dark:text-stone-400">
       <span className="font-semibold text-stone-800 dark:text-stone-100">{count}</span>
-      {' '}produit{count > 1 ? 's' : ''}{full ? ` trouvé${count > 1 ? 's' : ''}` : ''}
+      {' '}{f.count(count)}{full ? f.found(count) : ''}
     </span>
   )
 }
 
 function EmptyProducts({ onReset }: { onReset: () => void }) {
+  const { t } = useI18n()
+  const f = t.catalog.filters
   return (
     <div className="flex flex-col items-center justify-center text-center py-24 text-stone-400 dark:text-stone-500">
       <div className="w-16 h-16 rounded-2xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center mb-4">
         <Package className="w-8 h-8 text-stone-300 dark:text-stone-600" />
       </div>
       <p className="text-lg font-medium text-stone-700 dark:text-stone-300 mb-1">
-        Aucun produit trouvé
+        {f.emptyTitle}
       </p>
       <p className="text-sm text-stone-400 dark:text-stone-500 mb-6">
-        Essayez de modifier vos critères de recherche.
+        {f.emptyDesc}
       </p>
       <button
         onClick={onReset}
         className="text-sm font-medium text-orange-700 dark:text-orange-400 hover:underline"
       >
-        Voir tous les produits
+        {f.seeAll}
       </button>
     </div>
   )

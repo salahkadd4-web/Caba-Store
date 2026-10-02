@@ -4,12 +4,22 @@ import { getAuthToken } from '@/lib/getAuthToken'
 import { getPrixUnitaire } from '@/lib/prix'
 import { FRAIS_EXPEDITION, METHODE_EXPEDITION_DEFAUT } from '@/lib/constants'
 import { randomUUID } from 'crypto'
+import { getI18n } from '@/lib/i18n/server'
+import { validateWilayaCommune } from '@/lib/algeria/server'
+
+/** Rupture de stock détectée pendant la transaction (nom du produit/variante inclus). */
+class StockInsuffisantError extends Error {
+  constructor(public readonly produit: string) {
+    super('STOCK_INSUFFISANT')
+  }
+}
 
 // GET — Récupérer les commandes de l'utilisateur (groupées par groupeId côté client)
 export async function GET() {
+  const { t } = await getI18n()
   try {
     const token = await getAuthToken()
-    if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    if (!token) return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
 
     const commandes = await prisma.order.findMany({
       where: { userId: token.id as string },
@@ -30,7 +40,7 @@ export async function GET() {
 
     return NextResponse.json(commandes)
   } catch {
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }
 
@@ -39,6 +49,8 @@ export async function GET() {
 // Body attendu :
 // {
 //   adresse: string,
+//   wilaya: string,               // code de wilaya ("16")
+//   commune: string,
 //   modePaiement: string,
 //   vendeurGroupes: Array<{
 //     vendeurId: string | null,   // null = produits admin
@@ -49,9 +61,10 @@ export async function GET() {
 // Compatibilité descendante : si vendeurGroupes est absent, on tombe sur
 // l'ancien comportement (une seule commande, methodeExpedition global).
 export async function POST(req: NextRequest) {
+  const { t } = await getI18n()
   try {
     const token = await getAuthToken()
-    if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    if (!token) return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
 
     const body = await req.json()
     const { adresse, modePaiement } = body
@@ -63,7 +76,19 @@ export async function POST(req: NextRequest) {
         : [{ vendeurId: null, methodeExpedition: body.methodeExpedition ?? METHODE_EXPEDITION_DEFAUT }]
 
     if (!adresse) {
-      return NextResponse.json({ error: 'Adresse de livraison requise' }, { status: 400 })
+      return NextResponse.json({ error: t.orders.api.addressRequired }, { status: 400 })
+    }
+
+    // Wilaya + commune de livraison obligatoires et cohérentes (fichiers JSON)
+    const lieu = validateWilayaCommune(body.wilaya, body.commune)
+    if (!lieu.ok) {
+      return NextResponse.json(
+        { error: lieu.field === 'wilaya' ? t.address.invalidWilaya : t.address.invalidCommune },
+        { status: 400 },
+      )
+    }
+    if (!lieu.wilaya || !lieu.commune) {
+      return NextResponse.json({ error: t.orders.api.wilayaCommuneRequired }, { status: 400 })
     }
 
     // Récupérer le panier avec toutes les relations nécessaires
@@ -85,7 +110,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (!panier || panier.items.length === 0) {
-      return NextResponse.json({ error: 'Panier vide' }, { status: 400 })
+      return NextResponse.json({ error: t.orders.api.emptyCart }, { status: 400 })
     }
 
     // ── Grouper les items du panier par vendeurId ──────────────────────────
@@ -135,7 +160,7 @@ export async function POST(req: NextRequest) {
               data:  { stock: { decrement: item.quantite } },
             })
             if (r.count === 0) {
-              throw new Error(`Stock insuffisant pour ${item.product.nom}${item.variantOption ? ` (${item.variantOption.valeur})` : ''}`)
+              throw new StockInsuffisantError(`${item.product.nom}${item.variantOption ? ` (${item.variantOption.valeur})` : ''}`)
             }
           } else if (item.variantId) {
             const r = await tx.productVariant.updateMany({
@@ -143,7 +168,7 @@ export async function POST(req: NextRequest) {
               data:  { stock: { decrement: item.quantite } },
             })
             if (r.count === 0) {
-              throw new Error(`Stock insuffisant pour ${item.product.nom}${item.variant ? ` (${item.variant.nom})` : ''}`)
+              throw new StockInsuffisantError(`${item.product.nom}${item.variant ? ` (${item.variant.nom})` : ''}`)
             }
           } else {
             const r = await tx.product.updateMany({
@@ -151,7 +176,7 @@ export async function POST(req: NextRequest) {
               data:  { stock: { decrement: item.quantite } },
             })
             if (r.count === 0) {
-              throw new Error(`Stock insuffisant pour ${item.product.nom}`)
+              throw new StockInsuffisantError(item.product.nom)
             }
             await tx.product.updateMany({
               where: { id: item.productId, stock: 0 },
@@ -175,6 +200,8 @@ export async function POST(req: NextRequest) {
             data: {
               userId:            token.id as string,
               adresse,
+              wilaya:            lieu.wilaya,
+              commune:           lieu.commune,
               total,
               modePaiement:      modePaiement || 'Paiement à la livraison',
               methodeExpedition: groupe.methodeExpedition,
@@ -203,17 +230,16 @@ export async function POST(req: NextRequest) {
       })
 
       return NextResponse.json(
-        { message: 'Commande(s) créée(s) avec succès', commandeIds },
+        { message: t.orders.api.created, commandeIds },
         { status: 201 },
       )
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Erreur serveur'
-      if (message.startsWith('Stock insuffisant')) {
-        return NextResponse.json({ error: message }, { status: 400 })
+      if (e instanceof StockInsuffisantError) {
+        return NextResponse.json({ error: t.orders.api.insufficientStock(e.produit) }, { status: 400 })
       }
       throw e
     }
   } catch {
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }

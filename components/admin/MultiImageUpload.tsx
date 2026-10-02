@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import Image from 'next/image'
+import { useI18n } from '@/components/I18nProvider'
 import { FolderOpen, X } from 'lucide-react'
 
 interface MultiImageUploadProps {
@@ -10,7 +11,9 @@ interface MultiImageUploadProps {
   label?: string
 }
 
-export default function MultiImageUpload({ values, onChange, label = 'Images' }: MultiImageUploadProps) {
+export default function MultiImageUpload({ values, onChange, label }: MultiImageUploadProps) {
+  const { t } = useI18n()
+  const u = t.pm.upload
   const [uploading, setUploading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -52,7 +55,7 @@ export default function MultiImageUpload({ values, onChange, label = 'Images' }:
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-gray-700 mb-1">{label ?? u.images}</label>
 
       {/* Images existantes */}
       {values.length > 0 && (
@@ -71,7 +74,7 @@ export default function MultiImageUpload({ values, onChange, label = 'Images' }:
               <button
                 type="button"
                 onClick={() => removeImage(index)}
-                className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-1 end-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
               ><X className="w-4 h-4" /></button>
             </div>
           ))}
@@ -85,9 +88,9 @@ export default function MultiImageUpload({ values, onChange, label = 'Images' }:
       >
         <p className="text-2xl mb-1"><FolderOpen className="w-6 h-6" /></p>
         <p className="text-sm text-gray-500">
-          {uploading ? 'Upload en cours...' : 'Cliquez pour ajouter des images'}
+          {uploading ? u.uploading : u.clickToAdd}
         </p>
-        <p className="text-xs text-gray-400 mt-1">Plusieurs images possibles</p>
+        <p className="text-xs text-gray-400 mt-1">{u.multipleAllowed}</p>
       </div>
 
       <input

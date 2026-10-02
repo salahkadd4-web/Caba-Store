@@ -18,6 +18,7 @@ import { Banknote, Package } from 'lucide-react'
 import FavoriIconButton from '@/components/client/FavoriIconButton'
 import CartIconButton from '@/components/client/CartIconButton'
 import { getPrixMin, hasPrixDegressif, getPourcentageReduction } from '@/lib/prix'
+import { useI18n } from '@/components/I18nProvider'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -91,6 +92,7 @@ export default function ProductCard({
   className = '',
   hideActions = false,
 }: Props) {
+  const { t, fmt } = useI18n()
   const hasTiers  = hasPrixDegressif(produit.prixVariables)
   const prixMin   = getPrixMin(produit.prixVariables, produit.prix)
   const reduction = getPourcentageReduction(produit.prixVariables, produit.prix)
@@ -128,14 +130,14 @@ export default function ProductCard({
 
         {/* ── Badges gauche ── */}
         {(badges || hasTiers) && (
-          <div className="absolute top-2 left-2 flex flex-col gap-1">
+          <div className="absolute top-2 start-2 flex flex-col gap-1">
             {Children.map(badges, (child, i) => (
               <Fragment key={`badge-${i}`}>{child}</Fragment>
             ))}
             {hasTiers && (
               <span key="degressif" className="inline-flex items-center gap-1 text-[10px] bg-orange-700 text-white font-bold px-1.5 py-0.5 rounded-full shadow">
                 <Banknote className="w-3 h-3" />
-                dégressif
+                {t.common.degressiveBadge}
               </span>
             )}
           </div>
@@ -143,7 +145,7 @@ export default function ProductCard({
 
         {/* ── Actions droite ── */}
         {!hideActions && (
-          <div className="absolute top-2 right-2 flex flex-col gap-2">
+          <div className="absolute top-2 end-2 flex flex-col gap-2">
             <FavoriIconButton produitId={produit.id} />
             <CartIconButton produitId={produit.id} stock={produit.stock} />
           </div>
@@ -167,7 +169,7 @@ export default function ProductCard({
         <div className="flex items-baseline gap-1.5 flex-wrap">
           {hasTiers && (
             <span className="text-[10px] text-stone-400 dark:text-stone-500">
-              à partir de
+              {t.common.fromPrice}
             </span>
           )}
           <span
@@ -177,7 +179,7 @@ export default function ProductCard({
                 : 'text-orange-700 dark:text-orange-500'
             }`}
           >
-            {prixMin.toFixed(2)} DA
+            {prixMin.toFixed(2)} {fmt.currency}
           </span>
           {estReduit && (
             <>

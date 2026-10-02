@@ -12,10 +12,13 @@ import {
   tableWrapper,
   statutOrderColor,
 } from '@/lib/dashboard-ui'
+import { getI18n } from '@/lib/i18n/server'
+import { tr } from '@/lib/i18n'
 
 export default async function VendeurDashboard() {
-  const session = await auth()
+  const [session, { t, fmt }] = await Promise.all([auth(), getI18n()])
   if (!session?.user || session.user.role !== 'VENDEUR') redirect('/connexion')
+  const h = t.seller.home
 
   const vendeur = await prisma.vendeurProfile.findUnique({
     where:   { userId: session.user.id },
@@ -68,23 +71,23 @@ export default async function VendeurDashboard() {
 
   const kpis = [
     {
-      href: '/vendeur/produits', label: 'Produits', value: totalProduits,
-      sub: `${produitsActifs} actifs`,
+      href: '/vendeur/produits', label: h.products, value: totalProduits,
+      sub: h.activeCount(produitsActifs),
       Icon: Package, accent: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-950/40',
     },
     {
-      href: '/commandes', label: 'Commandes', value: totalCommandes,
-      sub: commandesEnAttente > 0 ? `${commandesEnAttente} en attente` : 'À jour',
+      href: '/commandes', label: h.orders, value: totalCommandes,
+      sub: commandesEnAttente > 0 ? h.pendingCount(commandesEnAttente) : h.upToDate,
       Icon: ShoppingCart, accent: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/40',
     },
     {
-      href: '/vendeur/abonnement', label: 'Commission ventes', value: `${billing.salesFee.toLocaleString('fr-DZ')} DA`,
-      sub: `${Math.round(SELLER_SALE_FEE_RATE * 100)}% sur ${billing.grossSales.toLocaleString('fr-DZ')} DA`,
+      href: '/vendeur/abonnement', label: h.salesFee, value: fmt.price(billing.salesFee),
+      sub: h.feeOn(Math.round(SELLER_SALE_FEE_RATE * 100), fmt.price(billing.grossSales)),
       Icon: Percent, accent: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/40',
     },
     {
-      href: '/vendeur/abonnement', label: 'Total a payer', value: `${billing.totalDue.toLocaleString('fr-DZ')} DA`,
-      sub: 'Abonnement + frais sur ventes',
+      href: '/vendeur/abonnement', label: h.totalDue, value: fmt.price(billing.totalDue),
+      sub: h.totalDueSub,
       Icon: Receipt, accent: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/40',
     },
   ]
@@ -92,7 +95,7 @@ export default async function VendeurDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className={heading}>Tableau de bord</h1>
+        <h1 className={heading}>{h.title}</h1>
         {vendeur.nomBoutique && (
           <p className={`${subtext} flex items-center gap-1.5 mt-0.5`}>
             <Store className="w-3.5 h-3.5" /> {vendeur.nomBoutique}
@@ -117,14 +120,14 @@ export default async function VendeurDashboard() {
         <div className={`${kpiCardDark} col-span-2`}>
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs text-stone-400 mb-1">Chiffre d&apos;affaires</p>
-              <p className="text-2xl font-bold text-white">{ca.toLocaleString('fr-DZ')} DA</p>
+              <p className="text-xs text-stone-400 mb-1">{h.revenue}</p>
+              <p className="text-2xl font-bold text-white">{fmt.price(ca)}</p>
               <p className="text-xs text-stone-400 mt-1 flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" /> Commandes livrées
+                <TrendingUp className="w-3 h-3" /> {h.deliveredOrders}
               </p>
             </div>
             <Link href="/vendeur/abonnement" className="text-xs text-emerald-400 hover:underline flex items-center gap-0.5 mt-1">
-              Abonnement <ArrowRight className="w-3 h-3" />
+              {h.subscription} <ArrowRight className="w-3 h-3 rtl-flip" />
             </Link>
           </div>
         </div>
@@ -136,14 +139,14 @@ export default async function VendeurDashboard() {
         {/* Dernières commandes */}
         <div className={tableWrapper}>
           <div className="px-5 py-4 border-b border-stone-100 dark:border-stone-800 flex items-center justify-between">
-            <h2 className="font-semibold text-stone-800 dark:text-stone-100 text-sm">Dernières commandes</h2>
+            <h2 className="font-semibold text-stone-800 dark:text-stone-100 text-sm">{h.latestOrders}</h2>
             <Link href="/commandes" className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-0.5">
-              Voir tout <ArrowRight className="w-3 h-3" />
+              {h.seeAll} <ArrowRight className="w-3 h-3 rtl-flip" />
             </Link>
           </div>
           <div className="divide-y divide-stone-100 dark:divide-stone-800">
             {dernieresCommandes.length === 0 ? (
-              <p className="p-5 text-xs text-stone-400 text-center">Aucune commande</p>
+              <p className="p-5 text-xs text-stone-400 text-center">{h.noOrders}</p>
             ) : dernieresCommandes.map((cmd) => (
               <div key={cmd.id} className="px-5 py-3.5 flex items-center justify-between gap-3">
                 <div className="min-w-0">
@@ -153,10 +156,10 @@ export default async function VendeurDashboard() {
                   <p className="text-xs text-stone-400 truncate">
                     {cmd.items.map(i => i.product.nom).join(', ')}
                   </p>
-                  <p className="text-xs text-stone-400">{new Date(cmd.createdAt).toLocaleDateString('fr-DZ')}</p>
+                  <p className="text-xs text-stone-400">{new Date(cmd.createdAt).toLocaleDateString(fmt.intl)}</p>
                 </div>
                 <span className={`shrink-0 text-xs px-2.5 py-1 rounded-full font-medium ${statutOrderColor[cmd.statut] ?? 'bg-stone-100 text-stone-600'}`}>
-                  {cmd.statut.replace('_', ' ')}
+                  {tr(t.orders.status, cmd.statut)}
                 </span>
               </div>
             ))}
@@ -166,14 +169,14 @@ export default async function VendeurDashboard() {
         {/* Top 5 produits */}
         <div className={tableWrapper}>
           <div className="px-5 py-4 border-b border-stone-100 dark:border-stone-800 flex items-center justify-between">
-            <h2 className="font-semibold text-stone-800 dark:text-stone-100 text-sm">Meilleurs produits</h2>
+            <h2 className="font-semibold text-stone-800 dark:text-stone-100 text-sm">{h.bestProducts}</h2>
             <Link href="/vendeur/produits" className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-0.5">
-              Voir tout <ArrowRight className="w-3 h-3" />
+              {h.seeAll} <ArrowRight className="w-3 h-3 rtl-flip" />
             </Link>
           </div>
           <div className="divide-y divide-stone-100 dark:divide-stone-800">
             {top5.length === 0 ? (
-              <p className="p-5 text-xs text-stone-400 text-center">Aucun produit</p>
+              <p className="p-5 text-xs text-stone-400 text-center">{h.noProducts}</p>
             ) : top5.map((p, i) => (
               <div key={p.id} className="px-5 py-3.5 flex items-center gap-3">
                 <span className={`text-lg font-bold w-6 shrink-0 ${
@@ -185,10 +188,10 @@ export default async function VendeurDashboard() {
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-stone-800 dark:text-stone-100 truncate">{p.nom}</p>
-                  <p className="text-xs text-stone-400">{p.prix.toLocaleString('fr-DZ')} DA</p>
+                  <p className="text-xs text-stone-400">{fmt.price(p.prix)}</p>
                 </div>
                 <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
-                  {p._count.orderItems} ventes
+                  {h.salesCount(p._count.orderItems)}
                 </span>
               </div>
             ))}

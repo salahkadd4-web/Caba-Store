@@ -8,6 +8,9 @@ import ProduitDetailClient from '@/components/client/ProduitDetailClient'
 import ProductCard, { type ProductCardData } from '@/components/client/ProductCard'
 import { ChevronRight } from 'lucide-react'
 import { VENDEUR_SUSPENDU_PRIORITE } from '@/lib/constants'
+import { getI18n } from '@/lib/i18n/server'
+import { rankProducts, VENDEUR_RANK_SELECT } from '@/lib/product-ranking'
+import { getViewerWilaya } from '@/lib/viewer'
 
 export async function generateMetadata({
   params,
@@ -15,15 +18,16 @@ export async function generateMetadata({
   params: Promise<{ id: string }>
 }): Promise<Metadata> {
   const { id } = await params
+  const { t, fmt } = await getI18n()
   const produit = await prisma.product.findUnique({
     where: { id },
     select: { nom: true, description: true, images: true, prix: true, category: { select: { nom: true } } },
   })
-  if (!produit) return { title: 'Produit introuvable — Caba Store' }
+  if (!produit) return { title: t.product.notFoundTitle }
 
-  const title       = `${produit.nom} — Caba Store`
+  const title       = t.product.metaTitle(produit.nom)
   const description = produit.description
-    ?? `Achetez ${produit.nom} (${produit.category.nom}) en Algérie. Prix : ${produit.prix.toFixed(2)} DA.`
+    ?? t.product.metaDescription(produit.nom, produit.category.nom, `${produit.prix.toFixed(2)} ${fmt.currency}`)
 
   return {
     title,
@@ -43,6 +47,7 @@ export default async function ProduitDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
+  const { t } = await getI18n()
 
   const produit = await prisma.product.findUnique({
     where: { id },
@@ -86,7 +91,7 @@ export default async function ProduitDetailPage({
     : adminFallback
     ? {
         id:          'admin',
-        nomBoutique: 'Caba Store',
+        nomBoutique: t.common.appName,
         isAdmin:     true,
         user: {
           nom:       adminFallback.nom,
@@ -102,15 +107,15 @@ export default async function ProduitDetailPage({
     <div className="max-w-6xl mx-auto px-4 py-8 md:py-12 pb-52 md:pb-12">
 
       {/* Breadcrumb */}
-      <nav aria-label="Fil d'Ariane" className="flex items-center flex-wrap gap-1 text-sm text-stone-500 dark:text-stone-400 mb-8">
-        <Link href="/" className="hover:text-orange-700 dark:hover:text-orange-400 transition-colors">Accueil</Link>
-        <ChevronRight className="w-3.5 h-3.5 text-stone-300 dark:text-stone-600" />
-        <Link href="/produits" className="hover:text-orange-700 dark:hover:text-orange-400 transition-colors">Produits</Link>
-        <ChevronRight className="w-3.5 h-3.5 text-stone-300 dark:text-stone-600" />
+      <nav aria-label={t.product.breadcrumb} className="flex items-center flex-wrap gap-1 text-sm text-stone-500 dark:text-stone-400 mb-8">
+        <Link href="/" className="hover:text-orange-700 dark:hover:text-orange-400 transition-colors">{t.layout.nav.home}</Link>
+        <ChevronRight className="w-3.5 h-3.5 text-stone-300 dark:text-stone-600 rtl-flip" />
+        <Link href="/produits" className="hover:text-orange-700 dark:hover:text-orange-400 transition-colors">{t.layout.nav.products}</Link>
+        <ChevronRight className="w-3.5 h-3.5 text-stone-300 dark:text-stone-600 rtl-flip" />
         <Link href={`/categories/${produit.category.id}`} className="hover:text-orange-700 dark:hover:text-orange-400 transition-colors">
           {produit.category.nom}
         </Link>
-        <ChevronRight className="w-3.5 h-3.5 text-stone-300 dark:text-stone-600" />
+        <ChevronRight className="w-3.5 h-3.5 text-stone-300 dark:text-stone-600 rtl-flip" />
         <span className="text-stone-800 dark:text-stone-200 font-medium line-clamp-1">{produit.nom}</span>
       </nav>
 
@@ -149,14 +154,14 @@ export default async function ProduitDetailPage({
       <section className="mt-20 pt-10 border-t border-stone-200 dark:border-stone-800">
         <div className="flex items-end justify-between mb-8">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-400 mb-1">Découvrir</p>
-            <h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">Produits similaires</h2>
+            <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-400 mb-1">{t.product.discover}</p>
+            <h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">{t.product.similar}</h2>
           </div>
           <Link
             href={`/categories/${produit.category.id}`}
             className="hidden sm:inline-flex text-sm font-medium text-stone-600 dark:text-stone-300 hover:text-orange-700 dark:hover:text-orange-400 transition-colors"
           >
-            Voir la catégorie →
+            {t.product.seeCategory}
           </Link>
         </div>
         <ProduitsSimilaires categoryId={produit.category.id} produitId={produit.id} />
@@ -172,7 +177,7 @@ async function ProduitsSimilaires({
   categoryId: string
   produitId:  string
 }) {
-  const produitsRaw = await prisma.product.findMany({
+  const [viewerWilaya, produitsRaw] = await Promise.all([getViewerWilaya(), prisma.product.findMany({
     where: {
       categoryId,
       actif: true,
@@ -186,14 +191,13 @@ async function ProduitsSimilaires({
     take: 8,
     include: {
       category: true,
-      vendeur:  { select: { prioriteAffichage: true } },
+      vendeur:  VENDEUR_RANK_SELECT,
       variants: { select: { id: true, nom: true, couleur: true }, orderBy: { createdAt: 'asc' } },
     },
-  })
+  })])
 
-  const produits = [...produitsRaw]
-    .sort((a, b) => (a.vendeur?.prioriteAffichage ?? 0) - (b.vendeur?.prioriteAffichage ?? 0))
-    .slice(0, 4)
+  // Priorité d'abonnement → wilaya du visiteur → date
+  const produits = rankProducts(produitsRaw, viewerWilaya).slice(0, 4)
 
   if (produits.length === 0) return null
 

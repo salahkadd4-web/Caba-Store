@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyOTP } from '@/lib/twilio'
 import { rateLimit, rateLimits, sanitize } from '@/lib/security'
+import { getI18n } from '@/lib/i18n/server'
 
 export async function POST(req: NextRequest) {
+  const { t } = await getI18n()
   // Rate limiting strict : 5 tentatives / 10 min
   const limited = await rateLimit(req, rateLimits.otp)
   if (limited) return limited
@@ -14,12 +16,12 @@ export async function POST(req: NextRequest) {
     const code        = sanitize(body.code)
 
     if (!identifiant || !code) {
-      return NextResponse.json({ error: 'Identifiant et code requis' }, { status: 400 })
+      return NextResponse.json({ error: t.auth.api.identifierAndCodeRequired }, { status: 400 })
     }
 
     // Validation format : 6 chiffres uniquement
     if (!/^\d{6}$/.test(code)) {
-      return NextResponse.json({ error: 'Le code doit contenir 6 chiffres' }, { status: 400 })
+      return NextResponse.json({ error: t.auth.api.code6Digits }, { status: 400 })
     }
 
     const user = await prisma.user.findFirst({
@@ -33,7 +35,7 @@ export async function POST(req: NextRequest) {
 
     // Réponse identique que l'user existe ou non (anti-énumération)
     if (!user) {
-      return NextResponse.json({ error: 'Code invalide ou expiré' }, { status: 400 })
+      return NextResponse.json({ error: t.auth.api.codeInvalidOrExpired }, { status: 400 })
     }
 
     // ── Vérification email ─────────────────────────────────
@@ -50,7 +52,7 @@ export async function POST(req: NextRequest) {
       })
 
       if (!resetToken) {
-        return NextResponse.json({ error: 'Code invalide ou expiré' }, { status: 400 })
+        return NextResponse.json({ error: t.auth.api.codeInvalidOrExpired }, { status: 400 })
       }
 
       // Marquer comme vérifié — /nouveau lira ce flag
@@ -64,7 +66,7 @@ export async function POST(req: NextRequest) {
     if (user.telephone && identifiant === user.telephone) {
       const isValid = await verifyOTP(user.telephone, code)
       if (!isValid) {
-        return NextResponse.json({ error: 'Code invalide ou expiré' }, { status: 400 })
+        return NextResponse.json({ error: t.auth.api.codeInvalidOrExpired }, { status: 400 })
       }
 
       await prisma.resetToken.updateMany({
@@ -79,10 +81,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Ne PAS retourner userId — la sécurité repose sur verified=true en DB
-    return NextResponse.json({ message: 'Code valide' })
+    return NextResponse.json({ message: t.auth.api.codeValid })
 
   } catch (error) {
     console.error('Erreur reset vérifier:', error)
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }

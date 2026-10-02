@@ -15,6 +15,10 @@ import {
 import { getPrixUnitaire as getPrixUnitaireLib } from '@/lib/prix'
 import { FRAIS_EXPEDITION } from '@/lib/constants'
 import VendeurButton from '@/components/client/VendeurButton'
+import WilayaCommuneSelect from '@/components/WilayaCommuneSelect'
+import { useI18n } from '@/components/I18nProvider'
+import { tr } from '@/lib/i18n'
+import { formatFullAddress, normalizeWilayaCode } from '@/lib/algeria'
 
 /* ── Types ── */
 type VariantOption = { id: string; valeur: string; stock: number }
@@ -75,19 +79,20 @@ function groupByVendeur(items: CartItem[]): VendeurGroup[] {
   return [...map.values()]
 }
 
-/* ── Modes de paiement ── */
+/* ── Modes de paiement ── (label = valeur stockée en base) */
 const MODES_PAIEMENT = [
-  { label: 'Paiement à la livraison', icon: Banknote,       disabled: false, subtitle: 'Payez en espèces à la réception' },
-  { label: 'CCP',                      icon: Landmark,       disabled: true,  subtitle: 'Prochainement disponible' },
-  { label: 'Dahabia',                  icon: CreditCard,     disabled: true,  subtitle: 'Prochainement disponible' },
-  { label: 'Virement bancaire',        icon: ArrowLeftRight, disabled: true,  subtitle: 'Prochainement disponible' },
-  { label: 'BaridiMob',               icon: Smartphone,     disabled: true,  subtitle: 'Prochainement disponible' },
+  { label: 'Paiement à la livraison', icon: Banknote,       disabled: false },
+  { label: 'CCP',                      icon: Landmark,       disabled: true  },
+  { label: 'Dahabia',                  icon: CreditCard,     disabled: true  },
+  { label: 'Virement bancaire',        icon: ArrowLeftRight, disabled: true  },
+  { label: 'BaridiMob',               icon: Smartphone,     disabled: true  },
 ]
 
+/* label = valeur stockée en base et clé des frais côté serveur */
 const METHODES_EXPEDITION = [
-  { label: 'Livraison standard',      frais: FRAIS_EXPEDITION['Livraison standard'],      delai: '3–5 jours' },
-  { label: 'Livraison express',       frais: FRAIS_EXPEDITION['Livraison express'],        delai: '1–2 jours' },
-  { label: 'Retrait en point relais', frais: FRAIS_EXPEDITION['Retrait en point relais'],  delai: '2–4 jours' },
+  { label: 'Livraison standard',      frais: FRAIS_EXPEDITION['Livraison standard']      },
+  { label: 'Livraison express',       frais: FRAIS_EXPEDITION['Livraison express']        },
+  { label: 'Retrait en point relais', frais: FRAIS_EXPEDITION['Retrait en point relais']  },
 ]
 
 /* ── Sélecteur d'expédition par vendeur ── */
@@ -100,6 +105,7 @@ function ExpeditionSelector({
   selected:   string
   onChange:   (key: string, methode: string) => void
 }) {
+  const { t, fmt } = useI18n()
   return (
     <div className="space-y-1.5 mt-3">
       {METHODES_EXPEDITION.map(opt => (
@@ -109,7 +115,7 @@ function ExpeditionSelector({
               ? 'border-orange-700 bg-orange-50 dark:bg-orange-950/60'
               : 'border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600'
           }`}>
-          <div className="flex items-center gap-2.5 text-left">
+          <div className="flex items-center gap-2.5 text-start">
             <div className={`w-3.5 h-3.5 rounded-full border-2 shrink-0 flex items-center justify-center ${
               selected === opt.label ? 'border-orange-700' : 'border-stone-300 dark:border-stone-600'
             }`}>
@@ -117,13 +123,13 @@ function ExpeditionSelector({
             </div>
             <div>
               <p className={`font-medium text-xs ${selected === opt.label ? 'text-orange-700 dark:text-orange-400' : 'text-stone-700 dark:text-stone-300'}`}>
-                {opt.label}
+                {tr(t.orders.shipping, opt.label)}
               </p>
-              <p className="text-[10px] text-stone-400">{opt.delai}</p>
+              <p className="text-[10px] text-stone-400">{tr(t.orders.shippingDelay, opt.label)}</p>
             </div>
           </div>
           <span className={`font-bold text-sm shrink-0 ${selected === opt.label ? 'text-orange-700 dark:text-orange-400' : 'text-stone-500 dark:text-stone-400'}`}>
-            {opt.frais} DA
+            {opt.frais} {fmt.currency}
           </span>
         </button>
       ))}
@@ -136,6 +142,9 @@ function ExpeditionSelector({
 ════════════════════════════════════════════ */
 export default function NouvelleCommandePage() {
   const router = useRouter()
+  const { t, fmt, locale } = useI18n()
+  const c = t.orders.checkout
+  const DA = fmt.currency
   const [panier,     setPanier]     = useState<Cart | null>(null)
   const [loading,    setLoading]    = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -143,6 +152,9 @@ export default function NouvelleCommandePage() {
   const [showModal,  setShowModal]  = useState(false)
 
   const [adresse,      setAdresse]      = useState('')
+  const [wilaya,       setWilaya]       = useState('')
+  const [commune,      setCommune]      = useState('')
+  const [lieuDepuisProfil, setLieuDepuisProfil] = useState(false)
   const [modePaiement, setModePaiement] = useState(MODES_PAIEMENT[0].label)
 
   // Méthode d'expédition par vendeur (key = vendeurId ou '__admin__')
@@ -163,7 +175,14 @@ export default function NouvelleCommandePage() {
       .then(([panierData, profilData]) => {
         setPanier(panierData)
         setHasTelephone(!!profilData.telephone)
+        // Pré-sélection depuis le profil : wilaya, commune et adresse
         if (profilData.adresse) setAdresse(profilData.adresse)
+        const codeWilaya = normalizeWilayaCode(profilData.wilaya)
+        if (codeWilaya) {
+          setWilaya(codeWilaya)
+          if (profilData.commune) setCommune(profilData.commune)
+          setLieuDepuisProfil(true)
+        }
 
         // Initialiser la méthode d'expédition par défaut pour chaque vendeur
         const defaultMethode = METHODES_EXPEDITION[0].label
@@ -174,8 +193,9 @@ export default function NouvelleCommandePage() {
         }
         setMethodeParVendeur(initial)
       })
-      .catch(() => setError('Impossible de charger le panier. Veuillez réessayer.'))
+      .catch(() => setError(c.loadCartError))
       .finally(() => setLoading(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const vendeurGroups = panier ? groupByVendeur(panier.items) : []
@@ -218,10 +238,12 @@ export default function NouvelleCommandePage() {
   const totalEconomies  = vendeurCalcs.reduce((s, c) => s + c.economies, 0)
   const total           = sousTotal + totalFrais
 
+  const lieuComplet = !!(adresse.trim() && wilaya && commune)
+
   const handleSaveTelephone = async () => {
     setTelError('')
     if (!/^(05|06|07)[0-9]{8}$/.test(telephone.replace(/\s/g, ''))) {
-      setTelError('Format invalide. Ex: 05XX XX XX XX'); return
+      setTelError(c.invalidPhone); return
     }
     setSavingTel(true)
     try {
@@ -232,7 +254,7 @@ export default function NouvelleCommandePage() {
       const data = await res.json()
       if (!res.ok) { setTelError(data.error); return }
       setHasTelephone(true)
-    } catch { setTelError('Erreur serveur') } finally { setSavingTel(false) }
+    } catch { setTelError(t.common.serverError) } finally { setSavingTel(false) }
   }
 
   const handleConfirmer = async () => {
@@ -245,12 +267,12 @@ export default function NouvelleCommandePage() {
 
       const res = await fetch('/api/commandes', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adresse, modePaiement, vendeurGroupes }),
+        body: JSON.stringify({ adresse, wilaya, commune, modePaiement, vendeurGroupes }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
       router.push('/mes-commandes?success=true')
-    } catch { setError('Erreur serveur, veuillez réessayer') } finally { setSubmitting(false) }
+    } catch { setError(c.serverRetry) } finally { setSubmitting(false) }
   }
 
   const inputCls = 'w-full border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-800 dark:text-stone-100 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 dark:focus:ring-orange-500 transition'
@@ -259,7 +281,7 @@ export default function NouvelleCommandePage() {
   if (loading) return (
     <div className="max-w-5xl mx-auto px-4 py-16 text-center">
       <div className="w-8 h-8 border-2 border-stone-200 dark:border-stone-700 border-t-orange-700 rounded-full animate-spin mx-auto mb-3" />
-      <p className="text-stone-500 dark:text-stone-400 text-sm">Chargement…</p>
+      <p className="text-stone-500 dark:text-stone-400 text-sm">{t.common.loading}</p>
     </div>
   )
 
@@ -268,9 +290,9 @@ export default function NouvelleCommandePage() {
       <div className="w-20 h-20 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
         <ShoppingCart className="w-10 h-10 text-stone-400 dark:text-stone-500" />
       </div>
-      <h1 className="text-2xl font-semibold tracking-tight text-stone-800 dark:text-stone-100 mb-2">Panier vide</h1>
+      <h1 className="text-2xl font-semibold tracking-tight text-stone-800 dark:text-stone-100 mb-2">{c.emptyCart}</h1>
       <Link href="/produits" className="inline-block mt-4 bg-orange-700 hover:bg-orange-800 text-white px-8 py-3 rounded-xl font-semibold transition-colors">
-        Voir les produits
+        {c.seeProducts}
       </Link>
     </div>
   )
@@ -278,7 +300,7 @@ export default function NouvelleCommandePage() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 pt-4">
       <h1 className="text-2xl font-semibold tracking-tight text-stone-800 dark:text-stone-100 mb-6 flex items-center gap-2">
-        <ShoppingBag className="w-6 h-6 text-orange-700" /> Passer la commande
+        <ShoppingBag className="w-6 h-6 text-orange-700" /> {c.title}
       </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -294,8 +316,8 @@ export default function NouvelleCommandePage() {
                   <Smartphone className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-amber-800 dark:text-amber-300 text-sm">Numéro de téléphone requis</h3>
-                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">Nécessaire pour le suivi de votre livraison.</p>
+                  <h3 className="font-semibold text-amber-800 dark:text-amber-300 text-sm">{c.phoneRequired}</h3>
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">{c.phoneRequiredDesc}</p>
                 </div>
               </div>
               <input type="tel" value={telephone}
@@ -306,7 +328,7 @@ export default function NouvelleCommandePage() {
               {telError && <p className="text-xs text-red-500 mb-2">{telError}</p>}
               <button onClick={handleSaveTelephone} disabled={savingTel || !telephone}
                 className="w-full bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold py-2.5 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-2">
-                {savingTel ? 'Enregistrement…' : <><Check className="w-4 h-4" /> Enregistrer</>}
+                {savingTel ? t.common.saving : <><Check className="w-4 h-4" /> {t.common.save}</>}
               </button>
             </div>
           )}
@@ -314,7 +336,7 @@ export default function NouvelleCommandePage() {
           {/* Formulaire principal */}
           <div className={`bg-white dark:bg-stone-900 rounded-2xl border border-stone-100 dark:border-stone-800 p-5 space-y-5 ${!hasTelephone ? 'opacity-40 pointer-events-none select-none' : ''}`}>
             <h2 className="font-semibold text-stone-800 dark:text-stone-100 flex items-center gap-2">
-              <ClipboardList className="w-4 h-4 text-orange-700" /> Détails de la commande
+              <ClipboardList className="w-4 h-4 text-orange-700" /> {c.details}
             </h2>
 
             {error && (
@@ -323,18 +345,35 @@ export default function NouvelleCommandePage() {
               </div>
             )}
 
+            {/* Wilaya / commune (pré-sélectionnées depuis le profil) */}
+            <div>
+              <WilayaCommuneSelect
+                wilaya={wilaya}
+                commune={commune}
+                onChange={v => { setWilaya(v.wilaya); setCommune(v.commune) }}
+                required
+                selectClassName={inputCls}
+                labelClassName={labelCls}
+                labelPrefix={<MapPin className="w-4 h-4 inline me-1 text-orange-700" />}
+                className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+              />
+              {lieuDepuisProfil && (
+                <p className="text-[10px] text-stone-400 dark:text-stone-500 mt-1.5">{c.fromProfile}</p>
+              )}
+            </div>
+
             {/* Adresse */}
             <div>
-              <label className={labelCls}><MapPin className="w-4 h-4 inline mr-1 text-orange-700" /> Adresse de livraison *</label>
+              <label className={labelCls}><MapPin className="w-4 h-4 inline me-1 text-orange-700" /> {c.deliveryAddress}</label>
               <textarea value={adresse} onChange={e => setAdresse(e.target.value)}
-                required rows={3} placeholder="Numéro, rue, cité, commune, wilaya…"
+                required rows={3} placeholder={c.addressPlaceholder}
                 className={inputCls} />
             </div>
 
             {/* Mode de paiement */}
             <div>
               <label className={labelCls}>
-                <CreditCard className="w-4 h-4 inline mr-1 text-orange-700" /> Mode de paiement *
+                <CreditCard className="w-4 h-4 inline me-1 text-orange-700" /> {c.paymentMethod}
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {MODES_PAIEMENT.map(m => {
@@ -345,7 +384,7 @@ export default function NouvelleCommandePage() {
                     <button key={m.label} type="button"
                       onClick={() => !isDisabled && setModePaiement(m.label)}
                       disabled={isDisabled}
-                      className={`relative flex flex-col items-start gap-1.5 px-3 py-3 rounded-xl border-2 text-left transition-all duration-200 ${
+                      className={`relative flex flex-col items-start gap-1.5 px-3 py-3 rounded-xl border-2 text-start transition-all duration-200 ${
                         isDisabled
                           ? 'border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/40 opacity-50 cursor-not-allowed'
                           : isActive
@@ -366,8 +405,8 @@ export default function NouvelleCommandePage() {
                       <div>
                         <p className={`text-xs font-semibold leading-tight ${
                           isDisabled ? 'text-stone-400 dark:text-stone-600' : isActive ? 'text-orange-700 dark:text-orange-400' : 'text-stone-700 dark:text-stone-300'
-                        }`}>{m.label}</p>
-                        {isDisabled && <p className="text-[10px] text-stone-400 dark:text-stone-600 mt-0.5 leading-tight">Bientôt disponible</p>}
+                        }`}>{tr(t.orders.payment, m.label)}</p>
+                        {isDisabled && <p className="text-[10px] text-stone-400 dark:text-stone-600 mt-0.5 leading-tight">{c.soonAvailable}</p>}
                       </div>
                     </button>
                   )
@@ -378,10 +417,10 @@ export default function NouvelleCommandePage() {
             {/* ══ Livraison par vendeur ══ */}
             <div>
               <label className={labelCls}>
-                <Truck className="w-4 h-4 inline mr-1 text-orange-700" /> Expédition par vendeur
+                <Truck className="w-4 h-4 inline me-1 text-orange-700" /> {c.shippingBySeller}
                 {vendeurCalcs.length > 1 && (
-                  <span className="ml-2 text-[10px] font-normal text-stone-400">
-                    ({vendeurCalcs.length} vendeurs · livraisons séparées)
+                  <span className="ms-2 text-[10px] font-normal text-stone-400">
+                    {c.sellersSeparate(vendeurCalcs.length)}
                   </span>
                 )}
               </label>
@@ -395,7 +434,7 @@ export default function NouvelleCommandePage() {
                       <div className="px-3 pt-3 pb-2.5 border-b border-stone-100 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-800/30">
                         {vendeurCalcs.length > 1 && (
                           <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2 flex items-center gap-1">
-                            <Store className="w-3 h-3" /> Commande {idx + 1} / {vendeurCalcs.length}
+                            <Store className="w-3 h-3" /> {c.orderNofM(idx + 1, vendeurCalcs.length)}
                           </p>
                         )}
                         {/* ← VendeurButton : bottom-sheet avec infos et appel */}
@@ -411,12 +450,12 @@ export default function NouvelleCommandePage() {
                         />
                         {/* Sous-total de ce groupe */}
                         <div className="flex justify-between items-center mt-3 px-1 text-xs text-stone-500 dark:text-stone-400">
-                          <span>Articles ({vc.items.length})</span>
-                          <span className="tabular-nums">{vc.sousTotal.toFixed(2)} DA</span>
+                          <span>{c.itemsCount(vc.items.length)}</span>
+                          <span className="tabular-nums">{vc.sousTotal.toFixed(2)} {DA}</span>
                         </div>
                         <div className="flex justify-between items-center px-1 text-xs font-semibold text-stone-700 dark:text-stone-300 mt-0.5">
-                          <span>Sous-total avec livraison</span>
-                          <span className="tabular-nums text-orange-700 dark:text-orange-400">{vc.totalGroupe.toFixed(2)} DA</span>
+                          <span>{c.subtotalWithDelivery}</span>
+                          <span className="tabular-nums text-orange-700 dark:text-orange-400">{vc.totalGroupe.toFixed(2)} {DA}</span>
                         </div>
                       </div>
                     </div>
@@ -425,14 +464,14 @@ export default function NouvelleCommandePage() {
               </div>
             </div>
 
-            <button type="button" onClick={() => adresse ? setShowModal(true) : null}
-              disabled={submitting || !hasTelephone || !adresse}
+            <button type="button" onClick={() => lieuComplet ? setShowModal(true) : null}
+              disabled={submitting || !hasTelephone || !lieuComplet}
               className="w-full bg-orange-700 hover:bg-orange-800 text-white font-semibold py-3.5 rounded-xl transition disabled:opacity-40 flex items-center justify-center gap-2">
-              {submitting ? 'Traitement…' : `Confirmer — ${total.toFixed(2)} DA`}
+              {submitting ? c.processing : c.confirmTotal(`${total.toFixed(2)} ${DA}`)}
             </button>
 
             <Link href="/panier" className="block text-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 text-sm transition">
-              ← Retour au panier
+              {c.backToCart}
             </Link>
           </div>
         </div>
@@ -442,18 +481,18 @@ export default function NouvelleCommandePage() {
           <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-100 dark:border-stone-800 p-5 lg:sticky lg:top-20 space-y-4">
             <h2 className="font-semibold text-stone-800 dark:text-stone-100 flex items-center gap-2">
               <Package className="w-4 h-4 text-orange-700" />
-              Résumé ({panier.items.length} article{panier.items.length > 1 ? 's' : ''})
+              {c.summary(panier.items.length)}
             </h2>
 
             {/* Détails par vendeur */}
-            <div className="space-y-4 max-h-80 overflow-y-auto pr-1">
+            <div className="space-y-4 max-h-80 overflow-y-auto pe-1">
               {vendeurCalcs.map(vc => {
                 const key = vc.vendeurId ?? '__admin__'
                 return (
                   <div key={key}>
                     <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest flex items-center gap-1 mb-2">
                       <Store className="w-3 h-3" />
-                      {vc.vendeurInfo?.nomBoutique ?? 'Caba Store'}
+                      {vc.vendeurInfo?.nomBoutique ?? t.common.appName}
                     </p>
                     <div className="space-y-2">
                       {vc.items.map(item => {
@@ -461,7 +500,7 @@ export default function NouvelleCommandePage() {
                         const prixBase   = item.product.prix
                         const estReduit  = prixUnit < prixBase
                         const sousLigne  = prixUnit * item.quantite
-                        const typeOpt    = item.product.typeOption || 'Taille'
+                        const typeOpt    = item.product.typeOption || c.sizeDefault
                         const img        = item.variant?.images?.[0] ?? item.product.images?.[0]
                         return (
                           <div key={item.id} className="flex gap-2.5 items-start">
@@ -480,7 +519,7 @@ export default function NouvelleCommandePage() {
                                   {item.variant && <span className="text-[10px] text-stone-400">{item.variant.nom}</span>}
                                   {item.variantOption && (
                                     <>
-                                      <ChevronRight className="w-2.5 h-2.5 text-stone-300 shrink-0" />
+                                      <ChevronRight className="w-2.5 h-2.5 text-stone-300 shrink-0 rtl-flip" />
                                       <span className="text-[10px] text-stone-400 flex items-center gap-0.5">
                                         <Ruler className="w-2.5 h-2.5" />{typeOpt} {item.variantOption.valeur}
                                       </span>
@@ -492,19 +531,19 @@ export default function NouvelleCommandePage() {
                                 <span className="text-xs text-stone-400">×{item.quantite}</span>
                                 {estReduit ? (
                                   <>
-                                    <span className="text-xs font-semibold text-green-700 dark:text-green-400">{prixUnit.toFixed(2)} DA/u.</span>
+                                    <span className="text-xs font-semibold text-green-700 dark:text-green-400">{prixUnit.toFixed(2)} {DA}{c.perUnit}</span>
                                     <span className="text-[10px] text-stone-400 line-through">{prixBase.toFixed(2)}</span>
                                     <span className="text-[10px] bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 px-1 py-0.5 rounded-full font-bold flex items-center gap-0.5">
                                       <TrendingDown className="w-2.5 h-2.5" />−{Math.round((1 - prixUnit / prixBase) * 100)}%
                                     </span>
                                   </>
                                 ) : (
-                                  <span className="text-xs text-stone-500 dark:text-stone-400">{prixUnit.toFixed(2)} DA/u.</span>
+                                  <span className="text-xs text-stone-500 dark:text-stone-400">{prixUnit.toFixed(2)} {DA}{c.perUnit}</span>
                                 )}
                               </div>
                             </div>
                             <span className="text-xs font-bold text-stone-800 dark:text-stone-200 shrink-0">
-                              {sousLigne.toFixed(2)} DA
+                              {sousLigne.toFixed(2)} {DA}
                             </span>
                           </div>
                         )
@@ -513,8 +552,8 @@ export default function NouvelleCommandePage() {
                     {/* Frais de ce vendeur */}
                     <div className="mt-2 pt-2 border-t border-stone-100 dark:border-stone-800">
                       <div className="flex justify-between text-xs text-stone-400">
-                        <span>Livraison ({vc.methode})</span>
-                        <span>{vc.fraisLivraison} DA</span>
+                        <span>{c.deliveryWith(tr(t.orders.shipping, vc.methode))}</span>
+                        <span>{vc.fraisLivraison} {DA}</span>
                       </div>
                     </div>
                   </div>
@@ -524,21 +563,21 @@ export default function NouvelleCommandePage() {
 
             <div className="border-t border-stone-100 dark:border-stone-800 pt-3 space-y-2">
               <div className="flex justify-between text-sm text-stone-500 dark:text-stone-400">
-                <span>Sous-total</span><span>{sousTotal.toFixed(2)} DA</span>
+                <span>{c.subtotal}</span><span>{sousTotal.toFixed(2)} {DA}</span>
               </div>
               {totalEconomies > 0 && (
                 <div className="flex justify-between text-sm text-green-700 dark:text-green-400">
-                  <span className="flex items-center gap-1"><TrendingDown className="w-3.5 h-3.5" /> Économies</span>
-                  <span>−{totalEconomies.toFixed(2)} DA</span>
+                  <span className="flex items-center gap-1"><TrendingDown className="w-3.5 h-3.5" /> {c.savings}</span>
+                  <span>−{totalEconomies.toFixed(2)} {DA}</span>
                 </div>
               )}
               <div className="flex justify-between text-sm text-stone-500 dark:text-stone-400">
-                <span>Livraison totale ({vendeurCalcs.length} vendeur{vendeurCalcs.length > 1 ? 's' : ''})</span>
-                <span>{totalFrais} DA</span>
+                <span>{c.totalDelivery(vendeurCalcs.length)}</span>
+                <span>{totalFrais} {DA}</span>
               </div>
               <div className="flex justify-between font-bold text-lg pt-1 border-t border-stone-100 dark:border-stone-800">
-                <span className="text-stone-800 dark:text-stone-100">Total</span>
-                <span className="text-orange-700 dark:text-orange-500">{total.toFixed(2)} DA</span>
+                <span className="text-stone-800 dark:text-stone-100">{c.total}</span>
+                <span className="text-orange-700 dark:text-orange-500">{total.toFixed(2)} {DA}</span>
               </div>
             </div>
           </div>
@@ -561,11 +600,11 @@ export default function NouvelleCommandePage() {
                 <div className="w-14 h-14 bg-orange-50 dark:bg-orange-950/50 rounded-2xl flex items-center justify-center mx-auto mb-3">
                   <ShoppingBag className="w-7 h-7 text-orange-700 dark:text-orange-400" />
                 </div>
-                <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Confirmer la commande ?</h2>
+                <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">{c.confirmTitle}</h2>
                 <p className="text-stone-400 text-sm mt-1">
                   {vendeurCalcs.length > 1
-                    ? `${vendeurCalcs.length} commandes séparées seront créées`
-                    : 'Vérifiez les détails avant de valider'}
+                    ? c.separateOrders(vendeurCalcs.length)
+                    : c.checkDetails}
                 </p>
               </div>
 
@@ -573,26 +612,28 @@ export default function NouvelleCommandePage() {
               <div className="space-y-2 mb-4">
                 <div className="bg-stone-50 dark:bg-stone-800 rounded-xl p-3">
                   <p className="text-xs text-stone-400 mb-1 flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5" /> Adresse
+                    <MapPin className="w-3.5 h-3.5" /> {c.address}
                   </p>
-                  <p className="text-sm text-stone-800 dark:text-stone-200">{adresse}</p>
+                  <p className="text-sm text-stone-800 dark:text-stone-200">
+                    {formatFullAddress({ adresse, commune, wilaya }, locale)}
+                  </p>
                 </div>
                 <div className="bg-stone-50 dark:bg-stone-800 rounded-xl p-3">
                   <p className="text-xs text-stone-400 mb-1 flex items-center gap-1">
-                    <CreditCard className="w-3.5 h-3.5" /> Paiement
+                    <CreditCard className="w-3.5 h-3.5" /> {c.payment}
                   </p>
-                  <p className="text-sm font-medium text-stone-800 dark:text-stone-200">{modePaiement}</p>
+                  <p className="text-sm font-medium text-stone-800 dark:text-stone-200">{tr(t.orders.payment, modePaiement)}</p>
                 </div>
                 {vendeurCalcs.map(vc => (
                   <div key={vc.vendeurId ?? '__admin__'} className="bg-stone-50 dark:bg-stone-800 rounded-xl p-3">
                     <p className="text-xs text-stone-400 mb-1 flex items-center gap-1">
-                      <Store className="w-3.5 h-3.5" /> {vc.vendeurInfo?.nomBoutique ?? 'Caba Store'}
+                      <Store className="w-3.5 h-3.5" /> {vc.vendeurInfo?.nomBoutique ?? t.common.appName}
                     </p>
                     <div className="flex justify-between items-center">
                       <p className="text-sm font-medium text-stone-700 dark:text-stone-300 flex items-center gap-1">
-                        <Truck className="w-3.5 h-3.5 text-orange-700" /> {vc.methode}
+                        <Truck className="w-3.5 h-3.5 text-orange-700" /> {tr(t.orders.shipping, vc.methode)}
                       </p>
-                      <p className="text-sm font-semibold text-orange-700 dark:text-orange-400">{vc.totalGroupe.toFixed(2)} DA</p>
+                      <p className="text-sm font-semibold text-orange-700 dark:text-orange-400">{vc.totalGroupe.toFixed(2)} {DA}</p>
                     </div>
                   </div>
                 ))}
@@ -601,30 +642,30 @@ export default function NouvelleCommandePage() {
               {/* Totaux */}
               <div className="border-t border-stone-100 dark:border-stone-800 pt-3 space-y-1.5 mb-5">
                 <div className="flex justify-between text-sm text-stone-500 dark:text-stone-400">
-                  <span>Sous-total</span><span>{sousTotal.toFixed(2)} DA</span>
+                  <span>{c.subtotal}</span><span>{sousTotal.toFixed(2)} {DA}</span>
                 </div>
                 {totalEconomies > 0 && (
                   <div className="flex justify-between text-sm text-green-700 dark:text-green-400">
-                    <span>Économies</span><span>−{totalEconomies.toFixed(2)} DA</span>
+                    <span>{c.savings}</span><span>−{totalEconomies.toFixed(2)} {DA}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm text-stone-500 dark:text-stone-400">
-                  <span>Livraison</span><span>{totalFrais} DA</span>
+                  <span>{c.delivery}</span><span>{totalFrais} {DA}</span>
                 </div>
                 <div className="flex justify-between font-bold text-lg border-t border-stone-100 dark:border-stone-800 pt-2">
-                  <span className="text-stone-800 dark:text-stone-100">Total</span>
-                  <span className="text-orange-700 dark:text-orange-500">{total.toFixed(2)} DA</span>
+                  <span className="text-stone-800 dark:text-stone-100">{c.total}</span>
+                  <span className="text-orange-700 dark:text-orange-500">{total.toFixed(2)} {DA}</span>
                 </div>
               </div>
 
               <div className="flex gap-3">
                 <button onClick={() => setShowModal(false)}
                   className="flex-1 border-2 border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 font-semibold py-3 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800 transition">
-                  Annuler
+                  {t.common.cancel}
                 </button>
                 <button onClick={handleConfirmer} disabled={submitting}
                   className="flex-1 flex items-center justify-center gap-2 bg-orange-700 hover:bg-orange-800 text-white font-semibold py-3 rounded-xl transition disabled:opacity-50">
-                  {submitting ? 'En cours…' : <><CheckCircle2 className="w-5 h-5" /> Confirmer</>}
+                  {submitting ? c.inProgress : <><CheckCircle2 className="w-5 h-5" /> {t.common.confirm}</>}
                 </button>
               </div>
             </div>

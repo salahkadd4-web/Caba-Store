@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthToken } from '@/lib/getAuthToken'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { getI18n } from '@/lib/i18n/server'
 
 const rules = [
   (p: string) => p.length >= 8,
@@ -12,17 +13,18 @@ const rules = [
 ]
 
 export async function POST(req: NextRequest) {
+  const { t } = await getI18n()
   try {
     const token = await getAuthToken()
     if (!token?.email) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+      return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
     }
 
     const { motDePasse } = await req.json()
 
     if (!motDePasse || !rules.every(r => r(motDePasse))) {
       return NextResponse.json(
-        { error: 'Le mot de passe ne respecte pas les conditions requises' },
+        { error: t.auth.api.passwordConditions },
         { status: 400 }
       )
     }
@@ -34,9 +36,9 @@ export async function POST(req: NextRequest) {
       data:  { motDePasse: hashed },
     })
 
-    return NextResponse.json({ message: 'Mot de passe enregistré' })
+    return NextResponse.json({ message: t.auth.api.passwordSaved })
   } catch (error) {
     console.error('Erreur google-password:', error)
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }

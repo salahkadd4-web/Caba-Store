@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { getI18n } from '@/lib/i18n/server'
 
 // GET /api/admin/vendeurs/[id] — détail d'un vendeur
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { t } = await getI18n()
   const session = await auth()
   if (!session?.user || session.user.role !== 'ADMIN') {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
   }
 
   const { id } = await params
@@ -20,7 +22,7 @@ export async function GET(
       user: {
         select: {
           id: true, nom: true, prenom: true, email: true,
-          telephone: true, createdAt: true, wilaya: true,
+          telephone: true, createdAt: true, wilaya: true, commune: true,
         },
       },
       documents: { orderBy: { createdAt: 'asc' } },
@@ -38,7 +40,7 @@ export async function GET(
   })
 
   if (!vendeur) {
-    return NextResponse.json({ error: 'Vendeur introuvable' }, { status: 404 })
+    return NextResponse.json({ error: t.msg.sellerNotFound }, { status: 404 })
   }
 
   // Stats commandes & CA
@@ -66,9 +68,10 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { t } = await getI18n()
   const session = await auth()
   if (!session?.user || session.user.role !== 'ADMIN') {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
   }
 
   const { id } = await params
@@ -82,7 +85,7 @@ export async function PATCH(
     where: { id },
   })
   if (!vendeur) {
-    return NextResponse.json({ error: 'Vendeur introuvable' }, { status: 404 })
+    return NextResponse.json({ error: t.msg.sellerNotFound }, { status: 404 })
   }
 
   if (action === 'approuver') {
@@ -91,7 +94,7 @@ export async function PATCH(
     })
     if (docsRefuses > 0) {
       return NextResponse.json(
-        { error: 'Certains documents ont été refusés.' },
+        { error: t.msg.someDocumentsRefused },
         { status: 400 }
       )
     }
@@ -115,7 +118,7 @@ export async function PATCH(
         },
       }),
     ])
-    return NextResponse.json({ message: 'Vendeur approuvé — période gratuite d\'1 an démarrée' })
+    return NextResponse.json({ message: t.msg.sellerApprovedFreeYear })
   }
 
   if (action === 'suspendre') {
@@ -123,7 +126,7 @@ export async function PATCH(
       where: { id },
       data: { statut: 'SUSPENDU', adminNote: adminNote || null },
     })
-    return NextResponse.json({ message: 'Vendeur suspendu' })
+    return NextResponse.json({ message: t.msg.sellerSuspended })
   }
 
   if (action === 'reactiver') {
@@ -131,13 +134,13 @@ export async function PATCH(
       where: { id },
       data: { statut: 'APPROUVE', adminNote: null },
     })
-    return NextResponse.json({ message: 'Vendeur réactivé' })
+    return NextResponse.json({ message: t.msg.sellerReactivated })
   }
 
   if (action === 'demander_pieces') {
     if (!documents || !Array.isArray(documents) || documents.length === 0) {
       return NextResponse.json(
-        { error: 'Vous devez spécifier au moins un document à demander' },
+        { error: t.msg.specifyAtLeastOneDocument },
         { status: 400 }
       )
     }
@@ -157,8 +160,8 @@ export async function PATCH(
       })),
     })
 
-    return NextResponse.json({ message: 'Demande de pièces envoyée' })
+    return NextResponse.json({ message: t.msg.documentsRequestSent })
   }
 
-  return NextResponse.json({ error: 'Action invalide' }, { status: 400 })
+  return NextResponse.json({ error: t.msg.invalidAction }, { status: 400 })
 }

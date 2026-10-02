@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { put } from '@vercel/blob'
 import { randomUUID } from 'crypto'
+import { getI18n } from '@/lib/i18n/server'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
 
@@ -13,13 +14,14 @@ const ALLOWED_TYPES: Record<string, string> = {
 }
 
 export async function POST(req: NextRequest) {
+  const { t } = await getI18n()
   const session = await auth()
   if (!session?.user || session.user.role !== 'VENDEUR') {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
   }
 
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    return NextResponse.json({ error: 'BLOB_READ_WRITE_TOKEN manquant' }, { status: 500 })
+    return NextResponse.json({ error: t.msg.blobTokenMissing }, { status: 500 })
   }
 
   try {
@@ -29,13 +31,13 @@ export async function POST(req: NextRequest) {
     if (!file) return NextResponse.json({ error: 'Aucun fichier fourni' }, { status: 400 })
 
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ error: 'Fichier trop volumineux (max 10 MB)' }, { status: 400 })
+      return NextResponse.json({ error: t.msg.fileTooLarge10 }, { status: 400 })
     }
 
     const ext = ALLOWED_TYPES[file.type]
     if (!ext) {
       return NextResponse.json(
-        { error: 'Type non autorisé. Formats acceptés : JPG, PNG, WebP, PDF.' },
+        { error: t.msg.documentTypeNotAllowed },
         { status: 400 }
       )
     }
@@ -48,7 +50,7 @@ export async function POST(req: NextRequest) {
     const isPdf  = b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46
 
     if (!isJpeg && !isPng && !isWebp && !isPdf) {
-      return NextResponse.json({ error: 'Contenu du fichier invalide.' }, { status: 400 })
+      return NextResponse.json({ error: t.msg.invalidFileContent }, { status: 400 })
     }
 
     const vendeurId = session.user.id
@@ -73,7 +75,7 @@ export async function POST(req: NextRequest) {
     console.error('══════════════════════════')
 
     return NextResponse.json(
-      { error: err?.message ?? 'Erreur serveur' },
+      { error: err?.message ?? t.api.serverError },
       { status: 500 }
     )
   }

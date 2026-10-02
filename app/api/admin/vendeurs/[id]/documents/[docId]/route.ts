@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { getI18n } from '@/lib/i18n/server'
 
 // PATCH /api/admin/vendeurs/[id]/documents/[docId]
 // body: { action: "accepter" | "refuser", adminNote?: string }
@@ -8,9 +9,10 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string; docId: string }> }
 ) {
+  const { t } = await getI18n()
   const session = await auth()
   if (!session?.user || session.user.role !== 'ADMIN') {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
   }
 
   const { id, docId } = await params
@@ -22,11 +24,11 @@ export async function PATCH(
     where: { id: docId, vendeurId: id },
   })
   if (!doc) {
-    return NextResponse.json({ error: 'Document introuvable' }, { status: 404 })
+    return NextResponse.json({ error: t.msg.documentNotFound }, { status: 404 })
   }
 
   if (!['accepter', 'refuser'].includes(action)) {
-    return NextResponse.json({ error: 'Action invalide' }, { status: 400 })
+    return NextResponse.json({ error: t.msg.invalidAction }, { status: 400 })
   }
 
   const newStatut = action === 'accepter' ? 'ACCEPTE' : 'REFUSE'
@@ -45,7 +47,7 @@ export async function PATCH(
       where: { id },
       data: { statut: 'PIECES_REQUISES' },
     })
-    return NextResponse.json({ message: 'Document refusé' })
+    return NextResponse.json({ message: t.msg.documentRefused })
   }
 
   // Si accepté → vérifier si TOUS les documents sont maintenant acceptés
@@ -64,13 +66,13 @@ export async function PATCH(
         data: { statut: 'APPROUVE' },
       })
       return NextResponse.json({
-        message: 'Document accepté. Tous les documents sont validés — compte vendeur débloqué automatiquement.',
+        message: t.msg.documentAcceptedAll,
         compteDebloque: true,
       })
     }
 
     return NextResponse.json({
-      message: 'Document accepté. D\'autres documents sont encore en attente.',
+      message: t.msg.documentAcceptedOthersPending,
       compteDebloque: false,
     })
   }
@@ -82,9 +84,10 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string; docId: string }> }
 ) {
+  const { t } = await getI18n()
   const session = await auth()
   if (!session?.user || session.user.role !== 'ADMIN') {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
   }
 
   const { id, docId } = await params
@@ -93,5 +96,5 @@ export async function DELETE(
     where: { id: docId, vendeurId: id },
   })
 
-  return NextResponse.json({ message: 'Document supprimé' })
+  return NextResponse.json({ message: t.msg.documentDeleted })
 }

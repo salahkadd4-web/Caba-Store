@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
 import { Prisma } from '@/generated/prisma/client'
+import { getI18n } from '@/lib/i18n/server'
 
 type VariantInput = {
   nom: string
@@ -17,8 +18,9 @@ async function checkAdmin() {
 }
 
 export async function GET(req: NextRequest) {
+  const { t } = await getI18n()
   try {
-    if (!await checkAdmin()) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    if (!await checkAdmin()) return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
     const { searchParams } = new URL(req.url)
     const vendeurId = searchParams.get('vendeurId')
     const adminOnly = searchParams.get('adminOnly') === 'true'
@@ -39,15 +41,16 @@ export async function GET(req: NextRequest) {
     })
     return NextResponse.json(produits)
   } catch {
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }
 
 export async function POST(req: NextRequest) {
+  const { t } = await getI18n()
   try {
-    if (!await checkAdmin()) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    if (!await checkAdmin()) return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
     const { nom, description, prix, stock, images, categoryId, prixVariables, typeOption, variants } = await req.json()
-    if (!nom || !prix || !categoryId) return NextResponse.json({ error: 'Champs requis manquants' }, { status: 400 })
+    if (!nom || !prix || !categoryId) return NextResponse.json({ error: t.msg.missingFields }, { status: 400 })
 
     const produit = await prisma.product.create({
       data: {
@@ -73,6 +76,6 @@ export async function POST(req: NextRequest) {
     })
     return NextResponse.json(produit, { status: 201 })
   } catch {
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }

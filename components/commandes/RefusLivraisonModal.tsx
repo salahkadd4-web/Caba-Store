@@ -4,13 +4,11 @@ import { useState } from 'react'
 import { AlertTriangle, Loader2, X } from 'lucide-react'
 import { modalOverlay, modalBox, selectCls, inputCls, btnDangerSolid, btnSecondary } from '@/lib/dashboard-ui'
 import type { Commande } from './DashboardCommandesView'
+import { useI18n } from '@/components/I18nProvider'
+import { tr } from '@/lib/i18n'
 
-const MOTIFS = [
-  { value: 'CLIENT_ABSENT',              label: 'Client absent' },
-  { value: 'CLIENT_A_CHANGE_AVIS',       label: "Client a changé d'avis" },
-  { value: 'CLIENT_A_REFUSE_SANS_MOTIF', label: 'Client a refusé sans motif' },
-  { value: 'AUTRE',                      label: 'Autre' },
-] as const
+// Codes transmis à Flowmerce ; libellés : t.orders.refusal.reasons
+const MOTIFS = ['CLIENT_ABSENT', 'CLIENT_A_CHANGE_AVIS', 'CLIENT_A_REFUSE_SANS_MOTIF', 'AUTRE'] as const
 
 export default function RefusLivraisonModal({
   cmd,
@@ -23,6 +21,8 @@ export default function RefusLivraisonModal({
   onClose: () => void
   onReported: (message: string) => void
 }) {
+  const { t } = useI18n()
+  const r = t.orders.refusal
   const [motif,     setMotif]     = useState<string>('')
   const [details,   setDetails]   = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -31,8 +31,8 @@ export default function RefusLivraisonModal({
   const isAutre = motif === 'AUTRE'
 
   const handleSubmit = async () => {
-    if (!motif) { setError('Sélectionnez un motif.'); return }
-    if (isAutre && !details.trim()) { setError('Précisez le motif.'); return }
+    if (!motif) { setError(r.selectReason); return }
+    if (isAutre && !details.trim()) { setError(r.specifyReason); return }
 
     setSubmitting(true)
     setError(null)
@@ -46,10 +46,10 @@ export default function RefusLivraisonModal({
         body:    JSON.stringify({ motif, details: isAutre ? details.trim() : undefined }),
       })
       const data = await res.json().catch(() => ({})) as { message?: string; error?: string }
-      if (!res.ok) throw new Error(data.error || 'Erreur lors du signalement')
-      onReported(data.message ?? 'Refus signalé à Flowmerce.')
+      if (!res.ok) throw new Error(data.error || r.reportError)
+      onReported(data.message ?? r.reported)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur lors du signalement')
+      setError(e instanceof Error ? e.message : r.reportError)
     } finally {
       setSubmitting(false)
     }
@@ -65,9 +65,9 @@ export default function RefusLivraisonModal({
             </div>
             <div>
               <h3 className="text-base font-bold text-stone-800 dark:text-stone-100">
-                Signaler un refus à la livraison
+                {r.title}
               </h3>
-              <p className="text-xs text-stone-400">Commande #{cmd.id.slice(-8).toUpperCase()}</p>
+              <p className="text-xs text-stone-400">{r.orderRef(cmd.id.slice(-8).toUpperCase())}</p>
             </div>
           </div>
           <button onClick={onClose} className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 shrink-0">
@@ -76,23 +76,22 @@ export default function RefusLivraisonModal({
         </div>
 
         <p className="text-xs text-stone-500 dark:text-stone-400 mb-4">
-          Ce signalement est transmis à Flowmerce et contribue au score anti-fraude du
-          client, partagé entre boutiques partenaires. Cette action est définitive.
+          {r.warning}
         </p>
 
         <div className="space-y-3">
           <div>
             <label className="text-xs font-medium text-stone-500 dark:text-stone-400 mb-1 block">
-              Motif du refus
+              {r.reasonLabel}
             </label>
             <select
               value={motif}
               onChange={e => setMotif(e.target.value)}
               className={`${selectCls} w-full`}
             >
-              <option value="">Sélectionnez un motif…</option>
+              <option value="">{r.reasonPlaceholder}</option>
               {MOTIFS.map(m => (
-                <option key={m.value} value={m.value}>{m.label}</option>
+                <option key={m} value={m}>{tr(r.reasons, m)}</option>
               ))}
             </select>
           </div>
@@ -100,13 +99,13 @@ export default function RefusLivraisonModal({
           {isAutre && (
             <div>
               <label className="text-xs font-medium text-stone-500 dark:text-stone-400 mb-1 block">
-                Précisez
+                {r.specify}
               </label>
               <textarea
                 value={details}
                 onChange={e => setDetails(e.target.value)}
                 rows={3}
-                placeholder="Décrivez le motif du refus…"
+                placeholder={r.detailsPlaceholder}
                 className={`${inputCls} resize-none`}
               />
             </div>
@@ -121,11 +120,11 @@ export default function RefusLivraisonModal({
 
         <div className="flex items-center justify-end gap-2 mt-5">
           <button onClick={onClose} disabled={submitting} className={btnSecondary}>
-            Annuler
+            {t.common.cancel}
           </button>
           <button onClick={handleSubmit} disabled={submitting} className={`${btnDangerSolid} flex items-center gap-1.5`}>
             {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            Signaler
+            {r.submit}
           </button>
         </div>
       </div>

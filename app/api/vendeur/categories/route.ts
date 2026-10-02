@@ -1,20 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { getI18n } from '@/lib/i18n/server'
 
 // GET /api/vendeur/categories
 // Retourne : mes propositions + toutes les catégories approuvées
 export async function GET() {
+  const { t } = await getI18n()
   const session = await auth()
   if (!session?.user || session.user.role !== 'VENDEUR') {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
   }
 
   const vendeur = await prisma.vendeurProfile.findUnique({
     where: { userId: session.user.id },
   })
   if (!vendeur) {
-    return NextResponse.json({ error: 'Profil vendeur introuvable' }, { status: 404 })
+    return NextResponse.json({ error: t.auth.api.sellerProfileNotFound }, { status: 404 })
   }
 
   const [mesCats, approuvees] = await Promise.all([
@@ -38,35 +40,36 @@ export async function GET() {
 // POST /api/vendeur/categories
 // Proposer une nouvelle catégorie (statut EN_ATTENTE par défaut)
 export async function POST(req: NextRequest) {
+  const { t } = await getI18n()
   const session = await auth()
   if (!session?.user || session.user.role !== 'VENDEUR') {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
   }
 
   const vendeur = await prisma.vendeurProfile.findUnique({
     where: { userId: session.user.id },
   })
   if (!vendeur) {
-    return NextResponse.json({ error: 'Profil vendeur introuvable' }, { status: 404 })
+    return NextResponse.json({ error: t.auth.api.sellerProfileNotFound }, { status: 404 })
   }
 
   // Seul un vendeur APPROUVÉ peut proposer des catégories
   if (vendeur.statut !== 'APPROUVE') {
     return NextResponse.json(
-      { error: 'Votre compte doit être approuvé pour proposer des catégories.' },
+      { error: t.msg.mustBeApprovedForCategories },
       { status: 403 }
     )
   }
 
   const body = await req.json().catch(() => null)
   if (!body) {
-    return NextResponse.json({ error: 'Corps de requête invalide' }, { status: 400 })
+    return NextResponse.json({ error: t.msg.invalidBody }, { status: 400 })
   }
 
   const { nom, description } = body
 
   if (!nom?.trim()) {
-    return NextResponse.json({ error: 'Le nom de la catégorie est requis' }, { status: 400 })
+    return NextResponse.json({ error: t.msg.categoryNameRequired }, { status: 400 })
   }
 
   // Vérifier qu'une catégorie avec ce nom n'existe pas déjà
@@ -75,7 +78,7 @@ export async function POST(req: NextRequest) {
   })
   if (existing) {
     return NextResponse.json(
-      { error: 'Une catégorie avec ce nom existe déjà.' },
+      { error: t.msg.categoryExists },
       { status: 409 }
     )
   }
@@ -90,7 +93,7 @@ export async function POST(req: NextRequest) {
   })
 
   return NextResponse.json(
-    { ...category, message: 'Catégorie proposée avec succès. En attente de validation par l\'admin.' },
+    { ...category, message: t.msg.categoryProposed },
     { status: 201 }
   )
 }

@@ -1,0 +1,57 @@
+/** Catalogue : /produits, /categories, /recherche, fiche produit, favoris. */
+const catalog = {
+  products: {
+    metaTitle: 'Tous les produits — Caba Store',
+    metaDescription: 'Parcourez notre catalogue complet de produits livrés en Algérie. Mode, maison, électronique et plus encore.',
+    metaOgDescription: 'Parcourez notre catalogue complet de produits livrés en Algérie.',
+    eyebrow: 'Catalogue',
+    title: 'Tous nos produits',
+  },
+  categories: {
+    title: 'Catégories',
+    subtitle: 'Parcourez nos catégories de produits',
+    empty: 'Aucune catégorie disponible pour le moment.',
+    productsCount: (n: number): string => `${n} produit${n > 1 ? 's' : ''}`,
+    seeAll: 'Voir tout →',
+  },
+  category: {
+    notFoundTitle: 'Catégorie introuvable — Caba Store',
+    metaTitle: (nom: string): string => `${nom} — Caba Store`,
+    metaDescription: (n: number, nom: string): string => `Découvrez nos ${n} produits dans la catégorie ${nom} en Algérie.`,
+    empty: 'Aucun produit dans cette catégorie.',
+    backToCategories: '← Retour aux catégories',
+    filterByWilaya: 'Filtrer par wilaya',
+  },
+  favorites: {
+    loadError: 'Impossible de charger vos favoris. Veuillez réessayer.',
+    retry: 'Réessayer',
+    title: 'Mes Favoris',
+    count: (n: number): string => `${n} produit${n > 1 ? 's' : ''} en favori`,
+    empty: "Vous n'avez pas encore de favoris.",
+    browse: 'Parcourir les produits',
+    remove: 'Retirer des favoris',
+    add: 'Ajouter aux favoris',
+    added: 'Ajouté aux favoris',
+  },
+  filters: {
+    search: 'Recherche',
+    searchPlaceholder: 'Rechercher...',
+    categories: 'Catégories',
+    allCategories: 'Toutes les catégories',
+    sellerWilaya: 'Wilaya du vendeur',
+    allWilayas: 'Toutes les wilayas',
+    nearMe: 'Ma wilaya',
+    reset: 'Réinitialiser les filtres',
+    clear: 'Effacer les filtres',
+    filters: 'Filtres',
+    searching: 'Recherche…',
+    searchingFull: 'Recherche en cours…',
+    count: (n: number): string => `produit${n > 1 ? 's' : ''}`,
+    found: (n: number): string => ` trouvé${n > 1 ? 's' : ''}`,
+    emptyTitle: 'Aucun produit trouvé',
+    emptyDesc: 'Essayez de modifier vos critères de recherche.',
+    seeAll: 'Voir tous les produits',
+  },
+}
+
+export default catalog

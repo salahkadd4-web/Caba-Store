@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { reportDeliveryRefusal, FlowmerceError } from '@/lib/flowmerce'
+import { getI18n } from '@/lib/i18n/server'
 
 const MOTIFS_VALIDES = ['CLIENT_ABSENT', 'CLIENT_A_CHANGE_AVIS', 'CLIENT_A_REFUSE_SANS_MOTIF', 'AUTRE'] as const
 
@@ -28,31 +29,32 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const { t } = await getI18n()
   const session = await auth()
   if (!session?.user || session.user.role !== 'VENDEUR') {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
   }
 
   const vendeur = await prisma.vendeurProfile.findUnique({
     where: { userId: session.user.id },
   })
   if (!vendeur || vendeur.statut !== 'APPROUVE') {
-    return NextResponse.json({ error: 'Compte non approuvé' }, { status: 403 })
+    return NextResponse.json({ error: t.msg.accountNotApproved }, { status: 403 })
   }
 
   const { id } = await params
   const body = await req.json().catch(() => null)
-  if (!body) return NextResponse.json({ error: 'Body requis' }, { status: 400 })
+  if (!body) return NextResponse.json({ error: t.msg.bodyRequired }, { status: 400 })
 
   const { motif, details } = body as { motif?: string; details?: string }
   if (!motif || !(MOTIFS_VALIDES as readonly string[]).includes(motif)) {
     return NextResponse.json(
-      { error: `Motif invalide. Valeurs acceptées : ${MOTIFS_VALIDES.join(', ')}` },
+      { error: t.msg.invalidReason(MOTIFS_VALIDES.join(', ')) },
       { status: 400 },
     )
   }
   if (motif === 'AUTRE' && !details?.trim()) {
-    return NextResponse.json({ error: 'Un détail est requis pour le motif "Autre"' }, { status: 400 })
+    return NextResponse.json({ error: t.msg.otherReasonDetailRequired }, { status: 400 })
   }
 
   // Commande appartenant à ce vendeur (au moins un item de ses produits).
@@ -65,20 +67,20 @@ export async function POST(
   })
 
   if (!commande) {
-    return NextResponse.json({ error: 'Commande introuvable' }, { status: 404 })
+    return NextResponse.json({ error: t.msg.orderNotFound }, { status: 404 })
   }
   if (commande.statut !== 'EXPEDIEE') {
     return NextResponse.json(
-      { error: 'Un refus à la livraison ne peut être signalé que pour une commande expédiée.' },
+      { error: t.msg.refusalOnlyShipped },
       { status: 403 },
     )
   }
   if (commande.refusLivraisonSignale) {
-    return NextResponse.json({ error: 'Ce refus a déjà été signalé.' }, { status: 409 })
+    return NextResponse.json({ error: t.msg.refusalAlreadyReported }, { status: 409 })
   }
   if (!commande.user.email && !commande.user.telephone) {
     return NextResponse.json(
-      { error: 'Le client n\u2019a ni e-mail ni téléphone enregistré : signalement impossible.' },
+      { error: t.msg.clientNoContact },
       { status: 422 },
     )
   }
@@ -102,14 +104,14 @@ export async function POST(
       ok: true,
       alreadyReported: result.alreadyReported,
       message: result.alreadyReported
-        ? 'Ce refus était déjà signalé à Flowmerce.'
-        : 'Refus signalé à Flowmerce.',
+        ? t.msg.refusalAlreadyReportedFlowmerce
+        : t.msg.refusalReported,
     })
   } catch (err) {
     if (err instanceof FlowmerceError) {
       return NextResponse.json({ error: err.message }, { status: err.status })
     }
     console.error('[vendeur/refus-livraison] erreur inattendue', err)
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }

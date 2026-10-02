@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { getI18n } from '@/lib/i18n/server'
 
 // PATCH /api/vendeur/documents/[docId] — Soumettre le fichier pour un document demandé
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ docId: string }> }
 ) {
+  const { t } = await getI18n()
   const session = await auth()
   if (!session?.user || session.user.role !== 'VENDEUR') {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
   }
 
   const { docId } = await params
@@ -17,7 +19,7 @@ export async function PATCH(
   const { filename } = body  // contient maintenant l'URL blob Vercel
 
   if (!filename) {
-    return NextResponse.json({ error: 'URL du fichier requise' }, { status: 400 })
+    return NextResponse.json({ error: t.msg.fileUrlRequired }, { status: 400 })
   }
 
   // Validation : doit être une URL Vercel Blob
@@ -26,7 +28,7 @@ export async function PATCH(
     filename.includes('.blob.vercel-storage.com')
   )
   if (!isValidBlobUrl) {
-    return NextResponse.json({ error: 'URL de fichier invalide' }, { status: 400 })
+    return NextResponse.json({ error: t.msg.invalidFileUrl }, { status: 400 })
   }
 
   // Vérifier que ce document appartient bien à ce vendeur
@@ -34,14 +36,14 @@ export async function PATCH(
     where: { userId: session.user.id },
   })
   if (!vendeur) {
-    return NextResponse.json({ error: 'Profil vendeur introuvable' }, { status: 404 })
+    return NextResponse.json({ error: t.auth.api.sellerProfileNotFound }, { status: 404 })
   }
 
   const doc = await prisma.vendeurDocument.findFirst({
     where: { id: docId, vendeurId: vendeur.id },
   })
   if (!doc) {
-    return NextResponse.json({ error: 'Document introuvable' }, { status: 404 })
+    return NextResponse.json({ error: t.msg.documentNotFound }, { status: 404 })
   }
 
   // Mettre à jour → statut revient à EN_ATTENTE pour re-validation
@@ -60,7 +62,7 @@ export async function PATCH(
   })
 
   return NextResponse.json({
-    message: 'Document soumis avec succès',
+    message: t.msg.documentSubmitted,
     docsManquants,
   })
 }

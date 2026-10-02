@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
+import { getI18n } from '@/lib/i18n/server'
 
 async function checkAdmin() {
   const token = await getAuthToken()
@@ -8,9 +9,10 @@ async function checkAdmin() {
 }
 
 export async function GET() {
+  const { t } = await getI18n()
   try {
     const token = await checkAdmin()
-    if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    if (!token) return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
 
     const categories = await prisma.category.findMany({
       orderBy: { nom: 'asc' },
@@ -19,18 +21,19 @@ export async function GET() {
 
     return NextResponse.json(categories)
   } catch {
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }
 
 export async function POST(req: NextRequest) {
+  const { t } = await getI18n()
   try {
     const token = await checkAdmin()
-    if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    if (!token) return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
 
     const { nom, description, image } = await req.json()
 
-    if (!nom) return NextResponse.json({ error: 'Nom requis' }, { status: 400 })
+    if (!nom) return NextResponse.json({ error: t.msg.nameRequired }, { status: 400 })
 
     const category = await prisma.category.create({
       data: { nom, description: description || null, image: image || null },
@@ -38,6 +41,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(category, { status: 201 })
   } catch {
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }

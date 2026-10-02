@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthToken } from '@/lib/getAuthToken'
 import cloudinary from '@/lib/cloudinary'
 import { rateLimit, rateLimits } from '@/lib/security'
+import { getI18n } from '@/lib/i18n/server'
 
 const MAX_FILE_SIZE    = 5 * 1024 * 1024  // 5 MB
 const ALLOWED_TYPES    = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
 export async function POST(req: NextRequest) {
+  const { t } = await getI18n()
   // Rate limiting — 20 uploads/heure
   const limited = await rateLimit(req, rateLimits.upload)
   if (limited) return limited
@@ -14,7 +16,7 @@ export async function POST(req: NextRequest) {
   try {
     const token = await getAuthToken()
     if (!token || !['ADMIN', 'VENDEUR'].includes(token.role)) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+      return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
     }
 
     const formData = await req.formData()
@@ -27,7 +29,7 @@ export async function POST(req: NextRequest) {
     // ── Validation taille ─────────────────────────────────
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: 'Fichier trop volumineux (max 5 MB)' },
+        { error: t.msg.fileTooLarge5 },
         { status: 400 }
       )
     }
@@ -35,7 +37,7 @@ export async function POST(req: NextRequest) {
     // ── Validation type MIME ──────────────────────────────
     if (!ALLOWED_TYPES.includes(file.type)) {
       return NextResponse.json(
-        { error: 'Type de fichier non autorisé. Utilisez JPG, PNG, WebP ou GIF.' },
+        { error: t.msg.imageTypeNotAllowed },
         { status: 400 }
       )
     }
@@ -50,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     if (!isJpeg && !isPng && !isWebp && !isGif) {
       return NextResponse.json(
-        { error: 'Le contenu du fichier ne correspond pas à une image valide' },
+        { error: t.msg.notAValidImage },
         { status: 400 }
       )
     }
@@ -67,6 +69,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ url: result.secure_url })
   } catch (error) {
     console.error('Erreur upload:', error)
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }

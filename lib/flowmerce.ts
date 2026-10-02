@@ -12,6 +12,10 @@
 // le Vendor et la ReturnPolicy associés à la clé.
 
 import 'server-only'
+import { getI18n } from '@/lib/i18n/server'
+import type { Dictionary } from '@/lib/i18n'
+
+type FlowmerceMessages = Dictionary['msg']['flowmerce']
 import type {
   ReturnForm,
   ReturnSubmission,
@@ -39,9 +43,9 @@ export class FlowmerceError extends Error {
   }
 }
 
-function requireConfig(): void {
+function requireConfig(m: FlowmerceMessages): void {
   if (!FLOWMERCE_API_URL || !FLOWMERCE_API_KEY) {
-    throw new FlowmerceError('Service retours non configuré', 503, { retryable: false })
+    throw new FlowmerceError(m.notConfigured, 503, { retryable: false })
   }
 }
 
@@ -59,20 +63,20 @@ async function parseJson<T>(res: Response): Promise<T | null> {
 }
 
 /** Transforme un échec HTTP Flowmerce en FlowmerceError avec message lisible. */
-async function toError(res: Response, fallback: string): Promise<FlowmerceError> {
+async function toError(res: Response, fallback: string, m: FlowmerceMessages): Promise<FlowmerceError> {
   const data = await parseJson<{ error?: string; message?: string; code?: string }>(res)
   // Priorité au message explicite renvoyé par Flowmerce en JSON (data.error /
   // data.message). Les textes ci-dessous ne sont que des replis génériques.
   const message = data?.error ?? data?.message ?? (res.status === 401
-    ? 'Authentification Flowmerce invalide : clé API refusée'
+    ? m.authInvalid
     : res.status === 403
-      ? 'Accès refusé : la clé API ne permet pas d\u2019accéder à ce service'
+      ? m.forbidden
       : res.status === 404
-        ? 'Service de retour indisponible (endpoint introuvable)'
+        ? m.endpointNotFound
         : res.status === 422
-          ? 'Retour refusé : hors politique de retour Flowmerce'
+          ? m.outsidePolicy
           : res.status === 429
-            ? 'Trop de demandes, réessayez plus tard'
+            ? m.tooManyRequests
             : fallback)
   return new FlowmerceError(message, res.status, { code: data?.code, retryable: res.status >= 500 })
 }
@@ -89,7 +93,8 @@ const FORM_TIMEOUT_MS = 10_000
 const formCache = new Map<string, { form: ReturnForm; expiresAt: number }>()
 
 export async function getReturnForm(): Promise<ReturnForm> {
-  requireConfig()
+  const m = (await getI18n()).t.msg.flowmerce
+  requireConfig(m)
 
   const cacheKey = 'return-form'
   const cached   = formCache.get(cacheKey)
@@ -105,17 +110,17 @@ export async function getReturnForm(): Promise<ReturnForm> {
     })
   } catch (err) {
     throw new FlowmerceError(
-      'Service Flowmerce indisponible',
+      m.unavailable,
       503,
       { code: (err as Error)?.name === 'TimeoutError' ? 'TIMEOUT' : 'NETWORK', retryable: true },
     )
   }
 
-  if (!res.ok) throw await toError(res, 'Impossible de charger le formulaire de retour')
+  if (!res.ok) throw await toError(res, m.formLoadError, m)
 
   const form = await parseJson<ReturnForm>(res)
   if (!form || !Array.isArray(form.sections)) {
-    throw new FlowmerceError('Réponse Flowmerce invalide', 502, { retryable: false })
+    throw new FlowmerceError(m.invalidResponse, 502, { retryable: false })
   }
 
   formCache.set(cacheKey, { form, expiresAt: Date.now() + RETURN_FORM_CACHE_TTL_MS })
@@ -129,7 +134,8 @@ export async function getReturnForm(): Promise<ReturnForm> {
 const SUBMIT_TIMEOUT_MS = 15_000
 
 export async function submitReturn(payload: ReturnSubmission): Promise<ReturnSubmissionResult> {
-  requireConfig()
+  const m = (await getI18n()).t.msg.flowmerce
+  requireConfig(m)
 
   let res: Response
   try {
@@ -141,18 +147,18 @@ export async function submitReturn(payload: ReturnSubmission): Promise<ReturnSub
     })
   } catch (err) {
     throw new FlowmerceError(
-      'Service Flowmerce indisponible',
+      m.unavailable,
       503,
       { code: (err as Error)?.name === 'TimeoutError' ? 'TIMEOUT' : 'NETWORK', retryable: true },
     )
   }
 
-  if (!res.ok) throw await toError(res, 'Erreur lors de la création du retour')
+  if (!res.ok) throw await toError(res, m.createError, m)
 
   const data = await parseJson<{ claim_id?: string; claimId?: string; status?: string }>(res)
   const claimId = data?.claim_id ?? data?.claimId
   if (!claimId) {
-    throw new FlowmerceError('Réponse Flowmerce invalide : identifiant de demande manquant', 502, { retryable: false })
+    throw new FlowmerceError(m.missingClaimId, 502, { retryable: false })
   }
 
   return { claimId, status: data?.status }
@@ -172,11 +178,12 @@ const REFUSAL_TIMEOUT_MS = 10_000
 export async function reportDeliveryRefusal(
   payload: ReportRefusalPayload,
 ): Promise<ReportRefusalResult> {
-  requireConfig()
+  const m = (await getI18n()).t.msg.flowmerce
+  requireConfig(m)
 
   if (!payload.customerEmail && !payload.customerPhone) {
     throw new FlowmerceError(
-      'customer_email ou customer_phone requis pour signaler un refus',
+      m.contactRequired,
       422,
       { retryable: false },
     )
@@ -197,13 +204,13 @@ export async function reportDeliveryRefusal(
     })
   } catch (err) {
     throw new FlowmerceError(
-      'Service Flowmerce indisponible',
+      m.unavailable,
       503,
       { code: (err as Error)?.name === 'TimeoutError' ? 'TIMEOUT' : 'NETWORK', retryable: true },
     )
   }
 
-  if (!res.ok) throw await toError(res, 'Erreur lors du signalement du refus à la livraison')
+  if (!res.ok) throw await toError(res, m.refusalError, m)
 
   const data = await parseJson<{
     ok?: boolean

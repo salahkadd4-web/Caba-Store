@@ -4,11 +4,13 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSession }  from 'next-auth/react'
 import { useIsMobile } from '@/lib/hooks/useIsMobile'
+import { useI18n } from '@/components/I18nProvider'
 
 export default function BottomNav() {
   const isMobile        = useIsMobile()
   const pathname        = usePathname()
   const { data: session } = useSession()
+  const { t } = useI18n()
 
   const role = session?.user?.role as string | undefined
 
@@ -23,7 +25,7 @@ export default function BottomNav() {
   const items = [
     {
       href: '/',
-      label: 'Home',
+      label: t.layout.nav.homeShort,
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
@@ -33,7 +35,7 @@ export default function BottomNav() {
     },
     {
       href: '/categories',
-      label: 'Catégories',
+      label: t.layout.nav.categories,
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
@@ -43,7 +45,7 @@ export default function BottomNav() {
     },
     {
       href: '/produits',
-      label: 'Produits',
+      label: t.layout.nav.products,
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
@@ -54,7 +56,7 @@ export default function BottomNav() {
     },
     {
       href: '/recherche',
-      label: 'Recherche',
+      label: t.layout.nav.search,
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="11" cy="11" r="8"/>
@@ -65,7 +67,7 @@ export default function BottomNav() {
   ]
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-stone-50 dark:bg-stone-950 border-t border-stone-200 dark:border-stone-800 flex items-center justify-around px-2 py-2 md:hidden">
+    <nav className="fixed bottom-0 start-0 end-0 z-50 bg-stone-50 dark:bg-stone-950 border-t border-stone-200 dark:border-stone-800 flex items-center justify-around px-2 py-2 md:hidden">
       {items.map((item) => {
         const isActive = pathname === item.href
         return (

@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Heart, Package, XCircle } from 'lucide-react'
+import { useI18n } from '@/components/I18nProvider'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -26,6 +27,8 @@ type FavoriItem = {
 export default function FavorisPage() {
   const { status } = useSession()
   const router = useRouter()
+  const { t, fmt } = useI18n()
+  const f = t.catalog.favorites
 
   const [favoris,  setFavoris]  = useState<FavoriItem[]>([])
   const [loading,  setLoading]  = useState(true)
@@ -40,12 +43,13 @@ export default function FavorisPage() {
 
     fetch('/api/favoris')
       .then((res) => {
-        if (!res.ok) throw new Error('Erreur lors du chargement des favoris')
+        if (!res.ok) throw new Error(f.loadError)
         return res.json() as Promise<FavoriItem[]>
       })
       .then((data) => setFavoris(data))
-      .catch(() => setError('Impossible de charger vos favoris. Veuillez réessayer.'))
+      .catch(() => setError(f.loadError))
       .finally(() => setLoading(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, router])
 
   const handleRetirer = async (produitId: string) => {
@@ -62,7 +66,7 @@ export default function FavorisPage() {
     return (
       <div className="max-w-6xl mx-auto px-4 py-12 text-center">
         <div className="w-8 h-8 border-2 border-stone-200 dark:border-stone-700 border-t-orange-700 rounded-full animate-spin mx-auto mb-3" />
-        <p className="text-stone-500 dark:text-stone-400 text-sm">Chargement...</p>
+        <p className="text-stone-500 dark:text-stone-400 text-sm">{t.common.loading}</p>
       </div>
     )
   }
@@ -75,7 +79,7 @@ export default function FavorisPage() {
           onClick={() => { setError(null); setLoading(true) }}
           className="text-sm text-orange-700 dark:text-orange-400 hover:underline"
         >
-          Réessayer
+          {f.retry}
         </button>
       </div>
     )
@@ -84,10 +88,10 @@ export default function FavorisPage() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-12 pt-4">
       <h1 className="text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100 mb-2">
-        Mes Favoris
+        {f.title}
       </h1>
       <p className="text-stone-500 dark:text-stone-400 mb-8">
-        {favoris.length} produit{favoris.length > 1 ? 's' : ''} en favori
+        {f.count(favoris.length)}
       </p>
 
       {favoris.length === 0 ? (
@@ -96,13 +100,13 @@ export default function FavorisPage() {
             <Heart className="w-10 h-10 text-stone-300 dark:text-stone-600" />
           </div>
           <p className="text-lg text-stone-500 dark:text-stone-400 mb-4">
-            Vous n&apos;avez pas encore de favoris.
+            {f.empty}
           </p>
           <Link
             href="/produits"
             className="inline-block bg-orange-700 hover:bg-orange-800 text-white text-sm font-semibold px-6 py-3 rounded-xl transition-colors"
           >
-            Parcourir les produits
+            {f.browse}
           </Link>
         </div>
       ) : (
@@ -134,7 +138,7 @@ export default function FavorisPage() {
                     {favori.product.nom}
                   </h3>
                   <p className="text-lg font-bold text-orange-700 dark:text-orange-500">
-                    {favori.product.prix.toFixed(2)} DA
+                    {favori.product.prix.toFixed(2)} {fmt.currency}
                   </p>
                 </div>
               </Link>
@@ -143,8 +147,8 @@ export default function FavorisPage() {
                   onClick={() => handleRetirer(favori.product.id)}
                   className="w-full border border-red-300 dark:border-red-800 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 text-sm py-2 rounded-xl transition-colors"
                 >
-                  <XCircle className="w-4 h-4 inline mr-1" />
-                  Retirer des favoris
+                  <XCircle className="w-4 h-4 inline me-1" />
+                  {f.remove}
                 </button>
               </div>
             </div>

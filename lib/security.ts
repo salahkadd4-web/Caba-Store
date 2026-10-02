@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis }     from '@upstash/redis'
 import { auth }      from '@/auth'
+import { getI18n } from '@/lib/i18n/server'
 
 // ══════════════════════════════════════════════════════════════
 //  1. RATE LIMITING — Upstash Redis (sliding window)
@@ -46,6 +47,7 @@ export async function rateLimit(
   req: NextRequest,
   options: RateLimitOptions,
 ): Promise<NextResponse | null> {
+  const { t } = await getI18n()
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
              || req.headers.get('x-real-ip')
              || 'unknown'
@@ -65,7 +67,7 @@ export async function rateLimit(
   if (!result.success) {
     const retryAfter = Math.max(1, Math.ceil((result.reset - Date.now()) / 1000))
     return NextResponse.json(
-      { error: 'Trop de tentatives. Réessayez dans quelques instants.' },
+      { error: t.auth.api.tooManyAttempts },
       {
         status: 429,
         headers: {
@@ -115,12 +117,12 @@ type AuthUser = {
 export async function requireAdmin(): Promise<
   { user: AuthUser; error?: never } | { error: NextResponse; user?: never }
 > {
-  const session = await auth()
+  const [session, { t }] = await Promise.all([auth(), getI18n()])
   if (!session?.user) {
-    return { error: NextResponse.json({ error: 'Non authentifié' }, { status: 401 }) }
+    return { error: NextResponse.json({ error: t.api.unauthenticated }, { status: 401 }) }
   }
   if (session.user.role !== 'ADMIN') {
-    return { error: NextResponse.json({ error: 'Accès refusé' }, { status: 403 }) }
+    return { error: NextResponse.json({ error: t.api.forbidden }, { status: 403 }) }
   }
   return { user: session.user as AuthUser }
 }
@@ -139,12 +141,12 @@ export async function requireVendeur(): Promise<
   | { user: AuthUser; vendeur: { id: string; statut: string; nomBoutique: string | null }; error?: never }
   | { error: NextResponse; user?: never; vendeur?: never }
 > {
-  const session = await auth()
+  const [session, { t }] = await Promise.all([auth(), getI18n()])
   if (!session?.user) {
-    return { error: NextResponse.json({ error: 'Non authentifié' }, { status: 401 }) }
+    return { error: NextResponse.json({ error: t.api.unauthenticated }, { status: 401 }) }
   }
   if (session.user.role !== 'VENDEUR') {
-    return { error: NextResponse.json({ error: 'Accès refusé' }, { status: 403 }) }
+    return { error: NextResponse.json({ error: t.api.forbidden }, { status: 403 }) }
   }
 
   // Vérification du statut en DB (le middleware ne peut pas accéder à Prisma)
@@ -155,10 +157,10 @@ export async function requireVendeur(): Promise<
   })
 
   if (!vendeur) {
-    return { error: NextResponse.json({ error: 'Profil vendeur introuvable' }, { status: 403 }) }
+    return { error: NextResponse.json({ error: t.auth.api.sellerProfileNotFound }, { status: 403 }) }
   }
   if (vendeur.statut !== 'APPROUVE') {
-    return { error: NextResponse.json({ error: 'Compte vendeur non approuvé' }, { status: 403 }) }
+    return { error: NextResponse.json({ error: t.auth.api.sellerNotApproved }, { status: 403 }) }
   }
 
   return { user: session.user as AuthUser, vendeur }
@@ -170,9 +172,9 @@ export async function requireVendeur(): Promise<
 export async function requireAuth(): Promise<
   { user: AuthUser; error?: never } | { error: NextResponse; user?: never }
 > {
-  const session = await auth()
+  const [session, { t }] = await Promise.all([auth(), getI18n()])
   if (!session?.user) {
-    return { error: NextResponse.json({ error: 'Non authentifié' }, { status: 401 }) }
+    return { error: NextResponse.json({ error: t.api.unauthenticated }, { status: 401 }) }
   }
   return { user: session.user as AuthUser }
 }

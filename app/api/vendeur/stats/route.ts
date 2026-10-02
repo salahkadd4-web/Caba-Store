@@ -2,12 +2,14 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { getSellerBillingBreakdown } from '@/lib/seller-billing'
+import { getI18n } from '@/lib/i18n/server'
 
 // GET /api/vendeur/stats
 export async function GET() {
+  const { t } = await getI18n()
   const session = await auth()
   if (!session?.user || session.user.role !== 'VENDEUR') {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
   }
 
   const vendeur = await prisma.vendeurProfile.findUnique({
@@ -15,7 +17,7 @@ export async function GET() {
     include: { abonnement: true },
   })
   if (!vendeur || vendeur.statut !== 'APPROUVE') {
-    return NextResponse.json({ error: 'Compte non approuvé' }, { status: 403 })
+    return NextResponse.json({ error: t.msg.accountNotApproved }, { status: 403 })
   }
 
   const vid = vendeur.id

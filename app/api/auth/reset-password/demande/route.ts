@@ -4,8 +4,10 @@ import { sendResetEmail } from '@/lib/mail'
 import { sendOTP } from '@/lib/twilio'
 import { rateLimit, rateLimits, sanitize } from '@/lib/security'
 import crypto from 'crypto'
+import { getI18n } from '@/lib/i18n/server'
 
 export async function POST(req: NextRequest) {
+  const { t, locale } = await getI18n()
   // ── Rate limiting strict — 3 tentatives / heure ───────
   const limited = await rateLimit(req, rateLimits.passwordReset)
   if (limited) return limited
@@ -15,7 +17,7 @@ export async function POST(req: NextRequest) {
     const identifiant = sanitize(body.identifiant).toLowerCase()
 
     if (!identifiant) {
-      return NextResponse.json({ error: 'Email ou téléphone requis' }, { status: 400 })
+      return NextResponse.json({ error: t.auth.api.emailOrPhoneRequiredShort }, { status: 400 })
     }
 
     const user = await prisma.user.findFirst({
@@ -24,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     // Réponse identique que l'utilisateur existe ou non (anti-énumération)
     if (!user) {
-      return NextResponse.json({ message: 'Code envoyé si le compte existe' })
+      return NextResponse.json({ message: t.auth.api.codeSentIfExists })
     }
 
     // Invalider les anciens tokens
@@ -45,7 +47,7 @@ export async function POST(req: NextRequest) {
       })
 
       // Envoie le code 6 chiffres, PAS le token hex
-      await sendResetEmail(user.email, code6)
+      await sendResetEmail(user.email, code6, locale)
 
     } else if (user.telephone && identifiant === user.telephone) {
       // Pour le téléphone, Twilio génère son propre code — on crée quand même
@@ -57,12 +59,12 @@ export async function POST(req: NextRequest) {
         data: { token, code: '', userId: user.id, expiresAt },
       })
 
-      await sendOTP(user.telephone)
+      await sendOTP(user.telephone, locale)
     }
 
-    return NextResponse.json({ message: 'Code envoyé si le compte existe' })
+    return NextResponse.json({ message: t.auth.api.codeSentIfExists })
   } catch (error) {
     console.error('Erreur reset password:', error)
-    return NextResponse.json({ message: 'Code envoyé si le compte existe' })
+    return NextResponse.json({ message: t.auth.api.codeSentIfExists })
   }
 }

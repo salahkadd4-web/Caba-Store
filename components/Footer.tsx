@@ -2,36 +2,39 @@ import Link from 'next/link'
 import { auth } from '@/auth'
 import CabaLogo from '@/components/CabaLogo'
 import { Mail, Phone, MapPin, ShieldCheck, Truck, RotateCcw } from 'lucide-react'
-
-const navLinks = [
-  { href: '/produits',   label: 'Produits' },
-  { href: '/categories', label: 'Catégories' },
-  { href: '/recherche',  label: 'Recherche' },
-]
-
-const accountLinks = [
-  { href: '/connexion',   label: 'Connexion' },
-  { href: '/inscription', label: 'Inscription' },
-]
-
-const supportLinks = [
-  { href: '/mes-retours',   label: 'Retours' },
-  { href: '/mes-commandes', label: 'Mes commandes' },
-  { href: '/favoris',       label: 'Mes favoris' },
-]
+import { getI18n } from '@/lib/i18n/server'
+import type { Dictionary } from '@/lib/i18n'
 
 export default async function Footer() {
-  const session = await auth()
+  const [session, { t }] = await Promise.all([auth(), getI18n()])
+  const f = t.layout.footer
+
+  const navLinks = [
+    { href: '/produits',   label: t.layout.nav.products },
+    { href: '/categories', label: t.layout.nav.categories },
+    { href: '/recherche',  label: t.layout.nav.search },
+  ]
+
+  const accountLinks = [
+    { href: '/connexion',   label: f.login },
+    { href: '/inscription', label: f.register },
+  ]
+
+  const supportLinks = [
+    { href: '/mes-retours',   label: f.returns },
+    { href: '/mes-commandes', label: f.myOrders },
+    { href: '/favoris',       label: f.myFavorites },
+  ]
 
   return (
     <footer className="bg-stone-900 dark:bg-black text-stone-300 border-t border-stone-800">
       {/* ── Bandeau garanties ── */}
       <div className="bg-stone-950 border-b border-stone-800">
-        <div className="max-w-7xl mx-auto px-6 py-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center sm:text-left">
+        <div className="max-w-7xl mx-auto px-6 py-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center sm:text-start">
           {[
-            { Icon: Truck,       title: 'Livraison 48h',    desc: 'Partout en Algérie' },
-            { Icon: ShieldCheck, title: 'Paiement sécurisé', desc: 'Payez à la livraison' },
-            { Icon: RotateCcw,   title: 'Retours gratuits',  desc: '14 jours pour changer d’avis' },
+            { Icon: Truck,       title: f.delivery48,     desc: f.deliveryDesc },
+            { Icon: ShieldCheck, title: f.securePayment,  desc: f.securePaymentDesc },
+            { Icon: RotateCcw,   title: f.freeReturns,    desc: f.freeReturnsDesc },
           ].map(({ Icon, title, desc }) => (
             <div key={title} className="flex items-center gap-3 justify-center sm:justify-start">
               <div className="w-9 h-9 rounded-full bg-orange-950/40 flex items-center justify-center shrink-0">
@@ -58,29 +61,29 @@ export default async function Footer() {
             </span>
           </Link>
           <p className="text-sm text-stone-400 leading-relaxed">
-            Vos produits préférés, livrés rapidement partout en Algérie.
+            {f.tagline}
           </p>
         </div>
 
         {/* Navigation */}
-        <FooterColumn title="Navigation" links={navLinks} />
+        <FooterColumn title={f.navigation} links={navLinks} />
 
         {/* Support */}
-        <FooterColumn title="Support" links={supportLinks} />
+        <FooterColumn title={f.support} links={supportLinks} />
 
         {/* Compte ou contact */}
         {session?.user ? (
-          <FooterContact />
+          <FooterContact f={f} />
         ) : (
-          <FooterColumn title="Mon compte" links={accountLinks} />
+          <FooterColumn title={f.myAccount} links={accountLinks} />
         )}
       </div>
 
       {/* ── Bas de page ── */}
       <div className="border-t border-stone-800">
         <div className="max-w-7xl mx-auto px-6 py-5 flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-stone-500">
-          <p>© {new Date().getFullYear()} CabaStore. Tous droits réservés.</p>
-          <p>Fait avec soin en Algérie.</p>
+          <p>© {new Date().getFullYear()} {f.rights}</p>
+          <p>{f.madeIn}</p>
         </div>
       </div>
     </footer>
@@ -107,10 +110,10 @@ function FooterColumn({ title, links }: { title: string; links: { href: string; 
   )
 }
 
-function FooterContact() {
+function FooterContact({ f }: { f: Dictionary['layout']['footer'] }) {
   return (
     <div>
-      <h4 className="text-xs font-semibold uppercase tracking-wider text-stone-200 mb-4">Contact</h4>
+      <h4 className="text-xs font-semibold uppercase tracking-wider text-stone-200 mb-4">{f.contact}</h4>
       <ul className="space-y-2.5 text-sm text-stone-400">
         <li className="flex items-center gap-2">
           <Mail className="w-4 h-4 text-orange-400 shrink-0" />
@@ -118,11 +121,11 @@ function FooterContact() {
         </li>
         <li className="flex items-center gap-2">
           <Phone className="w-4 h-4 text-orange-400 shrink-0" />
-          <span>+213 6 71 86 07 85</span>
+          <span dir="ltr">+213 6 71 86 07 85</span>
         </li>
         <li className="flex items-center gap-2">
           <MapPin className="w-4 h-4 text-orange-400 shrink-0" />
-          <span>Algérie</span>
+          <span>{f.algeria}</span>
         </li>
       </ul>
     </div>

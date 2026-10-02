@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { getI18n } from '@/lib/i18n/server'
 import {
   buildSellerInvoiceRecord,
   createSellerInvoiceNote,
@@ -19,9 +20,10 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { t } = await getI18n()
   const session = await auth()
   if (!session?.user || session.user.role !== 'ADMIN')
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
 
   const { id } = await params
   const abonnement = await prisma.abonnement.findUnique({
@@ -57,9 +59,10 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { t, fmt } = await getI18n()
   const session = await auth()
   if (!session?.user || session.user.role !== 'ADMIN')
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
 
   const { id } = await params
   const body = await req.json()
@@ -69,7 +72,7 @@ export async function POST(
 
   const abonnement = await prisma.abonnement.findUnique({ where: { vendeurId: id } })
   if (!abonnement)
-    return NextResponse.json({ error: 'Abonnement introuvable' }, { status: 404 })
+    return NextResponse.json({ error: t.msg.subscriptionNotFound }, { status: 404 })
 
   // Calculer nouvelle dateFin
   const base = abonnement.statut === 'EXPIRE' ? new Date() : new Date(abonnement.dateFin)
@@ -153,7 +156,7 @@ export async function POST(
   })
 
   return NextResponse.json({
-    message: `Abonnement ${niveau} active jusqu'au ${dateFin.toLocaleDateString('fr-DZ')}`,
+    message: t.msg.subscriptionActiveUntil(niveau, dateFin.toLocaleDateString(fmt.intl)),
     billing: {
       ...billing,
       subscriptionAmount,
@@ -168,9 +171,10 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { t } = await getI18n()
   const session = await auth()
   if (!session?.user || session.user.role !== 'ADMIN')
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
 
   const { id } = await params
   const { niveau } = await req.json()
@@ -181,5 +185,5 @@ export async function PATCH(
     prisma.vendeurProfile.update({ where: { id }, data: { prioriteAffichage: priorite } }),
   ])
 
-  return NextResponse.json({ message: 'Niveau mis à jour' })
+  return NextResponse.json({ message: t.msg.levelUpdated })
 }

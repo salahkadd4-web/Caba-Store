@@ -6,8 +6,14 @@ import Image from 'next/image'
 import { prisma } from '@/lib/prisma'
 import { Tag } from 'lucide-react'
 import ProductCard from '@/components/client/ProductCard'
+import { VENDEUR_SUSPENDU_PRIORITE } from '@/lib/constants'
+import { getI18n } from '@/lib/i18n/server'
+import { rankProducts, VENDEUR_RANK_SELECT } from '@/lib/product-ranking'
+import { getViewerWilaya } from '@/lib/viewer'
 
 export default async function CategoriesPage() {
+  const [{ t }, viewerWilaya] = await Promise.all([getI18n(), getViewerWilaya()])
+  const c = t.catalog.categories
   const categories = await prisma.category.findMany({
     where: { products: { some: { actif: true } } },
     orderBy: { nom: 'asc' },
@@ -17,11 +23,12 @@ export default async function CategoriesPage() {
           actif: true,
           OR: [
             { vendeurId: null },
-            { vendeur: { prioriteAffichage: { lt: 99 } } },
+            { vendeur: { prioriteAffichage: { lt: VENDEUR_SUSPENDU_PRIORITE } } },
           ],
         },
         orderBy: [{ createdAt: 'desc' }],
-        take: 10,
+        // On en prend plus que les 10 affichés pour que le classement ait du choix
+        take: 30,
         select: {
           id: true,
           nom: true,
@@ -29,7 +36,8 @@ export default async function CategoriesPage() {
           prix: true,
           stock: true,
           prixVariables: true,
-          vendeur: { select: { prioriteAffichage: true } },
+          createdAt: true,
+          vendeur: VENDEUR_RANK_SELECT,
           category: { select: { nom: true } },
           variants: {
             select: { id: true, couleur: true, nom: true },
@@ -44,10 +52,10 @@ export default async function CategoriesPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-12 pt-4">
       <h1 className="text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100 mb-2">
-        Catégories
+        {c.title}
       </h1>
       <p className="text-stone-500 dark:text-stone-400 mb-8">
-        Parcourez nos catégories de produits
+        {c.subtitle}
       </p>
 
       {categories.length === 0 ? (
@@ -55,17 +63,13 @@ export default async function CategoriesPage() {
           <div className="w-20 h-20 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-center mb-4">
             <Tag className="w-10 h-10 text-stone-400 dark:text-stone-500" />
           </div>
-          <p className="text-lg text-stone-500 dark:text-stone-400">Aucune catégorie disponible pour le moment.</p>
+          <p className="text-lg text-stone-500 dark:text-stone-400">{c.empty}</p>
         </div>
       ) : (
         <div className="space-y-14">
           {categories.map((cat) => {
-            // Tri priorité : null (admin) → 0, vendeurs → leur niveau
-            const produitsTries = [...cat.products].sort(
-              (a, b) =>
-                (a.vendeur?.prioriteAffichage ?? 0) -
-                (b.vendeur?.prioriteAffichage ?? 0)
-            )
+            // Priorité d'abonnement → wilaya du visiteur → date
+            const produitsTries = rankProducts(cat.products, viewerWilaya).slice(0, 10)
 
             return (
               <div key={cat.id}>
@@ -89,14 +93,14 @@ export default async function CategoriesPage() {
                       {cat.nom}
                     </h2>
                     <span className="text-xs text-stone-400 dark:text-stone-500">
-                      {cat._count.products} produit{cat._count.products > 1 ? 's' : ''}
+                      {c.productsCount(cat._count.products)}
                     </span>
                   </div>
                   <Link
                     href={`/categories/${cat.id}`}
                     className="text-xs uppercase tracking-[0.15em] text-orange-700 dark:text-orange-500 hover:text-orange-800 dark:hover:text-orange-400 transition-colors"
                   >
-                    Voir tout →
+                    {c.seeAll}
                   </Link>
                 </div>
 

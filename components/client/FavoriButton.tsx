@@ -5,11 +5,13 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Heart } from 'lucide-react'
 import { useEtatProduit } from '@/components/client/EtatProduitsProvider'
+import { useI18n } from '@/components/I18nProvider'
 
 export default function FavoriButton({ produitId }: { produitId: string }) {
   const { data: session } = useSession()
   const router    = useRouter()
   const { etat, setEtat } = useEtatProduit(produitId)
+  const { t } = useI18n()
   const [loading, setLoading] = useState(false)
 
   const isFavori = !!etat?.isFavori
@@ -47,8 +49,8 @@ export default function FavoriButton({ produitId }: { produitId: string }) {
     >
       <span className="flex items-center justify-center gap-2">
         {isFavori
-          ? <><Heart className="w-4 h-4 fill-red-500 text-red-500" />Retiré des favoris</>
-          : <><Heart className="w-4 h-4" />Ajouter aux favoris</>}
+          ? <><Heart className="w-4 h-4 fill-red-500 text-red-500" />{t.catalog.favorites.remove}</>
+          : <><Heart className="w-4 h-4" />{t.catalog.favorites.add}</>}
       </span>
     </button>
   )

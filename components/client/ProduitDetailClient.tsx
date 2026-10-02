@@ -13,6 +13,7 @@ import {
 import { getPrixUnitaire, parsePrixTiers } from '@/lib/prix'
 import QteInput from '@/components/client/QteInput'
 import VendeurButton from '@/components/client/VendeurButton'
+import { useI18n } from '@/components/I18nProvider'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -39,6 +40,9 @@ export default function ProduitDetailClient({
   const { data: session } = useSession()
   const router = useRouter()
   const isMobile = useIsMobile()
+  const { t, fmt } = useI18n()
+  const p  = t.product
+  const DA = fmt.currency
 
   const tiers       = useMemo(
     () => parsePrixTiers(produit.prixVariables).sort((a, b) => a.minQte - b.minQte),
@@ -46,7 +50,7 @@ export default function ProduitDetailClient({
   )
   const hasTiers    = tiers.length > 0
   const hasVariants = produit.variants.length > 0
-  const typeOpt     = produit.typeOption || 'Taille'
+  const typeOpt     = produit.typeOption || p.sizeDefault
   const hasOptions  = produit.variants.some(v => v.options.length > 0)
 
   const [imageIdx, setImageIdx] = useState(0)
@@ -132,8 +136,8 @@ export default function ProduitDetailClient({
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ produitId: produit.id, quantite: l.quantite, variantId: l.variantId, variantOptionId: l.optionId }),
         })
-        if (!res.ok) { const d = await res.json(); errs.push(`${l.variantNom}${l.optionValeur ? ` / ${l.optionValeur}` : ''} : ${d.error ?? 'Erreur'}`) }
-      } catch { errs.push(`${l.variantNom} : erreur réseau`) }
+        if (!res.ok) { const d = await res.json(); errs.push(`${l.variantNom}${l.optionValeur ? ` / ${l.optionValeur}` : ''} : ${d.error ?? p.error}`) }
+      } catch { errs.push(`${l.variantNom} : ${p.networkError}`) }
     }
     setSending(false)
     if (errs.length) { setErrors(errs); return }
@@ -170,7 +174,7 @@ export default function ProduitDetailClient({
             : <Package className="w-20 h-20 text-stone-300 dark:text-stone-600 absolute inset-0 m-auto" />
           }
           {previewVariant && (
-            <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/65 text-white text-xs px-2.5 py-1.5 rounded-full backdrop-blur-sm">
+            <div className="absolute top-3 start-3 flex items-center gap-1.5 bg-black/65 text-white text-xs px-2.5 py-1.5 rounded-full backdrop-blur-sm">
               {previewVariant.couleur && <span className="w-3 h-3 rounded-full border border-white/40 shrink-0" style={{ backgroundColor: previewVariant.couleur }} />}
               <span>{previewVariant.nom}</span>
             </div>
@@ -193,12 +197,12 @@ export default function ProduitDetailClient({
         <div className="mb-4">
           <div className="flex items-baseline gap-3 flex-wrap">
             <span className={`text-2xl font-bold ${prixReduit && totalQte > 0 ? 'text-green-600 dark:text-green-400' : 'text-orange-700 dark:text-orange-500'}`}>
-              {prixUnit.toFixed(2)} DA
-              {totalQte > 1 && <span className="text-sm font-normal text-stone-400 ml-1">/u.</span>}
+              {prixUnit.toFixed(2)} {DA}
+              {totalQte > 1 && <span className="text-sm font-normal text-stone-400 ms-1">{p.perUnit}</span>}
             </span>
             {prixReduit && totalQte > 0 && (
               <>
-                <span className="text-base text-stone-400 line-through">{produit.prix.toFixed(2)} DA</span>
+                <span className="text-base text-stone-400 line-through">{produit.prix.toFixed(2)} {DA}</span>
                 <span className="text-xs bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 font-semibold px-2 py-0.5 rounded-full">
                   -{Math.round((1 - prixUnit / produit.prix) * 100)}%
                 </span>
@@ -208,7 +212,7 @@ export default function ProduitDetailClient({
           {prochainPalier && totalQte > 0 && (
             <p className="mt-1 text-xs text-orange-700 dark:text-orange-500 flex items-center gap-1">
               <TrendingDown className="w-3 h-3 shrink-0" />
-              Ajoutez <strong>{prochainPalier.minQte - totalQte}</strong> de plus &rarr; {prochainPalier.prix.toFixed(2)} DA/u.
+              {p.addMore} <strong>{prochainPalier.minQte - totalQte}</strong> {p.addMoreSuffix} {p.arrow} {prochainPalier.prix.toFixed(2)} {DA}{p.perUnit}
             </p>
           )}
         </div>
@@ -222,7 +226,7 @@ export default function ProduitDetailClient({
         {hasTiers && (
           <div className="bg-orange-50 dark:bg-orange-950/40 border border-orange-100 dark:border-orange-900 rounded-xl p-3 mb-4">
             <p className="text-[10px] font-bold text-orange-700 dark:text-orange-500 uppercase tracking-widest mb-2 flex items-center gap-1">
-              <TrendingDown className="w-3 h-3" /> Prix dégressifs
+              <TrendingDown className="w-3 h-3" /> {p.degressivePrices}
             </p>
             <div className="flex gap-2 overflow-x-auto pb-1">
               {tiers.map((tier, i) => {
@@ -230,8 +234,8 @@ export default function ProduitDetailClient({
                 const isPast   = tier.maxQte !== null && totalQte > tier.maxQte
                 return (
                   <div key={i} className={`flex flex-col items-center px-3 py-1.5 rounded-lg text-xs shrink-0 transition-all ${isActive ? 'bg-orange-700 text-white shadow-md scale-105' : isPast ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 opacity-60' : 'bg-white dark:bg-stone-800 text-stone-500 dark:text-stone-400 border border-stone-200 dark:border-stone-700'}`}>
-                    <span className="font-bold">{tier.prix.toFixed(2)} DA</span>
-                    <span className="opacity-75">{tier.maxQte ? `${tier.minQte}-${tier.maxQte}u.` : `>=${tier.minQte}u.`}</span>
+                    <span className="font-bold">{tier.prix.toFixed(2)} {DA}</span>
+                    <span className="opacity-75">{tier.maxQte ? `${tier.minQte}-${tier.maxQte} ${p.unit}` : `>=${tier.minQte} ${p.unit}`}</span>
                     {isActive && <Check className="w-3 h-3 mt-0.5" />}
                   </div>
                 )
@@ -245,12 +249,12 @@ export default function ProduitDetailClient({
           <div className="space-y-4 mb-4">
             <div className={`flex items-center gap-2 text-sm font-medium ${produit.stock > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
               {produit.stock > 0 ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
-              {produit.stock > 0 ? `En stock (${produit.stock} disponibles)` : 'Rupture de stock'}
+              {produit.stock > 0 ? p.inStockCount(produit.stock) : t.common.outOfStock}
             </div>
             {produit.stock > 0 && (
               <div className="flex items-center gap-3">
                 <QteInput value={qteSimple} stockMax={produit.stock} onChange={setQteSimple} />
-                <span className="text-xs text-stone-400">{produit.stock} dispo.</span>
+                <span className="text-xs text-stone-400">{p.available(produit.stock)}</span>
               </div>
             )}
           </div>
@@ -262,8 +266,8 @@ export default function ProduitDetailClient({
             {/* Swatches couleur */}
             <div className="mb-4">
               <p className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-2">
-                {produit.variants.some(v => v.couleur) ? 'Couleur' : 'Variante'}
-                {activeVariant && <span className="ml-2 font-normal text-stone-400 text-xs">— {activeVariant.nom}</span>}
+                {produit.variants.some(v => v.couleur) ? p.color : p.variant}
+                {activeVariant && <span className="ms-2 font-normal text-stone-400 text-xs">— {activeVariant.nom}</span>}
               </p>
               <div className="flex flex-wrap gap-2">
                 {produit.variants.map(variant => {
@@ -282,8 +286,8 @@ export default function ProduitDetailClient({
                     >
                       {variant.couleur && <span className="w-4 h-4 rounded-full border border-stone-300 dark:border-stone-500 shrink-0 shadow-sm" style={{ backgroundColor: variant.couleur }} />}
                       <span className="text-stone-800 dark:text-stone-200">{variant.nom}</span>
-                      {qteLigne > 0 && <span className="ml-1 bg-orange-700 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shrink-0">{qteLigne}</span>}
-                      {outOfStock && <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center shadow"><X className="w-2.5 h-2.5" /></span>}
+                      {qteLigne > 0 && <span className="ms-1 bg-orange-700 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shrink-0">{qteLigne}</span>}
+                      {outOfStock && <span className="absolute -top-1.5 -end-1.5 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center shadow"><X className="w-2.5 h-2.5" /></span>}
                     </button>
                   )
                 })}
@@ -297,7 +301,7 @@ export default function ProduitDetailClient({
                   <div>
                     <p className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-2">
                       {typeOpt}
-                      <span className="ml-2 font-normal text-stone-400 text-xs">— touchez pour ajouter</span>
+                      <span className="ms-2 font-normal text-stone-400 text-xs">{p.tapToAdd}</span>
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {activeVariant.options.map(option => {
@@ -317,23 +321,23 @@ export default function ProduitDetailClient({
                               {option.valeur}
                             </button>
                             {qt > 0 && (
-                              <div className="pr-1.5">
+                              <div className="pe-1.5">
                                 <QteInput size="sm" value={qt} stockMax={option.stock} onChange={v => setLigneQte(key, v)} onZero={() => removeLigne(key)} />
                               </div>
                             )}
-                            {maxReached && <span className="absolute -top-1.5 -right-1.5 bg-orange-500 text-white text-[9px] font-bold px-1 py-0.5 rounded-full shadow leading-none">MAX</span>}
+                            {maxReached && <span className="absolute -top-1.5 -end-1.5 bg-orange-500 text-white text-[9px] font-bold px-1 py-0.5 rounded-full shadow leading-none">MAX</span>}
                           </div>
                         )
                       })}
                     </div>
                     <p className="text-[11px] text-stone-400 mt-2 flex items-center gap-1">
                       <Info className="w-3 h-3 shrink-0" />
-                      Touchez une taille pour l&apos;ajouter — utilisez +/- pour ajuster
+                      {p.tapHint}
                     </p>
                   </div>
                 ) : (
                   <div className="flex items-center gap-3">
-                    <p className="text-sm font-semibold text-stone-700 dark:text-stone-300">Quantité</p>
+                    <p className="text-sm font-semibold text-stone-700 dark:text-stone-300">{p.quantity}</p>
                     <QteInput
                       value={qteOf(activeVariant.id) || 1}
                       stockMax={activeVariant.stock}
@@ -346,7 +350,7 @@ export default function ProduitDetailClient({
                       }}
                       onZero={() => removeLigne(activeVariant.id)}
                     />
-                    <span className="text-xs text-stone-400">{activeVariant.stock} dispo.</span>
+                    <span className="text-xs text-stone-400">{p.available(activeVariant.stock)}</span>
                   </div>
                 )}
               </div>
@@ -363,7 +367,7 @@ export default function ProduitDetailClient({
 
         {/* ── BARRE STICKY MOBILE ── */}
         <div
-          className="fixed bottom-16 left-0 right-0 z-40 bg-white dark:bg-stone-950 border-t border-stone-200 dark:border-stone-800"
+          className="fixed bottom-16 start-0 end-0 z-40 bg-white dark:bg-stone-950 border-t border-stone-200 dark:border-stone-800"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
           {/* Récap collapsible */}
@@ -374,12 +378,12 @@ export default function ProduitDetailClient({
                 className="w-full flex items-center justify-between px-4 py-2.5 bg-stone-50 dark:bg-stone-900 border-b border-stone-100 dark:border-stone-800"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-stone-600 dark:text-stone-400 uppercase tracking-widest">Ma sélection</span>
+                  <span className="text-xs font-bold text-stone-600 dark:text-stone-400 uppercase tracking-widest">{p.mySelection}</span>
                   <span className="bg-orange-700 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">{totalQte}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`text-sm font-bold ${prixReduit ? 'text-green-600 dark:text-green-400' : 'text-orange-700 dark:text-orange-500'}`}>
-                    {totalPrix.toFixed(2)} DA
+                    {totalPrix.toFixed(2)} {DA}
                   </span>
                   {recapOpen ? <ChevronDown className="w-4 h-4 text-stone-400" /> : <ChevronUp className="w-4 h-4 text-stone-400" />}
                 </div>
@@ -398,21 +402,21 @@ export default function ProduitDetailClient({
                           <span className="text-xs font-medium text-stone-800 dark:text-stone-200 truncate">{ligne.variantNom}</span>
                           {ligne.optionValeur && (
                             <>
-                              <ChevronRight className="w-3 h-3 text-stone-400 shrink-0" />
+                              <ChevronRight className="w-3 h-3 text-stone-400 shrink-0 rtl-flip" />
                               <span className="text-xs text-stone-500 dark:text-stone-400 shrink-0">{typeOpt} {ligne.optionValeur}</span>
                             </>
                           )}
                         </div>
                       </div>
                       <QteInput size="sm" value={ligne.quantite} stockMax={ligne.stockMax} onChange={v => setLigneQte(ligne.key, v)} onZero={() => removeLigne(ligne.key)} />
-                      <span className="text-xs font-semibold text-stone-700 dark:text-stone-300 w-16 text-right shrink-0">{(prixUnit * ligne.quantite).toFixed(2)} DA</span>
+                      <span className="text-xs font-semibold text-stone-700 dark:text-stone-300 w-16 text-end shrink-0">{(prixUnit * ligne.quantite).toFixed(2)} {DA}</span>
                       <button onClick={() => removeLigne(ligne.key)} className="text-red-400 hover:text-red-600 p-1 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   ))}
                   {hasTiers && prixReduit && (
                     <div className="bg-green-50 dark:bg-green-950/40 px-4 py-2 flex items-center justify-between">
-                      <span className="text-xs text-green-700 dark:text-green-400 flex items-center gap-1"><TrendingDown className="w-3 h-3" /> Prix dégressif — {prixUnit.toFixed(2)} DA/u.</span>
-                      <span className="text-xs text-green-600 dark:text-green-400 font-semibold">Éco : {((produit.prix - prixUnit) * totalQte).toFixed(2)} DA</span>
+                      <span className="text-xs text-green-700 dark:text-green-400 flex items-center gap-1"><TrendingDown className="w-3 h-3" /> {p.degressiveShort} {prixUnit.toFixed(2)} {DA}{p.perUnit}</span>
+                      <span className="text-xs text-green-600 dark:text-green-400 font-semibold">{p.savingsShort} {((produit.prix - prixUnit) * totalQte).toFixed(2)} {DA}</span>
                     </div>
                   )}
                 </div>
@@ -426,17 +430,17 @@ export default function ProduitDetailClient({
               <button onClick={handleAjouter} disabled={sending || lignes.length === 0}
                 className={`w-full font-semibold py-4 rounded-2xl flex items-center justify-center gap-2.5 transition-all text-base active:scale-[0.98] ${sent ? 'bg-green-500 text-white shadow-lg' : lignes.length === 0 ? 'bg-stone-100 dark:bg-stone-800 text-stone-400 cursor-default' : sending ? 'bg-orange-700 text-white opacity-70' : 'bg-orange-700 hover:bg-orange-800 text-white shadow-lg shadow-orange-700/20'}`}
               >
-                {sent ? <><Check className="w-5 h-5" /> Ajouté au panier !</>
-                  : sending ? <><Loader2 className="w-5 h-5 animate-spin" /> Ajout en cours…</>
-                  : lignes.length === 0 ? <><ShoppingBag className="w-5 h-5" /> Sélectionnez des articles</>
-                  : <><ShoppingCart className="w-5 h-5" /><span>Ajouter {totalQte} article{totalQte > 1 ? 's' : ''} au panier</span><span className="ml-auto text-sm font-bold opacity-90">{totalPrix.toFixed(2)} DA</span></>
+                {sent ? <><Check className="w-5 h-5" /> {p.addedToCart}</>
+                  : sending ? <><Loader2 className="w-5 h-5 animate-spin" /> {p.adding}</>
+                  : lignes.length === 0 ? <><ShoppingBag className="w-5 h-5" /> {p.selectItems}</>
+                  : <><ShoppingCart className="w-5 h-5" /><span>{p.addNToCart(totalQte)}</span><span className="ms-auto text-sm font-bold opacity-90">{totalPrix.toFixed(2)} {DA}</span></>
                 }
               </button>
             ) : (
               <button onClick={handleAddSimple} disabled={loadingSimple || produit.stock === 0}
                 className={`w-full font-semibold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all text-base ${successSimple ? 'bg-green-500 text-white' : 'bg-orange-700 hover:bg-orange-800 text-white disabled:opacity-50'}`}
               >
-                {successSimple ? <><Check className="w-5 h-5" /> Ajouté !</> : loadingSimple ? <Loader2 className="w-5 h-5 animate-spin" /> : <><ShoppingCart className="w-5 h-5" /> Ajouter au panier</>}
+                {successSimple ? <><Check className="w-5 h-5" /> {p.added}</> : loadingSimple ? <Loader2 className="w-5 h-5 animate-spin" /> : <><ShoppingCart className="w-5 h-5" /> {p.addToCart}</>}
               </button>
             )}
           </div>
@@ -459,7 +463,7 @@ export default function ProduitDetailClient({
             : <Package className="w-24 h-24 text-stone-300 dark:text-stone-600" />
           }
           {previewVariant && (
-            <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/65 text-white text-xs px-2.5 py-1.5 rounded-full backdrop-blur-sm animate-fade-in">
+            <div className="absolute top-3 start-3 flex items-center gap-1.5 bg-black/65 text-white text-xs px-2.5 py-1.5 rounded-full backdrop-blur-sm animate-fade-in">
               {previewVariant.couleur && <span className="w-3 h-3 rounded-full border border-white/40 shrink-0" style={{ backgroundColor: previewVariant.couleur }} />}
               <span>{previewVariant.nom}</span>
             </div>
@@ -484,12 +488,12 @@ export default function ProduitDetailClient({
         <div>
           <div className="flex items-baseline gap-3 flex-wrap">
             <span className={`text-3xl font-bold transition-colors duration-300 ${prixReduit && totalQte > 0 ? 'text-green-600 dark:text-green-400' : 'text-orange-700 dark:text-orange-500'}`}>
-              {prixUnit.toFixed(2)} DA
-              {totalQte > 1 && <span className="text-base font-normal text-stone-400 ml-1">/u.</span>}
+              {prixUnit.toFixed(2)} {DA}
+              {totalQte > 1 && <span className="text-base font-normal text-stone-400 ms-1">{p.perUnit}</span>}
             </span>
             {prixReduit && totalQte > 0 && (
               <>
-                <span className="text-lg text-stone-400 line-through font-medium">{produit.prix.toFixed(2)} DA</span>
+                <span className="text-lg text-stone-400 line-through font-medium">{produit.prix.toFixed(2)} {DA}</span>
                 <span className="text-xs bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 font-semibold px-2 py-0.5 rounded-full">-{Math.round((1 - prixUnit / produit.prix) * 100)}%</span>
               </>
             )}
@@ -497,7 +501,7 @@ export default function ProduitDetailClient({
           {prochainPalier && totalQte > 0 && (
             <p className="mt-1.5 text-xs text-orange-700 dark:text-orange-500 flex items-center gap-1.5 animate-pulse">
               <TrendingDown className="w-3.5 h-3.5 shrink-0" />
-              Ajoutez <strong>{prochainPalier.minQte - totalQte}</strong> de plus &rarr; {prochainPalier.prix.toFixed(2)} DA/u.
+              {p.addMore} <strong>{prochainPalier.minQte - totalQte}</strong> {p.addMoreSuffix} {p.arrow} {prochainPalier.prix.toFixed(2)} {DA}{p.perUnit}
             </p>
           )}
         </div>
@@ -506,7 +510,7 @@ export default function ProduitDetailClient({
         {hasTiers && (
           <div className="bg-orange-50 dark:bg-orange-950/40 border border-orange-100 dark:border-orange-900 rounded-xl p-3">
             <p className="text-[10px] font-bold text-orange-700 dark:text-orange-500 uppercase tracking-widest mb-2 flex items-center gap-1">
-              <TrendingDown className="w-3 h-3" /> Prix dégressifs
+              <TrendingDown className="w-3 h-3" /> {p.degressivePrices}
             </p>
             <div className="flex flex-wrap gap-1.5">
               {tiers.map((tier, i) => {
@@ -514,8 +518,8 @@ export default function ProduitDetailClient({
                 const isPast   = tier.maxQte !== null && totalQte > tier.maxQte
                 return (
                   <div key={i} className={`flex flex-col items-center px-3 py-1.5 rounded-lg text-xs transition-all duration-300 ${isActive ? 'bg-orange-700 text-white shadow-md shadow-orange-700/20 scale-105' : isPast ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 opacity-60' : 'bg-white dark:bg-stone-800 text-stone-500 dark:text-stone-400 border border-stone-200 dark:border-stone-700'}`}>
-                    <span className="font-bold">{tier.prix.toFixed(2)} DA</span>
-                    <span className="opacity-75">{tier.maxQte ? `${tier.minQte}-${tier.maxQte}u.` : `>=${tier.minQte}u.`}</span>
+                    <span className="font-bold">{tier.prix.toFixed(2)} {DA}</span>
+                    <span className="opacity-75">{tier.maxQte ? `${tier.minQte}-${tier.maxQte} ${p.unit}` : `>=${tier.minQte} ${p.unit}`}</span>
                     {isActive && <Check className="w-3 h-3 mt-0.5" />}
                   </div>
                 )
@@ -529,17 +533,17 @@ export default function ProduitDetailClient({
           <div className="space-y-4">
             <div className={`flex items-center gap-2 text-sm font-medium ${produit.stock > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
               {produit.stock > 0 ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
-              {produit.stock > 0 ? `En stock (${produit.stock} disponibles)` : 'Rupture de stock'}
+              {produit.stock > 0 ? p.inStockCount(produit.stock) : t.common.outOfStock}
             </div>
             {produit.stock > 0 && (
               <div className="flex items-center gap-3">
                 <QteInput value={qteSimple} stockMax={produit.stock} onChange={setQteSimple} />
-                <span className="text-xs text-stone-400">{produit.stock} dispo.</span>
+                <span className="text-xs text-stone-400">{p.available(produit.stock)}</span>
               </div>
             )}
             <button onClick={handleAddSimple} disabled={loadingSimple || produit.stock === 0}
               className={`w-full font-semibold py-4 rounded-xl flex items-center justify-center gap-2 transition-all text-base ${successSimple ? 'bg-green-500 text-white' : 'bg-orange-700 hover:bg-orange-800 text-white disabled:opacity-50'}`}>
-              {successSimple ? <><Check className="w-5 h-5" /> Ajouté !</> : loadingSimple ? <Loader2 className="w-5 h-5 animate-spin" /> : <><ShoppingCart className="w-5 h-5" /> Ajouter au panier</>}
+              {successSimple ? <><Check className="w-5 h-5" /> {p.added}</> : loadingSimple ? <Loader2 className="w-5 h-5 animate-spin" /> : <><ShoppingCart className="w-5 h-5" /> {p.addToCart}</>}
             </button>
             {/* Bouton vendeur desktop (sans variantes) */}
             <VendeurButton produitId={produit.id} />
@@ -552,8 +556,8 @@ export default function ProduitDetailClient({
             {/* Swatches */}
             <div>
               <p className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-3">
-                {produit.variants.some(v => v.couleur) ? 'Couleur' : 'Variante'}
-                {activeVariant && <span className="ml-2 font-normal text-stone-400 text-xs">— {activeVariant.nom}</span>}
+                {produit.variants.some(v => v.couleur) ? p.color : p.variant}
+                {activeVariant && <span className="ms-2 font-normal text-stone-400 text-xs">— {activeVariant.nom}</span>}
               </p>
               <div className="flex flex-wrap gap-2">
                 {produit.variants.map(variant => {
@@ -566,13 +570,13 @@ export default function ProduitDetailClient({
                       onMouseEnter={() => setHoveredVariant(variant.id)}
                       onMouseLeave={() => setHoveredVariant(null)}
                       disabled={outOfStock}
-                      title={outOfStock ? 'Rupture de stock' : variant.nom}
+                      title={outOfStock ? t.common.outOfStock : variant.nom}
                       className={`relative flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm font-medium transition-all ${isActive ? 'border-orange-700 dark:border-orange-500 bg-orange-50 dark:bg-orange-950/60 shadow-sm' : outOfStock ? 'border-stone-200 dark:border-stone-700 opacity-30 cursor-not-allowed' : 'border-stone-200 dark:border-stone-700 hover:border-stone-400 dark:hover:border-stone-500'}`}
                     >
                       {variant.couleur && <span className="w-5 h-5 rounded-full border border-stone-300 dark:border-stone-500 shrink-0 shadow-sm" style={{ backgroundColor: variant.couleur }} />}
                       <span className="text-stone-800 dark:text-stone-200">{variant.nom}</span>
-                      {qteLigne > 0 && <span className="ml-1 bg-orange-700 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shrink-0 shadow">{qteLigne}</span>}
-                      {outOfStock && <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center shadow"><X className="w-2.5 h-2.5" /></span>}
+                      {qteLigne > 0 && <span className="ms-1 bg-orange-700 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shrink-0 shadow">{qteLigne}</span>}
+                      {outOfStock && <span className="absolute -top-1.5 -end-1.5 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center shadow"><X className="w-2.5 h-2.5" /></span>}
                     </button>
                   )
                 })}
@@ -586,7 +590,7 @@ export default function ProduitDetailClient({
                   <div>
                     <p className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-3">
                       {typeOpt}
-                      <span className="ml-2 font-normal text-stone-400 text-xs">— cliquez pour ajouter</span>
+                      <span className="ms-2 font-normal text-stone-400 text-xs">{p.clickToAdd}</span>
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {activeVariant.options.map(option => {
@@ -606,23 +610,23 @@ export default function ProduitDetailClient({
                               {option.valeur}
                             </button>
                             {qt > 0 && (
-                              <div className="pr-1.5">
+                              <div className="pe-1.5">
                                 <QteInput size="sm" value={qt} stockMax={option.stock} onChange={v => setLigneQte(key, v)} onZero={() => removeLigne(key)} />
                               </div>
                             )}
-                            {maxReached && <span className="absolute -top-1.5 -right-1.5 bg-orange-500 text-white text-[9px] font-bold px-1 py-0.5 rounded-full shadow leading-none">MAX</span>}
+                            {maxReached && <span className="absolute -top-1.5 -end-1.5 bg-orange-500 text-white text-[9px] font-bold px-1 py-0.5 rounded-full shadow leading-none">MAX</span>}
                           </div>
                         )
                       })}
                     </div>
                     <p className="text-[11px] text-stone-400 mt-2 flex items-center gap-1">
                       <Info className="w-3 h-3 shrink-0" />
-                      Cliquez sur une taille pour l&apos;ajouter — tapez ou utilisez +/- pour ajuster
+                      {p.clickHint}
                     </p>
                   </div>
                 ) : (
                   <div className="flex items-center gap-3">
-                    <p className="text-sm font-semibold text-stone-700 dark:text-stone-300">Quantité</p>
+                    <p className="text-sm font-semibold text-stone-700 dark:text-stone-300">{p.quantity}</p>
                     <QteInput
                       value={qteOf(activeVariant.id) || 0}
                       stockMax={activeVariant.stock}
@@ -635,7 +639,7 @@ export default function ProduitDetailClient({
                       }}
                       onZero={() => removeLigne(activeVariant.id)}
                     />
-                    <span className="text-xs text-stone-400">{activeVariant.stock} dispo.</span>
+                    <span className="text-xs text-stone-400">{p.available(activeVariant.stock)}</span>
                   </div>
                 )}
               </div>
@@ -645,10 +649,10 @@ export default function ProduitDetailClient({
             {lignes.length > 0 && (
               <div className="border border-stone-200 dark:border-stone-700 rounded-2xl overflow-hidden">
                 <div className="bg-stone-50 dark:bg-stone-800/60 px-4 py-2.5 flex items-center justify-between">
-                  <p className="text-xs font-bold text-stone-600 dark:text-stone-400 uppercase tracking-widest">Ma sélection</p>
+                  <p className="text-xs font-bold text-stone-600 dark:text-stone-400 uppercase tracking-widest">{p.mySelection}</p>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-stone-500 dark:text-stone-400">{totalQte} article{totalQte > 1 ? 's' : ''}</span>
-                    {totalQte > 0 && <span className={`text-sm font-bold ${prixReduit ? 'text-green-600 dark:text-green-400' : 'text-orange-700 dark:text-orange-500'}`}>= {totalPrix.toFixed(2)} DA</span>}
+                    <span className="text-xs text-stone-500 dark:text-stone-400">{p.itemsCount(totalQte)}</span>
+                    {totalQte > 0 && <span className={`text-sm font-bold ${prixReduit ? 'text-green-600 dark:text-green-400' : 'text-orange-700 dark:text-orange-500'}`}>= {totalPrix.toFixed(2)} {DA}</span>}
                   </div>
                 </div>
                 <div className="divide-y divide-stone-100 dark:divide-stone-800">
@@ -662,14 +666,14 @@ export default function ProduitDetailClient({
                           {ligne.couleur && <span className="w-3 h-3 rounded-full border border-stone-300 dark:border-stone-600 shrink-0" style={{ backgroundColor: ligne.couleur }} />}
                           <span className="text-sm font-medium text-stone-800 dark:text-stone-200 truncate">{ligne.variantNom}</span>
                           {ligne.optionValeur && (
-                            <><ChevronRight className="w-3 h-3 text-stone-400 shrink-0" /><span className="text-sm text-stone-500 dark:text-stone-400 shrink-0">{typeOpt} {ligne.optionValeur}</span></>
+                            <><ChevronRight className="w-3 h-3 text-stone-400 shrink-0 rtl-flip" /><span className="text-sm text-stone-500 dark:text-stone-400 shrink-0">{typeOpt} {ligne.optionValeur}</span></>
                           )}
                         </div>
                       </div>
                       <div className="shrink-0">
                         <QteInput value={ligne.quantite} stockMax={ligne.stockMax} onChange={v => setLigneQte(ligne.key, v)} onZero={() => removeLigne(ligne.key)} />
                       </div>
-                      <span className="text-sm font-semibold text-stone-700 dark:text-stone-300 w-20 text-right shrink-0">{(prixUnit * ligne.quantite).toFixed(2)} DA</span>
+                      <span className="text-sm font-semibold text-stone-700 dark:text-stone-300 w-20 text-end shrink-0">{(prixUnit * ligne.quantite).toFixed(2)} {DA}</span>
                       <button onClick={() => removeLigne(ligne.key)} className="opacity-0 group-hover:opacity-100 transition text-red-400 hover:text-red-600 p-1 shrink-0">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -678,8 +682,8 @@ export default function ProduitDetailClient({
                 </div>
                 {hasTiers && prixReduit && (
                   <div className="bg-green-50 dark:bg-green-950/40 border-t border-green-100 dark:border-green-900 px-4 py-2 flex items-center justify-between">
-                    <span className="text-xs text-green-700 dark:text-green-400 flex items-center gap-1"><TrendingDown className="w-3.5 h-3.5" /> Prix dégressif appliqué — {prixUnit.toFixed(2)} DA/u.</span>
-                    <span className="text-xs text-green-600 dark:text-green-400 font-semibold">Économie : {((produit.prix - prixUnit) * totalQte).toFixed(2)} DA</span>
+                    <span className="text-xs text-green-700 dark:text-green-400 flex items-center gap-1"><TrendingDown className="w-3.5 h-3.5" /> {p.degressiveApplied} {prixUnit.toFixed(2)} {DA}{p.perUnit}</span>
+                    <span className="text-xs text-green-600 dark:text-green-400 font-semibold">{p.savings} {((produit.prix - prixUnit) * totalQte).toFixed(2)} {DA}</span>
                   </div>
                 )}
               </div>
@@ -694,10 +698,10 @@ export default function ProduitDetailClient({
             <button onClick={handleAjouter} disabled={sending || lignes.length === 0}
               className={`w-full font-semibold py-4 rounded-xl flex items-center justify-center gap-2.5 transition-all duration-300 text-base active:scale-[0.98] ${sent ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' : lignes.length === 0 ? 'bg-stone-100 dark:bg-stone-800 text-stone-400 cursor-default' : sending ? 'bg-orange-700 text-white opacity-70 cursor-wait' : 'bg-orange-700 hover:bg-orange-800 active:bg-orange-900 text-white shadow-lg shadow-orange-700/20'}`}
             >
-              {sent ? <><Check className="w-5 h-5" /> Ajouté au panier !</>
-                : sending ? <><Loader2 className="w-5 h-5 animate-spin" /> Ajout en cours…</>
-                : lignes.length === 0 ? <><ShoppingBag className="w-5 h-5" /> Sélectionnez des articles</>
-                : <><ShoppingCart className="w-5 h-5" /><span>Ajouter {totalQte} article{totalQte > 1 ? 's' : ''} au panier</span><span className="ml-auto text-sm font-bold opacity-90">{totalPrix.toFixed(2)} DA</span></>
+              {sent ? <><Check className="w-5 h-5" /> {p.addedToCart}</>
+                : sending ? <><Loader2 className="w-5 h-5 animate-spin" /> {p.adding}</>
+                : lignes.length === 0 ? <><ShoppingBag className="w-5 h-5" /> {p.selectItems}</>
+                : <><ShoppingCart className="w-5 h-5" /><span>{p.addNToCart(totalQte)}</span><span className="ms-auto text-sm font-bold opacity-90">{totalPrix.toFixed(2)} {DA}</span></>
               }
             </button>
 

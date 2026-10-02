@@ -6,6 +6,11 @@
 // Ce module est compatible client (aucun import serveur).
 
 import type { ReturnField, ReturnFieldValidation, ReturnOption, ReturnAnswer } from '@/lib/flowmerce-types'
+import frReturns from '@/lib/i18n/fr/returns'
+
+/** Messages d'erreur (dictionnaire t.returns.validation) — français par défaut. */
+export type ValidationMessages = typeof frReturns.validation
+const DEFAULT_MESSAGES: ValidationMessages = frReturns.validation
 
 /** Valeur d'une réponse. */
 type AnswerValue = unknown
@@ -38,18 +43,18 @@ function isPresent(value: AnswerValue): boolean {
 }
 
 /** Vérifie un fichier sélectionné (avant upload) contre les règles du champ. */
-export function validateFileSelection(field: ReturnField, file: File): string | null {
+export function validateFileSelection(field: ReturnField, file: File, msgs: ValidationMessages = DEFAULT_MESSAGES): string | null {
   const rules = field.validation
 
   if (rules?.maxFileSize != null && file.size > rules.maxFileSize) {
-    return `Fichier trop volumineux (max ${formatBytes(rules.maxFileSize)})`
+    return msgs.fileTooLarge(formatBytes(rules.maxFileSize, msgs))
   }
 
   if (rules?.allowedExtensions?.length) {
     const ext      = extensionOf(file.name)
     const allowed  = rules.allowedExtensions.map(e => e.toLowerCase().replace(/^\./, ''))
     if (ext && !allowed.includes(ext)) {
-      return `Extension non autorisée (${allowed.map(a => `.${a}`).join(', ')})`
+      return msgs.extensionNotAllowed(allowed.map(a => `.${a}`).join(', '))
     }
   }
 
@@ -57,28 +62,28 @@ export function validateFileSelection(field: ReturnField, file: File): string | 
 }
 
 /** Applique les règles du JSON sur une valeur (post-upload : la valeur est une URL). */
-export function validateField(field: ReturnField, value: AnswerValue): string | null {
+export function validateField(field: ReturnField, value: AnswerValue, msgs: ValidationMessages = DEFAULT_MESSAGES): string | null {
   const rules: ReturnFieldValidation = field.validation ?? {}
   const required = rules.required ?? field.required ?? false
   // Case à cocher simple (booléenne, sans options) : "requis" veut dire cochée.
   // `false` est une valeur présente mais insuffisante pour un consentement.
   if (field.type === 'checkbox' && (field.options?.length ?? 0) === 0) {
-    return required && value !== true ? 'Ce champ est requis' : null
+    return required && value !== true ? msgs.required : null
   }
 
 
   if (!isPresent(value)) {
-    return required ? 'Ce champ est requis' : null
+    return required ? msgs.required : null
   }
 
   const values: AnswerValue[] = Array.isArray(value) ? value : [value]
 
   if (Array.isArray(value)) {
     if (rules.minItems != null && value.length < rules.minItems) {
-      return `Sélectionnez au moins ${rules.minItems} élément${rules.minItems > 1 ? 's' : ''}`
+      return msgs.minItems(rules.minItems)
     }
     if (rules.maxItems != null && value.length > rules.maxItems) {
-      return `Sélectionnez au plus ${rules.maxItems} éléments`
+      return msgs.maxItems(rules.maxItems)
     }
   }
 
@@ -87,15 +92,15 @@ export function validateField(field: ReturnField, value: AnswerValue): string | 
       const text = v.trim()
 
       if (rules.minLength != null && text.length < rules.minLength) {
-        return `Minimum ${rules.minLength} caractères`
+        return msgs.minLength(rules.minLength)
       }
       if (rules.maxLength != null && text.length > rules.maxLength) {
-        return `Maximum ${rules.maxLength} caractères`
+        return msgs.maxLength(rules.maxLength)
       }
       if (rules.regex) {
         try {
           if (!new RegExp(rules.regex).test(text)) {
-            return 'Format invalide'
+            return msgs.invalidFormat
           }
         } catch {
           // Regex invalide dans le JSON Flowmerce — on laisse passer côté client,
@@ -105,15 +110,15 @@ export function validateField(field: ReturnField, value: AnswerValue): string | 
     }
 
     if (typeof v === 'number') {
-      if (rules.min != null && v < rules.min) return `Valeur minimale : ${rules.min}`
-      if (rules.max != null && v > rules.max) return `Valeur maximale : ${rules.max}`
+      if (rules.min != null && v < rules.min) return msgs.minValue(rules.min)
+      if (rules.max != null && v > rules.max) return msgs.maxValue(rules.max)
     }
 
     if (typeof v === 'string' && rules.allowedExtensions?.length && isFileUrl(v)) {
       const ext     = extensionOf(v)
       const allowed = rules.allowedExtensions.map(e => e.toLowerCase().replace(/^\./, ''))
       if (ext && !allowed.includes(ext)) {
-        return `Extension non autorisée (${allowed.map(a => `.${a}`).join(', ')})`
+        return msgs.extensionNotAllowed(allowed.map(a => `.${a}`).join(', '))
       }
     }
   }
@@ -127,11 +132,11 @@ function isFileUrl(value: string): boolean {
 }
 
 /** Valide l'ensemble des réponses d'un formulaire. Retourne { fieldId: message }. */
-export function validateForm(formFields: ReturnField[], answers: ReturnAnswer): Record<string, string> {
+export function validateForm(formFields: ReturnField[], answers: ReturnAnswer, msgs: ValidationMessages = DEFAULT_MESSAGES): Record<string, string> {
   const errors: Record<string, string> = {}
 
   for (const field of formFields) {
-    const error = validateField(field, answers[field.id])
+    const error = validateField(field, answers[field.id], msgs)
     if (error) errors[field.id] = error
   }
 
@@ -139,10 +144,11 @@ export function validateForm(formFields: ReturnField[], answers: ReturnAnswer): 
 }
 
 /** Formate un nombre d'octets en lisible. */
-export function formatBytes(bytes: number): string {
-  if (bytes >= 1024 * 1024) return `${Math.round((bytes / (1024 * 1024)) * 10) / 10} Mo`
-  if (bytes >= 1024) return `${Math.round(bytes / 1024)} Ko`
-  return `${bytes} o`
+export function formatBytes(bytes: number, msgs: ValidationMessages = DEFAULT_MESSAGES): string {
+  const u = msgs.units
+  if (bytes >= 1024 * 1024) return `${Math.round((bytes / (1024 * 1024)) * 10) / 10} ${u.mb}`
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)} ${u.kb}`
+  return `${bytes} ${u.b}`
 }
 
 /** Construit la chaîne `accept` d'un input file à partir des règles du champ. */

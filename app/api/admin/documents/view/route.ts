@@ -1,19 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { getI18n } from '@/lib/i18n/server'
 
 // GET /api/admin/documents/view?docId=xxx
 // Récupère un document privé depuis Vercel Blob et le stream à l'admin
 // Accessible uniquement aux admins connectés
 export async function GET(req: NextRequest) {
+  const { t } = await getI18n()
   const session = await auth()
   if (!session?.user || session.user.role !== 'ADMIN') {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
   }
 
   const docId = req.nextUrl.searchParams.get('docId')
   if (!docId) {
-    return NextResponse.json({ error: 'docId requis' }, { status: 400 })
+    return NextResponse.json({ error: t.msg.docIdRequired }, { status: 400 })
   }
 
   // Récupérer l'URL blob en base
@@ -23,7 +25,7 @@ export async function GET(req: NextRequest) {
   })
 
   if (!doc?.fichier) {
-    return NextResponse.json({ error: 'Document introuvable' }, { status: 404 })
+    return NextResponse.json({ error: t.msg.documentNotFound }, { status: 404 })
   }
 
   // Récupérer le blob privé avec le token Vercel
@@ -34,7 +36,7 @@ export async function GET(req: NextRequest) {
   })
 
   if (!blobResponse.ok) {
-    return NextResponse.json({ error: 'Fichier inaccessible' }, { status: 502 })
+    return NextResponse.json({ error: t.msg.fileInaccessible }, { status: 502 })
   }
 
   // Stream le fichier vers l'admin sans jamais exposer l'URL privée

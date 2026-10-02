@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import Image from 'next/image'
+import { useI18n } from '@/components/I18nProvider'
 import { FolderOpen } from 'lucide-react'
 
 interface ImageUploadProps {
@@ -10,7 +11,9 @@ interface ImageUploadProps {
   label?: string
 }
 
-export default function ImageUpload({ value, onChange, label = 'Image' }: ImageUploadProps) {
+export default function ImageUpload({ value, onChange, label }: ImageUploadProps) {
+  const { t } = useI18n()
+  const u = t.pm.upload
   const [uploading, setUploading] = useState(false)
   const [preview, setPreview] = useState(value)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -49,7 +52,7 @@ export default function ImageUpload({ value, onChange, label = 'Image' }: ImageU
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-gray-700 mb-1">{label ?? u.image}</label>
 
       <div
         onClick={() => inputRef.current?.click()}
@@ -68,17 +71,17 @@ export default function ImageUpload({ value, onChange, label = 'Image' }: ImageU
               />
               {uploading && (
                 <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                  <p className="text-white text-sm">Upload en cours...</p>
+                  <p className="text-white text-sm">{u.uploading}</p>
                 </div>
               )}
             </div>
-            <p className="text-xs text-gray-400 mt-2">Cliquez pour changer</p>
+            <p className="text-xs text-gray-400 mt-2">{u.clickToChange}</p>
           </div>
         ) : (
           <div className="py-6">
             <p className="text-3xl mb-2"><FolderOpen className="w-6 h-6" /></p>
             <p className="text-sm text-gray-500">
-              {uploading ? 'Upload en cours...' : 'Cliquez pour choisir une image'}
+              {uploading ? u.uploading : u.clickToChoose}
             </p>
             <p className="text-xs text-gray-400 mt-1">JPG, PNG, WEBP</p>
           </div>

@@ -2,34 +2,49 @@ import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 
 export const revalidate = 60
-import ProduitsSearch, { type ProduitSearch } from '@/components/client/ProduitsSearch'
+import ProduitsSearch from '@/components/client/ProduitsSearch'
 import { VENDEUR_SUSPENDU_PRIORITE } from '@/lib/constants'
+import { getI18n } from '@/lib/i18n/server'
+import { normalizeWilayaCode } from '@/lib/algeria'
+import { rankProducts, VENDEUR_RANK_SELECT, wilayaDbValues } from '@/lib/product-ranking'
+import { getViewerWilaya } from '@/lib/viewer'
 
-export const metadata: Metadata = {
-  title:       'Tous les produits — Caba Store',
-  description: 'Parcourez notre catalogue complet de produits livrés en Algérie. Mode, maison, électronique et plus encore.',
-  openGraph: {
-    title:       'Tous les produits — Caba Store',
-    description: 'Parcourez notre catalogue complet de produits livrés en Algérie.',
-    type:        'website',
-  },
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n()
+  const p = t.catalog.products
+  return {
+    title:       p.metaTitle,
+    description: p.metaDescription,
+    openGraph: {
+      title:       p.metaTitle,
+      description: p.metaOgDescription,
+      type:        'website',
+    },
+  }
 }
 
 export default async function ProduitsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ categorie?: string; recherche?: string }>
+  searchParams: Promise<{ categorie?: string; recherche?: string; wilaya?: string }>
 }) {
-  const { categorie, recherche } = await searchParams
+  const { categorie, recherche, wilaya: wilayaParam } = await searchParams
+  const wilaya = normalizeWilayaCode(wilayaParam)
 
-  const [produitsRaw, categories] = await Promise.all([
+  const [produitsRaw, categories, viewerWilaya, { t }] = await Promise.all([
     prisma.product.findMany({
       where: {
         actif: true,
-        OR: [
-          { vendeurId: null },
-          { vendeur: { prioriteAffichage: { lt: VENDEUR_SUSPENDU_PRIORITE } } },
-        ],
+        ...(wilaya
+          // Filtre wilaya : uniquement les vendeurs de cette wilaya
+          ? { vendeur: {
+              prioriteAffichage: { lt: VENDEUR_SUSPENDU_PRIORITE },
+              user: { wilaya: { in: wilayaDbValues(wilaya) } },
+            } }
+          : { OR: [
+              { vendeurId: null },
+              { vendeur: { prioriteAffichage: { lt: VENDEUR_SUSPENDU_PRIORITE } } },
+            ] }),
         ...(categorie ? { categoryId: categorie } : {}),
         ...(recherche  ? { nom: { contains: recherche, mode: 'insensitive' } } : {}),
       },
@@ -41,26 +56,28 @@ export default async function ProduitsPage({
         prix:          true,
         stock:         true,
         prixVariables: true,
+        createdAt:     true,
         category:      { select: { nom: true } },
         variants:      { select: { id: true, couleur: true, nom: true }, orderBy: { createdAt: 'asc' } },
-        vendeur:       { select: { prioriteAffichage: true } },
+        vendeur:       VENDEUR_RANK_SELECT,
       },
     }),
     prisma.category.findMany({ orderBy: { nom: 'asc' } }),
+    getViewerWilaya(),
+    getI18n(),
   ])
 
-  const produits = [...produitsRaw].sort(
-    (a, b) => (a.vendeur?.prioriteAffichage ?? 0) - (b.vendeur?.prioriteAffichage ?? 0),
-  )
+  // Priorité d'abonnement → wilaya du visiteur → date
+  const produits = rankProducts(produitsRaw, viewerWilaya)
 
   return (
     <div className="max-w-6xl mx-auto px-4 pt-8 pb-20 md:pb-12">
       <div className="mb-8">
         <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-400 mb-1">
-          Catalogue
+          {t.catalog.products.eyebrow}
         </p>
         <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">
-          Tous nos produits
+          {t.catalog.products.title}
         </h1>
       </div>
 
@@ -69,6 +86,8 @@ export default async function ProduitsPage({
         initialProduits={produits}
         initialRecherche={recherche}
         initialCategorie={categorie}
+        initialWilaya={wilaya ?? undefined}
+        viewerWilaya={viewerWilaya}
       />
     </div>
   )

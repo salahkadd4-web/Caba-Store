@@ -3,25 +3,21 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { Check, Lock, Mail, X } from 'lucide-react'
-
-const WILAYAS = [
-  'Adrar','Chlef','Laghouat','Oum El Bouaghi','Batna','Béjaïa','Biskra','Béchar','Blida','Bouira',
-  'Tamanrasset','Tébessa','Tlemcen','Tiaret','Tizi Ouzou','Alger','Djelfa','Jijel','Sétif','Saïda',
-  'Skikda','Sidi Bel Abbès','Annaba','Guelma','Constantine','Médéa','Mostaganem',"M'Sila",'Mascara',
-  'Ouargla','Oran','El Bayadh','Illizi','Bordj Bou Arréridj','Boumerdès','El Tarf','Tindouf',
-  'Tissemsilt','El Oued','Khenchela','Souk Ahras','Tipaza','Mila','Aïn Defla','Naâma',
-  'Aïn Témouchent','Ghardaïa','Relizane',
-]
+import { useI18n } from '@/components/I18nProvider'
+import WilayaCommuneSelect from '@/components/WilayaCommuneSelect'
+import { wilayaName } from '@/lib/algeria'
+import type { Dictionary } from '@/lib/i18n'
 
 const pwdRules = [
-  { id: 'length',  label: 'Au moins 8 caractères',         test: (p: string) => p.length >= 8 },
-  { id: 'upper',   label: 'Au moins une lettre majuscule', test: (p: string) => /[A-Z]/.test(p) },
-  { id: 'lower',   label: 'Au moins une lettre minuscule', test: (p: string) => /[a-z]/.test(p) },
-  { id: 'number',  label: 'Au moins un chiffre',           test: (p: string) => /[0-9]/.test(p) },
-  { id: 'special', label: 'Au moins un caractère spécial', test: (p: string) => /[^A-Za-z0-9]/.test(p) },
-]
+  { id: 'length',  test: (p: string) => p.length >= 8 },
+  { id: 'upper',   test: (p: string) => /[A-Z]/.test(p) },
+  { id: 'lower',   test: (p: string) => /[a-z]/.test(p) },
+  { id: 'number',  test: (p: string) => /[0-9]/.test(p) },
+  { id: 'special', test: (p: string) => /[^A-Za-z0-9]/.test(p) },
+] as const
 
 function PasswordStrength({ password }: { password: string }) {
+  const { t } = useI18n()
   if (!password) return null
   return (
     <div className="mt-2 space-y-1">
@@ -30,7 +26,7 @@ function PasswordStrength({ password }: { password: string }) {
         return (
           <div key={rule.id} className="flex items-center gap-2">
             <span className={`text-xs transition-colors ${ok ? 'text-green-700 dark:text-green-400' : 'text-stone-400 dark:text-stone-600'}`}>{ok ? <Check className="w-4 h-4" /> : '○'}</span>
-            <span className={`text-xs transition-colors ${ok ? 'text-green-700 dark:text-green-400' : 'text-stone-400 dark:text-stone-500'}`}>{rule.label}</span>
+            <span className={`text-xs transition-colors ${ok ? 'text-green-700 dark:text-green-400' : 'text-stone-400 dark:text-stone-500'}`}>{t.password.rules[rule.id]}</span>
           </div>
         )
       })}
@@ -38,30 +34,31 @@ function PasswordStrength({ password }: { password: string }) {
   )
 }
 
-function InfoRow({ label, value }: { label: string; value?: string }) {
+function InfoRow({ label, value, emptyLabel }: { label: string; value?: string; emptyLabel: string }) {
   return (
     <div className="flex items-start justify-between py-3.5 border-b border-stone-100 dark:border-stone-800 gap-4">
       <span className="text-xs uppercase tracking-[0.15em] text-stone-400 dark:text-stone-500 shrink-0">{label}</span>
-      <span className="text-sm text-stone-800 dark:text-stone-100 text-right break-all">
-        {value || <span className="text-stone-300 dark:text-stone-600 italic">Non renseigné</span>}
+      <span className="text-sm text-stone-800 dark:text-stone-100 text-end break-all">
+        {value || <span className="text-stone-300 dark:text-stone-600 italic">{emptyLabel}</span>}
       </span>
     </div>
   )
 }
 
 /** Bloc confirmation pour comptes AVEC mot de passe */
-function ConfirmPasswordBlock({ value, onChange, inputClass, labelClass }: {
+function ConfirmPasswordBlock({ value, onChange, inputClass, labelClass, p }: {
   value: string; onChange: (v: string) => void; inputClass: string; labelClass: string
+  p: Dictionary['profile']
 }) {
   return (
     <div className="border-t border-stone-200 dark:border-stone-800 pt-5 space-y-4">
       <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3">
         <p className="text-xs text-amber-700 dark:text-amber-400">
-          <Lock className="w-4 h-4 inline mr-1" />Entrez votre mot de passe actuel pour confirmer les modifications
+          <Lock className="w-4 h-4 inline me-1" />{p.confirmWithPassword}
         </p>
       </div>
       <div>
-        <label className={labelClass}>Mot de passe actuel *</label>
+        <label className={labelClass}>{p.currentPasswordRequired}</label>
         <input type="password" value={value} onChange={e => onChange(e.target.value)}
           required className={inputClass} placeholder="••••••••" />
       </div>
@@ -71,7 +68,7 @@ function ConfirmPasswordBlock({ value, onChange, inputClass, labelClass }: {
 
 /** Bloc confirmation par OTP pour comptes Google (SANS mot de passe) */
 function ConfirmOtpBlock({
-  otpValue, onOtpChange, onSendCode, sending, codeSent, labelClass, otpClass,
+  otpValue, onOtpChange, onSendCode, sending, codeSent, labelClass, otpClass, p,
 }: {
   otpValue: string
   onOtpChange: (v: string) => void
@@ -81,14 +78,15 @@ function ConfirmOtpBlock({
   inputClass: string
   labelClass: string
   otpClass: string
+  p: Dictionary['profile']
 }) {
+  const { t } = useI18n()
   return (
     <div className="border-t border-stone-200 dark:border-stone-800 pt-5 space-y-4">
       <div className="bg-orange-50 dark:bg-stone-900 border border-orange-200 dark:border-stone-700 rounded-xl px-4 py-3">
         <p className="text-xs text-orange-700 dark:text-orange-400">
-          <Mail className="w-4 h-4 inline mr-1" />
-          Votre compte Google ne possède pas de mot de passe.
-          Un code de confirmation sera envoyé à votre email.
+          <Mail className="w-4 h-4 inline me-1" />
+          {p.googleNoPassword}
         </p>
       </div>
       {!codeSent ? (
@@ -98,11 +96,11 @@ function ConfirmOtpBlock({
           disabled={sending}
           className="w-full border border-stone-300 dark:border-stone-600 hover:border-orange-700 dark:hover:border-orange-500 text-stone-700 dark:text-stone-300 hover:text-orange-700 dark:hover:text-orange-500 text-xs uppercase tracking-[0.2em] py-3 transition-colors disabled:opacity-50"
         >
-          {sending ? 'Envoi...' : 'Envoyer un code par email'}
+          {sending ? t.common.sending : p.sendCodeByEmail}
         </button>
       ) : (
         <div>
-          <label className={labelClass}>Code reçu par email *</label>
+          <label className={labelClass}>{p.codeReceivedByEmail}</label>
           <input
             type="text"
             inputMode="numeric"
@@ -112,6 +110,7 @@ function ConfirmOtpBlock({
             required
             className={otpClass}
             placeholder="000000"
+            dir="ltr"
             autoFocus
           />
           <button
@@ -120,7 +119,7 @@ function ConfirmOtpBlock({
             disabled={sending}
             className="mt-2 text-xs text-stone-400 dark:text-stone-500 hover:text-orange-700 dark:hover:text-orange-500 transition-colors underline underline-offset-2"
           >
-            {sending ? 'Renvoi...' : 'Renvoyer le code'}
+            {sending ? p.resending : p.resendCode}
           </button>
         </div>
       )}
@@ -135,6 +134,8 @@ type EmailStatus = 'idle' | 'checking' | 'available' | 'same' | 'taken'
 
 export default function ProfilPage() {
   const { data: session, update } = useSession()
+  const { t, locale } = useI18n()
+  const p = t.profile
   const [view,       setView]       = useState<View>('profil')
   const [section,    setSection]    = useState<Section>('infos')
   const [loading,    setLoading]    = useState(true)
@@ -144,7 +145,7 @@ export default function ProfilPage() {
   const [hasPassword, setHasPassword] = useState<boolean | null>(null)
 
   const [profil, setProfil] = useState({
-    nom: '', prenom: '', telephone: '', age: '', genre: '', wilaya: '',
+    nom: '', prenom: '', telephone: '', age: '', genre: '', wilaya: '', commune: '',
     adresse: '',
   })
 
@@ -203,6 +204,7 @@ export default function ProfilPage() {
           age:       data.age       ? String(data.age) : '',
           genre:     data.genre     || '',
           wilaya:    data.wilaya    || '',
+          commune:   data.commune   || '',
           adresse:   data.adresse   || '',
         })
         setHasPassword(!!data.hasPassword)
@@ -230,9 +232,9 @@ export default function ProfilPage() {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
-      setSuccess('Code envoyé à votre email.')
+      setSuccess(p.codeSentToEmail)
       onDone()
-    } catch { setError('Erreur serveur') }
+    } catch { setError(t.common.serverError) }
     finally  { onSending(false) }
   }
 
@@ -242,10 +244,10 @@ export default function ProfilPage() {
 
     // Vérification locale avant envoi
     if (hasPassword && !motDePasseConfirm) {
-      setError('Veuillez entrer votre mot de passe pour confirmer'); return
+      setError(p.enterPasswordToConfirm); return
     }
     if (!hasPassword && !infosOtp) {
-      setError('Veuillez entrer le code de confirmation'); return
+      setError(p.enterConfirmationCode); return
     }
 
     setSaving(true)
@@ -263,19 +265,19 @@ export default function ProfilPage() {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
-      setSuccess('Informations mises à jour !')
+      setSuccess(p.infoUpdated)
       setMotDePasseConfirm(''); setInfosOtp(''); setInfosOtpSent(false)
       await update()
-    } catch { setError('Erreur serveur') } finally { setSaving(false) }
+    } catch { setError(t.common.serverError) } finally { setSaving(false) }
   }
 
   // ── Changement / définition mot de passe ─────────────────────────────────
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault(); clearMessages()
-    if (!pwdRules.every(r => r.test(pwd.nouveau))) { setError('Le nouveau mot de passe ne respecte pas les conditions'); return }
-    if (pwd.nouveau !== pwd.confirmer) { setError('Les mots de passe ne correspondent pas'); return }
-    if (hasPassword && !pwd.actuel) { setError('Veuillez entrer votre mot de passe actuel'); return }
-    if (!hasPassword && !pwdOtp)    { setError('Veuillez entrer le code de confirmation');   return }
+    if (!pwdRules.every(r => r.test(pwd.nouveau))) { setError(p.newPasswordInvalid); return }
+    if (pwd.nouveau !== pwd.confirmer) { setError(p.passwordsDontMatch); return }
+    if (hasPassword && !pwd.actuel) { setError(p.enterCurrentPassword); return }
+    if (!hasPassword && !pwdOtp)    { setError(p.enterConfirmationCode);   return }
 
     setSaving(true)
     try {
@@ -293,7 +295,7 @@ export default function ProfilPage() {
       setPwd({ actuel: '', nouveau: '', confirmer: '' }); setPwdOtp(''); setPwdOtpSent(false)
       // Après avoir défini un mot de passe, mettre à jour l'état local
       if (!hasPassword) setHasPassword(true)
-    } catch { setError('Erreur serveur') } finally { setSaving(false) }
+    } catch { setError(t.common.serverError) } finally { setSaving(false) }
   }
 
   // ── Changement email ──────────────────────────────────────────────────────
@@ -309,8 +311,8 @@ export default function ProfilPage() {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
-      setEmailForm(f => ({ ...f, etape: 'codeAncien' })); setSuccess('Code envoyé à votre email actuel.')
-    } catch { setError('Erreur serveur') } finally { setSaving(false) }
+      setEmailForm(f => ({ ...f, etape: 'codeAncien' })); setSuccess(p.codeSentToCurrentEmail)
+    } catch { setError(t.common.serverError) } finally { setSaving(false) }
   }
 
   const handleVerifyOldEmail = async (e: React.FormEvent) => {
@@ -322,8 +324,8 @@ export default function ProfilPage() {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
-      setEmailForm(f => ({ ...f, etape: 'codeNouveau' })); setSuccess(`Code envoyé à ${emailForm.nouvelEmail}`)
-    } catch { setError('Erreur serveur') } finally { setSaving(false) }
+      setEmailForm(f => ({ ...f, etape: 'codeNouveau' })); setSuccess(p.codeSentTo(emailForm.nouvelEmail))
+    } catch { setError(t.common.serverError) } finally { setSaving(false) }
   }
 
   const handleConfirmEmailChange = async (e: React.FormEvent) => {
@@ -335,14 +337,15 @@ export default function ProfilPage() {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
-      setSuccess('Email modifié avec succès !')
+      setSuccess(p.emailChanged)
       setEmailForm({ motDePasse: '', nouvelEmail: '', codeAncien: '', codeNouveau: '', etape: 'form' })
       setEmailStatus('idle'); await update()
-    } catch { setError('Erreur serveur') } finally { setSaving(false) }
+    } catch { setError(t.common.serverError) } finally { setSaving(false) }
   }
 
   // ── Styles ────────────────────────────────────────────────────────────────
   const inputClass = "w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-3 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors"
+  const selectClass = "w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-3 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors"
   const labelClass = "block text-xs uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400 mb-2"
   const otpClass   = "w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-3 text-xl text-center tracking-[0.4em] text-stone-800 dark:text-stone-100 bg-transparent transition-colors"
   const tabClass   = (s: Section) => `flex-1 py-2.5 text-xs uppercase tracking-[0.15em] border-b-2 transition-colors text-center ${section === s ? 'border-orange-700 dark:border-orange-500 text-orange-700 dark:text-orange-500' : 'border-transparent text-stone-400 dark:text-stone-500'}`
@@ -358,7 +361,7 @@ export default function ProfilPage() {
   if (loading) return (
     <div className="max-w-2xl mx-auto px-4 py-12 text-center">
       <div className="w-8 h-8 border-2 border-stone-200 dark:border-stone-700 border-t-orange-700 rounded-full animate-spin mx-auto mb-3" />
-      <p className="text-stone-500 dark:text-stone-400 text-sm">Chargement...</p>
+      <p className="text-stone-500 dark:text-stone-400 text-sm">{t.common.loading}</p>
     </div>
   )
 
@@ -367,8 +370,8 @@ export default function ProfilPage() {
     return (
       <div className="max-w-2xl mx-auto px-4 py-6 md:py-12">
         <div className="mb-6 md:mb-8">
-          <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500 mb-2">Compte</p>
-          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">Mon Profil</h1>
+          <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500 mb-2">{p.account}</p>
+          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">{p.title}</h1>
           <div className="w-8 h-px bg-orange-700 dark:bg-orange-500 mt-3 md:mt-4" />
         </div>
 
@@ -384,25 +387,26 @@ export default function ProfilPage() {
             {hasPassword === false && (
               <span className="inline-flex items-center gap-1 mt-1 text-[10px] uppercase tracking-wide bg-orange-100 dark:bg-stone-800 text-orange-700 dark:text-orange-400 px-2 py-0.5 rounded-full">
                 <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-                Connexion Google
+                {p.googleLogin}
               </span>
             )}
           </div>
         </div>
 
         <div className="mb-8 bg-white dark:bg-stone-900 rounded-2xl border border-stone-100 dark:border-stone-800 px-4 divide-y divide-stone-100 dark:divide-stone-800">
-          <InfoRow label="Nom"       value={profil.nom} />
-          <InfoRow label="Prénom"    value={profil.prenom} />
-          <InfoRow label="Âge"       value={profil.age} />
-          <InfoRow label="Genre"     value={profil.genre === 'HOMME' ? 'Homme' : profil.genre === 'FEMME' ? 'Femme' : undefined} />
-          <InfoRow label="Téléphone" value={profil.telephone} />
-          <InfoRow label="Wilaya"    value={profil.wilaya} />
-          <InfoRow label="Adresse"   value={profil.adresse} />
+          <InfoRow emptyLabel={t.common.notProvided} label={p.lastName}  value={profil.nom} />
+          <InfoRow emptyLabel={t.common.notProvided} label={p.firstName} value={profil.prenom} />
+          <InfoRow emptyLabel={t.common.notProvided} label={p.age}       value={profil.age} />
+          <InfoRow emptyLabel={t.common.notProvided} label={p.gender}    value={profil.genre === 'HOMME' ? t.common.male : profil.genre === 'FEMME' ? t.common.female : undefined} />
+          <InfoRow emptyLabel={t.common.notProvided} label={p.phone}     value={profil.telephone} />
+          <InfoRow emptyLabel={t.common.notProvided} label={t.address.wilaya}  value={wilayaName(profil.wilaya, locale)} />
+          <InfoRow emptyLabel={t.common.notProvided} label={t.address.commune} value={profil.commune} />
+          <InfoRow emptyLabel={t.common.notProvided} label={p.address}   value={profil.adresse} />
         </div>
 
         <button onClick={goToEdit}
           className="w-full bg-orange-700 hover:bg-orange-800 text-white text-xs uppercase tracking-[0.3em] py-4 transition-colors rounded-xl">
-          Modifier mes informations
+          {p.editInfo}
         </button>
       </div>
     )
@@ -414,92 +418,91 @@ export default function ProfilPage() {
       <div className="mb-6 md:mb-8">
         <button onClick={goBack}
           className="flex items-center gap-2 text-stone-400 dark:text-stone-500 hover:text-orange-700 dark:hover:text-orange-500 text-xs uppercase tracking-[0.2em] transition-colors mb-5">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="rtl-flip">
             <path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          Retour
+          {t.common.back}
         </button>
-        <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500 mb-2">Compte</p>
-        <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">Modifier</h1>
+        <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500 mb-2">{p.account}</p>
+        <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">{p.editTitle}</h1>
         <div className="w-8 h-px bg-orange-700 dark:bg-orange-500 mt-3 md:mt-4" />
       </div>
 
       <div className="flex border-b border-stone-200 dark:border-stone-800 mb-6 md:mb-8">
         <button onClick={() => { setSection('infos');    clearMessages() }} className={tabClass('infos')}>
-          <span className="sm:hidden">Infos</span><span className="hidden sm:inline">Informations</span>
+          <span className="sm:hidden">{p.tabInfoShort}</span><span className="hidden sm:inline">{p.tabInfo}</span>
         </button>
         <button onClick={() => { setSection('password'); clearMessages() }} className={tabClass('password')}>
-          {hasPassword === false ? 'Créer MDP' : 'Mot de passe'}
+          {hasPassword === false ? p.tabCreatePassword : p.tabPassword}
         </button>
-        <button onClick={() => { setSection('email');    clearMessages() }} className={tabClass('email')}>Email</button>
+        <button onClick={() => { setSection('email');    clearMessages() }} className={tabClass('email')}>{p.tabEmail}</button>
       </div>
 
       {error   && <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 text-xs px-4 py-3 mb-5 rounded-lg">{error}</div>}
-      {success && <div className="border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400 text-xs px-4 py-3 mb-5 rounded-lg"><Check className="w-4 h-4 inline mr-1" />{success}</div>}
+      {success && <div className="border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400 text-xs px-4 py-3 mb-5 rounded-lg"><Check className="w-4 h-4 inline me-1" />{success}</div>}
 
       {/* ── Informations ── */}
       {section === 'infos' && (
         <form onSubmit={handleSaveInfos} className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label className={labelClass}>Nom</label>
+              <label className={labelClass}>{p.lastName}</label>
               <input type="text" value={profil.nom} onChange={e => setProfil({...profil, nom: e.target.value})} required className={inputClass} />
             </div>
             <div>
-              <label className={labelClass}>Prénom</label>
+              <label className={labelClass}>{p.firstName}</label>
               <input type="text" value={profil.prenom} onChange={e => setProfil({...profil, prenom: e.target.value})} required className={inputClass} />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label className={labelClass}>Âge</label>
+              <label className={labelClass}>{p.age}</label>
               <input type="number" value={profil.age} onChange={e => setProfil({...profil, age: e.target.value})}
-                min="10" max="100" className={inputClass} placeholder="Ex: 25" />
+                min="10" max="100" className={inputClass} placeholder={p.agePlaceholder} />
             </div>
             <div>
-              <label className={labelClass}>Genre</label>
+              <label className={labelClass}>{p.gender}</label>
               <select value={profil.genre} onChange={e => setProfil({...profil, genre: e.target.value})}
-                className="w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-3 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors">
-                <option value="">Non précisé</option>
-                <option value="HOMME">Homme</option>
-                <option value="FEMME">Femme</option>
+                className={selectClass}>
+                <option value="">{p.genderUnspecified}</option>
+                <option value="HOMME">{t.common.male}</option>
+                <option value="FEMME">{t.common.female}</option>
               </select>
             </div>
           </div>
           <div>
-            <label className={labelClass}>Téléphone</label>
+            <label className={labelClass}>{p.phone}</label>
             <input type="tel" value={profil.telephone} onChange={e => setProfil({...profil, telephone: e.target.value})}
               className={inputClass} placeholder="05XX XX XX XX" />
           </div>
-          <div>
-            <label className={labelClass}>Wilaya</label>
-            <select value={profil.wilaya} onChange={e => setProfil({...profil, wilaya: e.target.value})}
-              className="w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-3 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors">
-              <option value="">Sélectionner une wilaya</option>
-              {WILAYAS.map(w => <option key={w} value={w}>{w}</option>)}
-            </select>
-          </div>
+          <WilayaCommuneSelect
+            wilaya={profil.wilaya}
+            commune={profil.commune}
+            onChange={v => setProfil({ ...profil, ...v })}
+            selectClassName={selectClass}
+            labelClassName={labelClass}
+          />
           <div>
             <label className={labelClass}>
-              Adresse de livraison par défaut
-              <span className="ml-1 text-stone-400 normal-case tracking-normal">(optionnel)</span>
+              {p.defaultAddress}
+              <span className="ms-1 text-stone-400 normal-case tracking-normal">{t.common.optional}</span>
             </label>
             <textarea
               value={profil.adresse}
               onChange={e => setProfil({...profil, adresse: e.target.value})}
               rows={2}
-              placeholder="Numéro, rue, cité, commune…"
+              placeholder={p.addressPlaceholder}
               className="w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-3 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors resize-none"
             />
             <p className="text-[10px] text-stone-400 dark:text-stone-500 mt-1">
-              Sera pré-remplie automatiquement lors de la commande
+              {p.addressHint}
             </p>
           </div>
 
           {/* Confirmation : mot de passe OU OTP selon le type de compte */}
           {hasPassword ? (
             <ConfirmPasswordBlock value={motDePasseConfirm} onChange={setMotDePasseConfirm}
-              inputClass={inputClass} labelClass={labelClass} />
+              inputClass={inputClass} labelClass={labelClass} p={p} />
           ) : (
             <ConfirmOtpBlock
               otpValue={infosOtp}
@@ -510,11 +513,12 @@ export default function ProfilPage() {
               inputClass={inputClass}
               labelClass={labelClass}
               otpClass={otpClass}
+              p={p}
             />
           )}
 
           <div className="flex gap-3 pt-1">
-            <button type="button" onClick={goBack} className={btnCancel}>Annuler</button>
+            <button type="button" onClick={goBack} className={btnCancel}>{t.common.cancel}</button>
             <button
               type="submit"
               disabled={
@@ -523,7 +527,7 @@ export default function ProfilPage() {
               }
               className={btnSubmit}
             >
-              {saving ? 'Enregistrement...' : 'Enregistrer'}
+              {saving ? t.common.saving : t.common.save}
             </button>
           </div>
         </form>
@@ -536,34 +540,33 @@ export default function ProfilPage() {
           {!hasPassword && (
             <div className="bg-orange-50 dark:bg-stone-900 border border-orange-200 dark:border-stone-700 rounded-xl px-4 py-3">
               <p className="text-xs text-orange-700 dark:text-orange-400">
-                <Mail className="w-4 h-4 inline mr-1" />
-                Votre compte Google n&apos;a pas encore de mot de passe.
-                Vous pouvez en créer un pour vous connecter également par email.
+                <Mail className="w-4 h-4 inline me-1" />
+                {p.googleCreatePassword}
               </p>
             </div>
           )}
           <div>
-            <label className={labelClass}>Nouveau mot de passe</label>
+            <label className={labelClass}>{p.newPassword}</label>
             <input type="password" value={pwd.nouveau} onChange={e => setPwd({...pwd, nouveau: e.target.value})}
-              required className={inputClass} placeholder="Minimum 8 caractères" />
+              required className={inputClass} placeholder={p.newPasswordPlaceholder} />
             <PasswordStrength password={pwd.nouveau} />
           </div>
           <div>
-            <label className={labelClass}>Confirmer le nouveau mot de passe</label>
+            <label className={labelClass}>{p.confirmNewPassword}</label>
             <input type="password" value={pwd.confirmer} onChange={e => setPwd({...pwd, confirmer: e.target.value})}
-              required className={inputClass} placeholder="Répétez le mot de passe" />
-            {pwd.confirmer && pwd.nouveau !== pwd.confirmer && <p className="text-xs text-red-500 dark:text-red-400 mt-1">Les mots de passe ne correspondent pas</p>}
-            {pwd.confirmer && pwd.nouveau === pwd.confirmer  && <p className="text-xs text-green-700 dark:text-green-400 mt-1"><Check className="w-4 h-4 inline mr-1" />Les mots de passe correspondent</p>}
+              required className={inputClass} placeholder={p.repeatPassword} />
+            {pwd.confirmer && pwd.nouveau !== pwd.confirmer && <p className="text-xs text-red-500 dark:text-red-400 mt-1">{p.passwordsDontMatch}</p>}
+            {pwd.confirmer && pwd.nouveau === pwd.confirmer  && <p className="text-xs text-green-700 dark:text-green-400 mt-1"><Check className="w-4 h-4 inline me-1" />{p.passwordsMatch}</p>}
           </div>
 
           {/* Confirmation : mot de passe actuel OU OTP */}
           {hasPassword ? (
             <div className="border-t border-stone-200 dark:border-stone-800 pt-5 space-y-4">
               <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3">
-                <p className="text-xs text-amber-700 dark:text-amber-400"><Lock className="w-4 h-4 inline mr-1" />Entrez votre mot de passe actuel pour confirmer les modifications</p>
+                <p className="text-xs text-amber-700 dark:text-amber-400"><Lock className="w-4 h-4 inline me-1" />{p.confirmWithPassword}</p>
               </div>
               <div>
-                <label className={labelClass}>Mot de passe actuel *</label>
+                <label className={labelClass}>{p.currentPasswordRequired}</label>
                 <input type="password" value={pwd.actuel} onChange={e => setPwd({...pwd, actuel: e.target.value})}
                   required className={inputClass} placeholder="••••••••" />
               </div>
@@ -578,11 +581,12 @@ export default function ProfilPage() {
               inputClass={inputClass}
               labelClass={labelClass}
               otpClass={otpClass}
+              p={p}
             />
           )}
 
           <div className="flex gap-3 pt-1">
-            <button type="button" onClick={goBack} className={btnCancel}>Annuler</button>
+            <button type="button" onClick={goBack} className={btnCancel}>{t.common.cancel}</button>
             <button
               type="submit"
               disabled={
@@ -591,7 +595,7 @@ export default function ProfilPage() {
               }
               className={btnSubmit}
             >
-              {saving ? 'Modification...' : hasPassword ? 'Modifier' : 'Créer le mot de passe'}
+              {saving ? p.modifying : hasPassword ? t.common.edit : p.createPassword}
             </button>
           </div>
         </form>
@@ -604,7 +608,7 @@ export default function ProfilPage() {
             {(['form', 'codeAncien', 'codeNouveau'] as EmailEtape[]).map((e, i) => {
               const stepIndex = ['form', 'codeAncien', 'codeNouveau'].indexOf(emailForm.etape)
               const isActive = i === stepIndex; const isDone = i < stepIndex
-              const labels   = ['Demande', 'Vérif.', 'Confirmer']
+              const labels   = p.emailSteps
               return (
                 <div key={e} className="flex items-center flex-1">
                   <div className="flex flex-col items-center gap-1 shrink-0">
@@ -622,24 +626,24 @@ export default function ProfilPage() {
           {emailForm.etape === 'form' && (
             <form onSubmit={handleRequestEmailChange} className="space-y-5">
               <div className="bg-stone-50 dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-4 text-xs text-stone-500 dark:text-stone-400">
-                Email actuel : <span className="font-semibold text-stone-800 dark:text-stone-100 break-all">{session?.user?.email}</span>
+                {p.currentEmail} <span className="font-semibold text-stone-800 dark:text-stone-100 break-all">{session?.user?.email}</span>
               </div>
               <div>
-                <label className={labelClass}>Nouvel email</label>
+                <label className={labelClass}>{p.newEmail}</label>
                 <div className="relative">
                   <input type="email" value={emailForm.nouvelEmail}
                     onChange={e => setEmailForm(f => ({ ...f, nouvelEmail: e.target.value }))} required
-                    className={`w-full border-b focus:outline-none outline-none py-3 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors pr-8 ${emailInputBorder}`}
-                    placeholder="nouveau@email.com" />
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                    className={`w-full border-b focus:outline-none outline-none py-3 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors pe-8 ${emailInputBorder}`}
+                    placeholder={p.newEmailPlaceholder} />
+                  <div className="absolute end-0 top-1/2 -translate-y-1/2">
                     {emailChecking && <svg className="animate-spin w-4 h-4 text-stone-400" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>}
                     {!emailChecking && emailStatus === 'available' && <Check className="w-4 h-4 text-green-500" />}
                     {!emailChecking && (emailStatus === 'taken' || emailStatus === 'same') && <X className="w-4 h-4 text-red-500" />}
                   </div>
                 </div>
-                {emailStatus === 'available' && <p className="text-xs text-green-700 dark:text-green-400 mt-1"><Check className="w-4 h-4 inline mr-1" />Email disponible</p>}
-                {emailStatus === 'same'      && <p className="text-xs text-red-500 dark:text-red-400 mt-1"><X className="w-4 h-4 inline mr-1" />Identique à votre email actuel</p>}
-                {emailStatus === 'taken'     && <p className="text-xs text-red-500 dark:text-red-400 mt-1"><X className="w-4 h-4 inline mr-1" />Email déjà utilisé</p>}
+                {emailStatus === 'available' && <p className="text-xs text-green-700 dark:text-green-400 mt-1"><Check className="w-4 h-4 inline me-1" />{p.emailAvailable}</p>}
+                {emailStatus === 'same'      && <p className="text-xs text-red-500 dark:text-red-400 mt-1"><X className="w-4 h-4 inline me-1" />{p.emailSame}</p>}
+                {emailStatus === 'taken'     && <p className="text-xs text-red-500 dark:text-red-400 mt-1"><X className="w-4 h-4 inline me-1" />{p.emailTaken}</p>}
               </div>
 
               {/* Mot de passe uniquement pour les comptes qui en ont un */}
@@ -649,20 +653,21 @@ export default function ProfilPage() {
                   onChange={v => setEmailForm(f => ({ ...f, motDePasse: v }))}
                   inputClass={inputClass}
                   labelClass={labelClass}
+                  p={p}
                 />
               )}
 
               {!hasPassword && (
                 <div className="bg-orange-50 dark:bg-stone-900 border border-orange-200 dark:border-stone-700 rounded-xl px-4 py-3">
                   <p className="text-xs text-orange-700 dark:text-orange-400">
-                    <Mail className="w-4 h-4 inline mr-1" />
-                    Un code sera envoyé à votre email actuel et au nouvel email pour confirmer le changement.
+                    <Mail className="w-4 h-4 inline me-1" />
+                    {p.googleEmailChangeInfo}
                   </p>
                 </div>
               )}
 
               <div className="flex gap-3 pt-1">
-                <button type="button" onClick={goBack} className={btnCancel}>Annuler</button>
+                <button type="button" onClick={goBack} className={btnCancel}>{t.common.cancel}</button>
                 <button
                   type="submit"
                   disabled={
@@ -672,7 +677,7 @@ export default function ProfilPage() {
                   }
                   className={btnSubmit}
                 >
-                  {saving ? 'Envoi...' : 'Envoyer le code'}
+                  {saving ? t.common.sending : p.sendCode}
                 </button>
               </div>
             </form>
@@ -681,20 +686,20 @@ export default function ProfilPage() {
           {emailForm.etape === 'codeAncien' && (
             <form onSubmit={handleVerifyOldEmail} className="space-y-5">
               <div className="bg-orange-50 dark:bg-stone-900 border border-orange-200 dark:border-stone-700 rounded-xl p-4 text-xs text-orange-700 dark:text-orange-400 leading-relaxed">
-                Code envoyé à <strong className="break-all">{session?.user?.email}</strong>. Confirmez votre identité.
+                {p.codeSentToShort} <strong className="break-all">{session?.user?.email}</strong>. {p.confirmIdentity}
               </div>
               <div>
-                <label className={labelClass}>Code reçu (email actuel)</label>
+                <label className={labelClass}>{p.codeCurrentEmail}</label>
                 <input type="text" inputMode="numeric" maxLength={6} value={emailForm.codeAncien}
                   onChange={e => setEmailForm({...emailForm, codeAncien: e.target.value.replace(/\D/g, '')})}
-                  required className={otpClass} placeholder="000000" autoFocus />
+                  required className={otpClass} placeholder="000000" dir="ltr" autoFocus />
               </div>
               <button type="submit" disabled={saving || emailForm.codeAncien.length < 6} className={`w-full ${btnSubmit}`}>
-                {saving ? 'Vérification...' : 'Valider'}
+                {saving ? p.verifying : t.common.validate}
               </button>
               <button type="button" onClick={() => { setEmailForm({...emailForm, etape: 'form', codeAncien: ''}); clearMessages() }}
                 className="w-full text-stone-400 dark:text-stone-500 hover:text-orange-700 dark:hover:text-orange-500 text-xs uppercase tracking-[0.2em] transition-colors py-2">
-                ← Retour
+                {t.common.backWithArrow}
               </button>
             </form>
           )}
@@ -702,20 +707,20 @@ export default function ProfilPage() {
           {emailForm.etape === 'codeNouveau' && (
             <form onSubmit={handleConfirmEmailChange} className="space-y-5">
               <div className="bg-orange-50 dark:bg-stone-900 border border-orange-200 dark:border-stone-700 rounded-xl p-4 text-xs text-orange-700 dark:text-orange-400 leading-relaxed">
-                Code envoyé à <strong className="break-all">{emailForm.nouvelEmail}</strong>. Entrez-le pour finaliser.
+                {p.codeSentToShort} <strong className="break-all">{emailForm.nouvelEmail}</strong>. {p.enterToFinalize}
               </div>
               <div>
-                <label className={labelClass}>Code reçu (nouvel email)</label>
+                <label className={labelClass}>{p.codeNewEmail}</label>
                 <input type="text" inputMode="numeric" maxLength={6} value={emailForm.codeNouveau}
                   onChange={e => setEmailForm({...emailForm, codeNouveau: e.target.value.replace(/\D/g, '')})}
-                  required className={otpClass} placeholder="000000" autoFocus />
+                  required className={otpClass} placeholder="000000" dir="ltr" autoFocus />
               </div>
               <button type="submit" disabled={saving || emailForm.codeNouveau.length < 6} className={`w-full ${btnSubmit}`}>
-                {saving ? 'Confirmation...' : 'Confirmer le changement'}
+                {saving ? p.confirming : p.confirmChange}
               </button>
               <button type="button" onClick={() => { setEmailForm({...emailForm, etape: 'codeAncien', codeNouveau: ''}); clearMessages() }}
                 className="w-full text-stone-400 dark:text-stone-500 hover:text-orange-700 dark:hover:text-orange-500 text-xs uppercase tracking-[0.2em] transition-colors py-2">
-                ← Retour
+                {t.common.backWithArrow}
               </button>
             </form>
           )}

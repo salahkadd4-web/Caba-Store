@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
+import { getI18n } from '@/lib/i18n/server'
 
 async function checkAdmin() {
   const token = await getAuthToken()
@@ -12,21 +13,22 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { t } = await getI18n()
   try {
     const token = await checkAdmin()
-    if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    if (!token) return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
 
     const { id } = await params
     const body = await req.json().catch(() => null)
-    if (!body) return NextResponse.json({ error: 'Corps de requête invalide' }, { status: 400 })
+    if (!body) return NextResponse.json({ error: t.msg.invalidBody }, { status: 400 })
 
     const { action } = body
     if (!['approuver', 'refuser'].includes(action)) {
-      return NextResponse.json({ error: 'Action invalide' }, { status: 400 })
+      return NextResponse.json({ error: t.msg.invalidAction }, { status: 400 })
     }
 
     const cat = await prisma.category.findUnique({ where: { id } })
-    if (!cat) return NextResponse.json({ error: 'Catégorie introuvable' }, { status: 404 })
+    if (!cat) return NextResponse.json({ error: t.msg.categoryNotFound }, { status: 404 })
 
     const statut = action === 'approuver' ? 'APPROUVEE' : 'REFUSEE'
 
@@ -37,10 +39,10 @@ export async function PATCH(
 
     return NextResponse.json({
       ...updated,
-      message: `Catégorie ${action === 'approuver' ? 'approuvée' : 'refusée'} avec succès`,
+      message: action === 'approuver' ? t.msg.categoryApproved : t.msg.categoryRefused,
     })
   } catch {
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }
 
@@ -49,14 +51,15 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { t } = await getI18n()
   try {
     const token = await checkAdmin()
-    if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    if (!token) return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
 
     const { id } = await params
     const { nom, description, image } = await req.json()
 
-    if (!nom) return NextResponse.json({ error: 'Nom requis' }, { status: 400 })
+    if (!nom) return NextResponse.json({ error: t.msg.nameRequired }, { status: 400 })
 
     const category = await prisma.category.update({
       where: { id },
@@ -65,7 +68,7 @@ export async function PUT(
 
     return NextResponse.json(category)
   } catch {
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }
 
@@ -74,9 +77,10 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { t } = await getI18n()
   try {
     const token = await checkAdmin()
-    if (!token) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    if (!token) return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
 
     const { id } = await params
 
@@ -84,15 +88,15 @@ export async function DELETE(
     const count = await prisma.product.count({ where: { categoryId: id } })
     if (count > 0) {
       return NextResponse.json(
-        { error: `Impossible de supprimer : ${count} produit(s) dans cette catégorie` },
+        { error: t.msg.categoryHasProducts(count) },
         { status: 400 }
       )
     }
 
     await prisma.category.delete({ where: { id } })
 
-    return NextResponse.json({ message: 'Catégorie supprimée' })
+    return NextResponse.json({ message: t.msg.categoryDeleted })
   } catch {
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }

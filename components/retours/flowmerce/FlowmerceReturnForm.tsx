@@ -15,6 +15,7 @@ import type { ReturnForm, ReturnAnswer, ReturnPrefill } from '@/lib/flowmerce-ty
 import { ENGINE_VERSION, flattenFields } from '@/lib/flowmerce-types'
 import { validateForm } from '@/lib/flowmerce-validation'
 import DynamicField, { type UploadFn } from './DynamicField'
+import { useI18n } from '@/components/I18nProvider'
 
 type LoadState =
   | { kind: 'loading' }
@@ -38,6 +39,8 @@ interface FlowmerceReturnFormProps {
 
 const FlowmerceReturnForm = forwardRef<FlowmerceReturnFormHandle, FlowmerceReturnFormProps>(
   function FlowmerceReturnForm({ prefill, onValidityChange }, ref) {
+    const { t } = useI18n()
+    const f = t.returns.form
     const [loadState, setLoadState] = useState<LoadState>({ kind: 'loading' })
     const [answers,   setAnswers]   = useState<ReturnAnswer>({})
     const [errors,    setErrors]    = useState<Record<string, string>>({})
@@ -49,7 +52,7 @@ const FlowmerceReturnForm = forwardRef<FlowmerceReturnFormHandle, FlowmerceRetur
         const data = await res.json().catch(() => ({})) as { form?: ReturnForm; error?: string }
 
         if (!res.ok || !data.form) {
-          return { kind: 'error', message: data.error ?? 'Impossible de charger le formulaire', retryable: res.status >= 500 || res.status === 429 }
+          return { kind: 'error', message: data.error ?? f.loadError, retryable: res.status >= 500 || res.status === 429 }
         }
 
         const form = data.form
@@ -64,9 +67,9 @@ const FlowmerceReturnForm = forwardRef<FlowmerceReturnFormHandle, FlowmerceRetur
 
         return { kind: 'ready', form }
       } catch {
-        return { kind: 'error', message: 'Erreur réseau, vérifiez votre connexion.', retryable: true }
+        return { kind: 'error', message: f.networkError, retryable: true }
       }
-    }, [])
+    }, [f])
 
     useEffect(() => {
       let cancelled = false
@@ -98,9 +101,9 @@ const FlowmerceReturnForm = forwardRef<FlowmerceReturnFormHandle, FlowmerceRetur
     // ── Notifie le parent de la validité courante à chaque changement ─────────
     useEffect(() => {
       if (loadState.kind !== 'ready') return
-      const currentErrors = validateForm(flattenFields(loadState.form), answers)
+      const currentErrors = validateForm(flattenFields(loadState.form), answers, t.returns.validation)
       onValidityChange?.(Object.keys(currentErrors).length === 0)
-    }, [loadState, answers, onValidityChange])
+    }, [loadState, answers, onValidityChange, t])
 
     const handleRetry = () => {
       setLoadState({ kind: 'loading' })
@@ -115,9 +118,9 @@ const FlowmerceReturnForm = forwardRef<FlowmerceReturnFormHandle, FlowmerceRetur
       const res = await fetch('/api/retours/upload', { method: 'POST', body: formData, signal: AbortSignal.timeout(60_000) })
       const data = await res.json().catch(() => ({})) as { url?: string; error?: string }
 
-      if (!res.ok || !data.url) throw new Error(data.error ?? 'Échec de l\u2019upload')
+      if (!res.ok || !data.url) throw new Error(data.error ?? f.uploadFailed)
       return data.url
-    }, [])
+    }, [f])
 
     const setAnswer = useCallback((fieldId: string, value: unknown) => {
       setAnswers(prev => ({ ...prev, [fieldId]: value }))
@@ -135,31 +138,31 @@ const FlowmerceReturnForm = forwardRef<FlowmerceReturnFormHandle, FlowmerceRetur
       validateAndGet: () => {
         if (loadState.kind !== 'ready') return null
 
-        const validationErrors = validateForm(flattenFields(loadState.form), answers)
+        const validationErrors = validateForm(flattenFields(loadState.form), answers, t.returns.validation)
         if (Object.keys(validationErrors).length > 0) {
           setErrors(validationErrors)
           return null
         }
         return { form: loadState.form, answers }
       },
-    }), [loadState, answers])
+    }), [loadState, answers, t])
 
     // ── Rendu par état de chargement ──────────────────────────────────────────
     if (loadState.kind === 'loading') {
       return (
         <div className="flex items-center justify-center gap-3 py-14 text-stone-500 dark:text-stone-400">
           <Loader2 className="w-5 h-5 animate-spin" />
-          <span className="text-sm">Chargement du formulaire…</span>
+          <span className="text-sm">{f.loading}</span>
         </div>
       )
     }
 
     if (loadState.kind === 'error') {
       return (
-        <StateCard icon={<AlertTriangle className="w-8 h-8 text-red-500" />} title="Formulaire indisponible" message={loadState.message}>
+        <StateCard icon={<AlertTriangle className="w-8 h-8 text-red-500" />} title={f.unavailable} message={loadState.message}>
           {loadState.retryable && (
             <button onClick={handleRetry} className="px-5 py-2 bg-orange-700 hover:bg-orange-800 text-white rounded-xl text-sm font-semibold transition">
-              Réessayer
+              {f.retry}
             </button>
           )}
         </StateCard>
@@ -168,15 +171,15 @@ const FlowmerceReturnForm = forwardRef<FlowmerceReturnFormHandle, FlowmerceRetur
 
     if (loadState.kind === 'empty') {
       return (
-        <StateCard icon={<PackageX className="w-8 h-8 text-stone-400" />} title="Aucun formulaire disponible"
-          message="Le formulaire de retour n'est pas encore disponible pour cette boutique. Réessayez plus tard." />
+        <StateCard icon={<PackageX className="w-8 h-8 text-stone-400" />} title={f.emptyTitle}
+          message={f.emptyMessage} />
       )
     }
 
     if (loadState.kind === 'incompatible') {
       return (
-        <StateCard icon={<AlertTriangle className="w-8 h-8 text-amber-500" />} title="Version du formulaire non prise en charge"
-          message={`Ce formulaire utilise une version (v${loadState.version}) plus récente que celle supportée par Caba Store. Contactez le support.`} />
+        <StateCard icon={<AlertTriangle className="w-8 h-8 text-amber-500" />} title={f.incompatibleTitle}
+          message={f.incompatibleMessage(loadState.version)} />
       )
     }
 

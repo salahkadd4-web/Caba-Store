@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { getI18n } from '@/lib/i18n/server'
+import { tr } from '@/lib/i18n'
 
 // Flux linéaire autorisé pour le vendeur
 const FLUX_VENDEUR: Record<string, string> = {
@@ -14,21 +16,22 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { t } = await getI18n()
   const session = await auth()
   if (!session?.user || session.user.role !== 'VENDEUR') {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
   }
 
   const vendeur = await prisma.vendeurProfile.findUnique({
     where: { userId: session.user.id },
   })
   if (!vendeur || vendeur.statut !== 'APPROUVE') {
-    return NextResponse.json({ error: 'Compte non approuvé' }, { status: 403 })
+    return NextResponse.json({ error: t.msg.accountNotApproved }, { status: 403 })
   }
 
   const { id } = await params
   const body = await req.json().catch(() => null)
-  if (!body) return NextResponse.json({ error: 'Body requis' }, { status: 400 })
+  if (!body) return NextResponse.json({ error: t.msg.bodyRequired }, { status: 400 })
 
   const { approuver, statut } = body
 
@@ -46,17 +49,17 @@ export async function PATCH(
   })
 
   if (!commande) {
-    return NextResponse.json({ error: 'Commande introuvable' }, { status: 404 })
+    return NextResponse.json({ error: t.msg.orderNotFound }, { status: 404 })
   }
 
   if (commande.statut === 'ANNULEE') {
-    return NextResponse.json({ error: 'Cette commande est annulée.' }, { status: 403 })
+    return NextResponse.json({ error: t.msg.orderCancelled }, { status: 403 })
   }
 
   // ── Cas 1 : Approbation (commande EN_ATTENTE) ──────────────────────────
   if (approuver === true) {
     if (commande.statut !== 'EN_ATTENTE') {
-      return NextResponse.json({ error: 'La commande est déjà traitée.' }, { status: 403 })
+      return NextResponse.json({ error: t.msg.orderAlreadyProcessed }, { status: 403 })
     }
 
     // Tous les acteurs qui doivent approuver
@@ -89,8 +92,8 @@ export async function PATCH(
     return NextResponse.json({
       ...updated,
       message: tousOk
-        ? 'Commande confirmée — tous les vendeurs ont approuvé.'
-        : 'Approbation enregistrée — en attente des autres vendeurs.',
+        ? t.msg.orderConfirmedAll
+        : t.msg.approvalSaved,
     })
   }
 
@@ -99,7 +102,7 @@ export async function PATCH(
     const prochainAttendu = FLUX_VENDEUR[commande.statut]
     if (!prochainAttendu || statut !== prochainAttendu) {
       return NextResponse.json(
-        { error: `Action non autorisée. Prochain statut attendu : ${prochainAttendu ?? 'aucun'}.` },
+        { error: t.msg.actionNotAllowedNext(prochainAttendu ? tr(t.orders.status, prochainAttendu) : t.msg.none) },
         { status: 403 }
       )
     }
@@ -112,5 +115,5 @@ export async function PATCH(
     return NextResponse.json(updated)
   }
 
-  return NextResponse.json({ error: 'approuver ou statut requis' }, { status: 400 })
+  return NextResponse.json({ error: t.msg.approveOrStatusRequired }, { status: 400 })
 }

@@ -14,15 +14,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthToken } from '@/lib/getAuthToken'
 import { getReturnForm, FlowmerceError } from '@/lib/flowmerce'
 import { rateLimit, rateLimits } from '@/lib/security'
+import { getI18n } from '@/lib/i18n/server'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
+  const { t } = await getI18n()
   const limited = await rateLimit(req, rateLimits.api)
   if (limited) return limited
 
   const token = await getAuthToken()
-  if (!token) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+  if (!token) return NextResponse.json({ error: t.api.unauthenticated }, { status: 401 })
 
   try {
     const form = await getReturnForm()
@@ -32,6 +34,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: err.message }, { status: err.status })
     }
     console.error('[retours/form] erreur inattendue', err)
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }

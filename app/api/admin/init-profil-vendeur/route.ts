@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { getI18n } from '@/lib/i18n/server'
 
 /**
  * GET    → vérifie si un profil vendeur admin existe encore en base
@@ -13,9 +14,10 @@ import { prisma } from '@/lib/prisma'
 
 // ── GET : vérification ─────────────────────────────────────────────────────────
 export async function GET() {
+  const { t } = await getI18n()
   const session = await auth()
   if (!session?.user || session.user.role !== 'ADMIN')
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
 
   const profil = await prisma.vendeurProfile.findUnique({
     where: { userId: session.user.id },
@@ -35,9 +37,10 @@ export async function GET() {
 
 // ── DELETE : nettoyage du profil admin créé par erreur ────────────────────────
 export async function DELETE() {
+  const { t } = await getI18n()
   const session = await auth()
   if (!session?.user || session.user.role !== 'ADMIN')
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
 
   const profil = await prisma.vendeurProfile.findUnique({
     where: { userId: session.user.id },
@@ -48,11 +51,11 @@ export async function DELETE() {
   })
 
   if (!profil)
-    return NextResponse.json({ error: 'Aucun profil vendeur admin à supprimer.' }, { status: 404 })
+    return NextResponse.json({ error: t.msg.noAdminSellerProfile }, { status: 404 })
 
   if (profil._count.products > 0) {
     return NextResponse.json({
-      error: `Impossible : ${profil._count.products} produit(s) lié(s) à ce profil. Supprimez-les d'abord.`,
+      error: t.msg.profileHasProducts(profil._count.products),
     }, { status: 400 })
   }
 
@@ -66,5 +69,5 @@ export async function DELETE() {
     await tx.vendeurProfile.delete({ where: { id: profil.id } })
   })
 
-  return NextResponse.json({ message: 'Profil vendeur admin supprimé. Les produits admin conservent leur priorité 0 automatique.' })
+  return NextResponse.json({ message: t.msg.adminSellerProfileDeleted })
 }

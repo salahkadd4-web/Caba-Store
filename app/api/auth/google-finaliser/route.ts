@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendOTP, verifyOTP, validatePhone } from '@/lib/twilio'
 import { sanitize } from '@/lib/security'
+import { getI18n } from '@/lib/i18n/server'
 
 const UNIVERSAL_CODE  = '000000'
 const TWILIO_TEST_NUM = process.env.TWILIO_TEST_NUMBER
@@ -24,13 +25,14 @@ function isTwilioTestNumber(telephone: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
+  const { t, locale } = await getI18n()
   try {
     const body      = await req.json()
     const etape     = Number(body.etape)
     const tempToken = String(body.tempToken || '').trim()
 
     if (!tempToken || !/^[a-f0-9]{64}$/.test(tempToken)) {
-      return NextResponse.json({ error: 'Token invalide.' }, { status: 400 })
+      return NextResponse.json({ error: t.auth.api.invalidToken }, { status: 400 })
     }
 
     const identifiant = `google_oauth_${tempToken}`
@@ -44,7 +46,7 @@ export async function POST(req: NextRequest) {
 
       if (!telephone || !validatePhone(telephone)) {
         return NextResponse.json(
-          { error: 'Format invalide. Ex : 05 XX XX XX XX' },
+          { error: t.auth.api.invalidPhoneFormat },
           { status: 400 }
         )
       }
@@ -55,7 +57,7 @@ export async function POST(req: NextRequest) {
       })
       if (!record) {
         return NextResponse.json(
-          { error: 'Session expirée. Recommencez la connexion Google.' },
+          { error: t.auth.api.googleSessionExpired },
           { status: 400 }
         )
       }
@@ -67,7 +69,7 @@ export async function POST(req: NextRequest) {
       if (existing) {
         await prisma.otpToken.deleteMany({ where: { identifiant } })
         return NextResponse.json(
-          { error: 'Ce compte existe déjà. Reconnectez-vous avec Google.' },
+          { error: t.auth.api.accountExists },
           { status: 409 }
         )
       }
@@ -76,7 +78,7 @@ export async function POST(req: NextRequest) {
       const phoneExists = await prisma.user.findFirst({ where: { telephone } })
       if (phoneExists) {
         return NextResponse.json(
-          { error: 'Ce numéro est déjà associé à un autre compte.' },
+          { error: t.auth.api.phoneUsedOther },
           { status: 400 }
         )
       }
@@ -95,12 +97,12 @@ export async function POST(req: NextRequest) {
       })
 
       if (useRealSMS) {
-        await sendOTP(telephone)
-        return NextResponse.json({ message: 'Code envoyé par SMS.' })
+        await sendOTP(telephone, locale)
+        return NextResponse.json({ message: t.auth.api.codeSentSms })
       }
 
       return NextResponse.json({
-        message:  'Mode test — entrez 000000 pour continuer.',
+        message:  t.auth.api.testModeCode,
         testMode: true,
       })
     }
@@ -109,7 +111,7 @@ export async function POST(req: NextRequest) {
     if (etape === 2) {
       const code = String(body.code || '').trim()
       if (!/^\d{6}$/.test(code)) {
-        return NextResponse.json({ error: 'Code invalide (6 chiffres).' }, { status: 400 })
+        return NextResponse.json({ error: t.auth.api.invalidCode6 }, { status: 400 })
       }
 
       const record = await prisma.otpToken.findFirst({
@@ -117,7 +119,7 @@ export async function POST(req: NextRequest) {
       })
       if (!record || !record.token) {
         return NextResponse.json(
-          { error: 'Session expirée. Recommencez depuis l\'étape 1.' },
+          { error: t.auth.api.sessionExpiredStep1 },
           { status: 400 }
         )
       }
@@ -133,11 +135,11 @@ export async function POST(req: NextRequest) {
       if (record.token === 'TWILIO_VERIFY') {
         const valid = await verifyOTP(data.telephone, code)
         if (!valid) {
-          return NextResponse.json({ error: 'Code invalide ou expiré.' }, { status: 400 })
+          return NextResponse.json({ error: t.auth.api.codeInvalidOrExpired }, { status: 400 })
         }
       } else {
         if (code !== UNIVERSAL_CODE) {
-          return NextResponse.json({ error: 'Code invalide.' }, { status: 400 })
+          return NextResponse.json({ error: t.auth.api.invalidCode }, { status: 400 })
         }
       }
 
@@ -146,7 +148,7 @@ export async function POST(req: NextRequest) {
       if (emailExists) {
         await prisma.otpToken.deleteMany({ where: { identifiant } })
         return NextResponse.json(
-          { error: 'Ce compte existe déjà. Reconnectez-vous avec Google.' },
+          { error: t.auth.api.accountExists },
           { status: 409 }
         )
       }
@@ -173,10 +175,10 @@ export async function POST(req: NextRequest) {
       }, { status: 201 })
     }
 
-    return NextResponse.json({ error: 'Requête invalide.' }, { status: 400 })
+    return NextResponse.json({ error: t.api.invalidRequest }, { status: 400 })
 
   } catch (err) {
     console.error('[google-finaliser]', err)
-    return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 }

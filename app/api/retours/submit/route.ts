@@ -24,23 +24,25 @@ import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
 import { submitReturn, FlowmerceError } from '@/lib/flowmerce'
 import { rateLimit, rateLimits } from '@/lib/security'
+import { getI18n } from '@/lib/i18n/server'
 
 const PRISMA_UNIQUE_VIOLATION = 'P2002'
 
 export async function POST(req: NextRequest) {
+  const { t } = await getI18n()
   const limited = await rateLimit(req, rateLimits.api)
   if (limited) return limited
 
   // ── 1. Auth ────────────────────────────────────────────────────────────────
   const token = await getAuthToken()
   if (!token?.id) {
-    return NextResponse.json({ error: 'Non connecté' }, { status: 401 })
+    return NextResponse.json({ error: t.api.unauthenticated }, { status: 401 })
   }
 
   // ── 2. Parse body ──────────────────────────────────────────────────────────
   let body: Record<string, unknown>
   try { body = await req.json() }
-  catch { return NextResponse.json({ error: 'Corps JSON invalide' }, { status: 400 }) }
+  catch { return NextResponse.json({ error: t.msg.invalidJsonBody }, { status: 400 }) }
 
   const orderId   = String(body.orderId ?? '').trim()
   const productId = String(body.productId ?? '').trim()
@@ -50,7 +52,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Champs obligatoires manquants : orderId, productId' }, { status: 400 })
   }
   if (answers === undefined || answers === null || typeof answers !== 'object' || Array.isArray(answers)) {
-    return NextResponse.json({ error: 'Champ answers invalide' }, { status: 400 })
+    return NextResponse.json({ error: t.msg.invalidAnswers }, { status: 400 })
   }
 
   // ── 3. Charger la commande + vérifier ownership ────────────────────────────
@@ -62,7 +64,7 @@ export async function POST(req: NextRequest) {
 
   if (!order) {
     return NextResponse.json(
-      { error: 'Commande introuvable' },
+      { error: t.msg.orderNotFound },
       { status: 404 }
     )
   }
@@ -70,7 +72,7 @@ export async function POST(req: NextRequest) {
   const item = order.items.find(i => i.productId === productId)
   if (!item) {
     return NextResponse.json(
-      { error: 'Article introuvable dans la commande' },
+      { error: t.msg.itemNotInOrder },
       { status: 400 }
     )
   }
@@ -92,7 +94,7 @@ export async function POST(req: NextRequest) {
     const code = (err as { code?: string })?.code
     if (code === PRISMA_UNIQUE_VIOLATION) {
       return NextResponse.json(
-        { error: 'Une demande de retour existe déjà pour cette commande.' },
+        { error: t.msg.returnAlreadyExists },
         { status: 409 }
       )
     }
@@ -114,7 +116,7 @@ export async function POST(req: NextRequest) {
     if (err instanceof FlowmerceError) {
       if (err.status === 409) {
         return NextResponse.json(
-          { error: 'Une demande de retour existe déjà pour cette commande.' },
+          { error: t.msg.returnAlreadyExists },
           { status: 409 }
         )
       }
@@ -129,7 +131,7 @@ export async function POST(req: NextRequest) {
     }
 
     console.error('[retours/submit] erreur inattendue', err)
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json({ error: t.api.serverError }, { status: 500 })
   }
 
   // ── 6. Succès — UPDATE avec flowmerceClaimId + marquer la commande ────────

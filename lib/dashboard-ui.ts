@@ -58,7 +58,7 @@ export const btnGhost =
 // ─── Tableaux ──────────────────────────────────────────────────────────────────
 export const tableWrapper = `${card} overflow-hidden`
 export const tableHead    = 'bg-stone-50 dark:bg-stone-800/60 text-stone-600 dark:text-stone-300 font-semibold text-sm'
-export const tableTh      = 'text-left px-5 py-3.5'
+export const tableTh      = 'text-start px-5 py-3.5'
 export const tableTd      = 'px-5 py-4'
 export const tableRow     = 'border-t border-stone-100 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800/50 transition'
 
@@ -88,7 +88,7 @@ export const sectionHeading =
 
 // ─── Toast ─────────────────────────────────────────────────────────────────────
 export const toastCls =
-  'fixed top-4 right-4 z-[100] bg-stone-900 dark:bg-stone-700 text-white text-sm ' +
+  'fixed top-4 end-4 z-[100] bg-stone-900 dark:bg-stone-700 text-white text-sm ' +
   'px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2'
 
 // ─── Loading placeholder ───────────────────────────────────────────────────────

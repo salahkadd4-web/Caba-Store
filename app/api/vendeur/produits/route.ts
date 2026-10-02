@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
+import { getI18n } from '@/lib/i18n/server'
 
 type VariantInput = {
   nom: string
@@ -19,8 +20,9 @@ async function getVendeur() {
 }
 
 export async function GET(req: NextRequest) {
+  const { t } = await getI18n()
   const vendeur = await getVendeur()
-  if (!vendeur) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+  if (!vendeur) return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
 
   const { searchParams } = new URL(req.url)
   const actif = searchParams.get('actif')
@@ -44,16 +46,17 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const { t } = await getI18n()
   const vendeur = await getVendeur()
-  if (!vendeur) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+  if (!vendeur) return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
 
   const { nom, description, prix, stock, images, categoryId, actif, prixVariables, typeOption, variants } = await req.json()
-  if (!nom?.trim()) return NextResponse.json({ error: 'Nom requis' }, { status: 400 })
-  if (!prix || isNaN(prix)) return NextResponse.json({ error: 'Prix invalide' }, { status: 400 })
-  if (!categoryId) return NextResponse.json({ error: 'Catégorie requise' }, { status: 400 })
+  if (!nom?.trim()) return NextResponse.json({ error: t.msg.nameRequired }, { status: 400 })
+  if (!prix || isNaN(prix)) return NextResponse.json({ error: t.msg.invalidPrice }, { status: 400 })
+  if (!categoryId) return NextResponse.json({ error: t.msg.categoryRequired }, { status: 400 })
 
   const cat = await prisma.category.findFirst({ where: { id: categoryId, statut: 'APPROUVEE' } })
-  if (!cat) return NextResponse.json({ error: 'Catégorie invalide' }, { status: 400 })
+  if (!cat) return NextResponse.json({ error: t.msg.invalidCategory }, { status: 400 })
 
   const produit = await prisma.product.create({
     data: {

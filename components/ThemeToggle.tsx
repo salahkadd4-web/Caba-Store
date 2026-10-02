@@ -3,11 +3,12 @@
 import { useTheme } from '@/components/ThemeProvider'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Sun, Moon, Monitor } from 'lucide-react'
+import { useI18n } from '@/components/I18nProvider'
 
-const options: { key: 'light' | 'dark' | 'system'; label: string; icon: React.ElementType }[] = [
-  { key: 'light',  label: 'Clair',   icon: Sun },
-  { key: 'dark',   label: 'Sombre',  icon: Moon },
-  { key: 'system', label: 'Système', icon: Monitor },
+const options: { key: 'light' | 'dark' | 'system'; icon: React.ElementType }[] = [
+  { key: 'light',  icon: Sun },
+  { key: 'dark',   icon: Moon },
+  { key: 'system', icon: Monitor },
 ]
 
 const BTN = 44
@@ -33,6 +34,7 @@ function getInitialPos(): { x: number; y: number } {
 
 export default function ThemeToggle() {
   const { theme, setTheme } = useTheme()
+  const { t } = useI18n()
 
   const [open,     setOpen]     = useState(false)
   const [dragging, setDragging] = useState(false)
@@ -126,12 +128,12 @@ export default function ThemeToggle() {
       {/* ── DESKTOP — même coin que le Header (bottom-right) ── */}
       <div
         ref={desktopRef}
-        className="hidden md:block fixed bottom-6 right-6 z-50"
+        className="hidden md:block fixed bottom-6 end-6 z-50"
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
       >
         {/* Options flottantes */}
-        <div className={`absolute bottom-full right-0 mb-2 flex flex-col items-end gap-1.5 transition-all duration-200 origin-bottom-right
+        <div className={`absolute bottom-full end-0 mb-2 flex flex-col items-end gap-1.5 transition-all duration-200 origin-bottom-right
           ${open ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-2 pointer-events-none'}`}
         >
           {options.map(opt => {
@@ -141,7 +143,7 @@ export default function ThemeToggle() {
               <button
                 key={opt.key}
                 onClick={() => { setTheme(opt.key); setOpen(false) }}
-                className={`flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-full text-xs font-medium
+                className={`flex items-center gap-2 ps-3 pe-3.5 py-2 rounded-full text-xs font-medium
                   border shadow-sm backdrop-blur-sm transition-all duration-150 active:scale-95
                   ${active
                     ? 'bg-orange-700 text-white border-orange-700 shadow-orange-200 dark:shadow-orange-900'
@@ -149,7 +151,7 @@ export default function ThemeToggle() {
                   }`}
               >
                 <Icon className="w-3.5 h-3.5" />
-                {opt.label}
+                {t.layout.theme[opt.key]}
               </button>
             )
           })}
@@ -201,7 +203,7 @@ export default function ThemeToggle() {
                   // ce qui évite l'interférence avec setPointerCapture dans Capacitor WebView.
                   onPointerDown={e => e.stopPropagation()}
                   onClick={() => { setTheme(opt.key); setOpen(false) }}
-                  className={`flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-full text-xs font-medium
+                  className={`flex items-center gap-2 ps-3 pe-3.5 py-2 rounded-full text-xs font-medium
                     border shadow-md backdrop-blur-sm whitespace-nowrap transition-all active:scale-95
                     ${active
                       ? 'bg-orange-700 text-white border-orange-700'
@@ -209,7 +211,7 @@ export default function ThemeToggle() {
                     }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
-                  {opt.label}
+                  {t.layout.theme[opt.key]}
                 </button>
               )
             })}
