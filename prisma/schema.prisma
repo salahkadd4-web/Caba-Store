@@ -59,6 +59,8 @@ model VendeurDocument {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   vendeur     VendeurProfile @relation(fields: [vendeurId], references: [id])
+
+  @@index([vendeurId])
 }
 
 model Category {
@@ -72,6 +74,8 @@ model Category {
   vendeurId   String?
   vendeur     VendeurProfile? @relation(fields: [vendeurId], references: [id])
   products    Product[]
+
+  @@index([vendeurId])
 }
 
 model Product {
@@ -94,6 +98,10 @@ model Product {
   category      Category         @relation(fields: [categoryId], references: [id])
   vendeur       VendeurProfile?  @relation(fields: [vendeurId], references: [id])
   variants      ProductVariant[]
+
+  @@index([vendeurId])
+  @@index([categoryId])
+  @@index([actif, createdAt])
 }
 
 model ProductVariant {
@@ -109,6 +117,8 @@ model ProductVariant {
   orderItems OrderItem[]
   options   VariantOption[]
   product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
 }
 
 model VariantOption {
@@ -121,6 +131,8 @@ model VariantOption {
   variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
   cartItems CartItem[]
   orderItems OrderItem[]
+
+  @@index([variantId])
 }
 
 model Abonnement {
@@ -149,6 +161,8 @@ model Paiement {
   confirmeParAdmin  Boolean    @default(false)
   createdAt         DateTime   @default(now())
   abonnement        Abonnement @relation(fields: [abonnementId], references: [id])
+
+  @@index([abonnementId])
 }
 
 model Cart {
@@ -171,6 +185,9 @@ model CartItem {
   product   Product         @relation(fields: [productId], references: [id])
   variant   ProductVariant? @relation(fields: [variantId], references: [id])
   variantOption   VariantOption?  @relation(fields: [variantOptionId], references: [id])
+
+  @@index([cartId])
+  @@index([productId])
 }
 
 model Favorite {
@@ -182,6 +199,8 @@ model Favorite {
   user      User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, productId])
+
+  @@index([productId])
 }
 
 model Order {
@@ -205,6 +224,10 @@ model Order {
   user                  User        @relation(fields: [userId], references: [id])
   items                 OrderItem[]
   returnRequest         ReturnRequest?
+
+  @@index([userId])
+  @@index([groupeId])
+  @@index([statut, createdAt])
 }
 
 model ReturnRequest {
@@ -239,6 +262,9 @@ model OrderItem {
   product    Product         @relation(fields: [productId], references: [id])
   variant    ProductVariant? @relation(fields: [variantId], references: [id])
   variantOption       VariantOption?  @relation(fields: [variantOptionId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
 }
 
 model ResetToken {
@@ -251,6 +277,8 @@ model ResetToken {
   verified  Boolean  @default(false)
   code      String
   user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
 model OtpToken {
@@ -260,6 +288,8 @@ model OtpToken {
   data        String
   expiresAt   DateTime
   createdAt   DateTime @default(now())
+
+  @@index([identifiant])
 }
 
 enum Role {

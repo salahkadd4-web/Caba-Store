@@ -7,6 +7,7 @@ const admin = {
     clients: 'Clients',
     orders: 'Commandes',
     stats: 'Statistiques',
+    activeSellers: 'Vendeurs actifs',
     seeAll: 'Voir tout',
     revenue: "Chiffre d'affaires",
     deliveredCount: (n: number): string => `${n} commandes livrées`,

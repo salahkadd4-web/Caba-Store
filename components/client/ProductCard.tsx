@@ -179,12 +179,12 @@ export default function ProductCard({
                 : 'text-orange-700 dark:text-orange-500'
             }`}
           >
-            {prixMin.toFixed(2)} {fmt.currency}
+            {fmt.money(prixMin)} {fmt.currency}
           </span>
           {estReduit && (
             <>
               <span className="text-xs text-stone-400 line-through font-normal">
-                {produit.prix.toFixed(2)}
+                {fmt.money(produit.prix)}
               </span>
               <span className="text-[9px] bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 font-bold px-1 py-0.5 rounded-full">
                 −{reduction}%

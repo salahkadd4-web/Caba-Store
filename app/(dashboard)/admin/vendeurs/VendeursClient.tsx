@@ -10,7 +10,7 @@ import {
   Play, Search, ShoppingCart, X, XCircle,
 } from 'lucide-react'
 import {
-  heading, inputCls, selectCls, btnSecondary, btnDangerSolid,
+  heading, inputCls, selectCls, btnSecondary,
   cardSm, kpiCard, modalOverlay, modalBox, toastCls,
 } from '@/lib/dashboard-ui'
 import { useI18n } from '@/components/I18nProvider'

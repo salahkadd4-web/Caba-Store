@@ -7,8 +7,7 @@ export const dynamic = 'force-dynamic'
 import BoutonInitProfilAdmin from '@/components/Boutoninitprofiladmin'
 import { CreditCard, Gem, Moon, ShieldCheck, Star, Tag, TrendingDown, Trophy } from 'lucide-react'
 import {
-  heading, kpiCard, kpiCardDark, sectionHeading,
-  card, tableWrapper,
+  heading, kpiCard, kpiCardDark, sectionHeading, tableWrapper,
 } from '@/lib/dashboard-ui'
 import { getI18n } from '@/lib/i18n/server'
 import { SELLER_SUBSCRIPTION_PRICING } from '@/lib/seller-billing'

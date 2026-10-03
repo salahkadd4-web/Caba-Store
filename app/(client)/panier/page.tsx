@@ -7,10 +7,10 @@ import {
   ShoppingCart, X, TrendingDown,
   Ruler, Package, ArrowLeft,
   Trash2, ShoppingBag, Tag, ChevronDown, ChevronUp,
-  Pencil, Check, Loader2,
+  Pencil, Loader2,
   Store,
 } from 'lucide-react'
-import { getPrixUnitaire as getPrixUnitaireLib, parsePrixTiers } from '@/lib/prix'
+import { getPrixUnitaire as getPrixUnitaireLib, parsePrixTiers, trierOptions } from '@/lib/prix'
 import QteInput from '@/components/client/QteInput'
 import VendeurButton from '@/components/client/VendeurButton'
 import { useI18n } from '@/components/I18nProvider'
@@ -214,7 +214,7 @@ function ProductEditor({
                 <span className="font-normal normal-case text-stone-400 ms-1">{c.clickToAdd}</span>
               </p>
               <div className="flex flex-wrap gap-2">
-                {activeVariant.options.map(opt => {
+                {trierOptions(activeVariant.options).map(opt => {
                   const key       = `${activeVariant.id}__${opt.id}`
                   const qt        = qteInCart(activeVariant.id, opt.id)
                   const isPending = pending[key]
@@ -304,7 +304,7 @@ function ProductEditor({
                       />
                   }
                   <span className="text-xs font-semibold text-stone-700 dark:text-stone-300 w-20 text-end tabular-nums shrink-0">
-                    {(prixU * item.quantite).toFixed(2)} {fmt.currency}
+                    {fmt.money(prixU * item.quantite)} {fmt.currency}
                   </span>
                   <button type="button" onClick={() => onDelete(item.id)}
                     className="text-stone-300 dark:text-stone-600 hover:text-red-500 dark:hover:text-red-400 transition shrink-0 p-0.5 rounded">
@@ -402,11 +402,11 @@ function ProductCard({
           {/* Prix unitaire */}
           <div className="flex items-baseline gap-2 mt-2.5 flex-wrap">
             <span className={`text-base font-semibold ${isReduit ? 'text-green-700 dark:text-green-400' : 'text-stone-900 dark:text-stone-50'}`}>
-              {prixUnit.toFixed(2)} {DA}<span className="text-xs font-normal text-stone-400 ms-0.5">{c.perUnit}</span>
+              {fmt.money(prixUnit)} {DA}<span className="text-xs font-normal text-stone-400 ms-0.5">{c.perUnit}</span>
             </span>
             {isReduit && (
               <>
-                <span className="text-xs text-stone-400 line-through">{prixBase.toFixed(2)} {DA}</span>
+                <span className="text-xs text-stone-400 line-through">{fmt.money(prixBase)} {DA}</span>
                 <span className="text-[10px] bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-300 font-semibold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                   <TrendingDown className="w-2.5 h-2.5" />−{Math.round((1 - prixUnit / prixBase) * 100)}%
                 </span>
@@ -418,7 +418,7 @@ function ProductCard({
           {prochainPalier && (
             <p className="text-[11px] text-orange-700 dark:text-orange-400 flex items-center gap-1 mt-1">
               <TrendingDown className="w-3 h-3 shrink-0" />
-              {c.nextTier(prochainPalier.minQte - totalQte, `${prochainPalier.prix.toFixed(2)} ${DA}`)}
+              {c.nextTier(prochainPalier.minQte - totalQte, `${fmt.money(prochainPalier.prix)} ${DA}`)}
             </p>
           )}
         </div>
@@ -438,11 +438,11 @@ function ProductCard({
       <div className="border-t border-stone-100 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-800/40 px-4 py-2.5 flex items-center justify-between gap-3">
         <div>
           <p className="text-[10px] text-stone-400 uppercase tracking-wide">
-            {c.subtotalLine(totalQte)}{isReduit && economie > 0 && c.savingsShort(`${economie.toFixed(0)} ${DA}`)}
+            {c.subtotalLine(totalQte)}{isReduit && economie > 0 && c.savingsShort(`${fmt.money(economie)} ${DA}`)}
           </p>
           <div className="flex items-baseline gap-1.5">
-            <p className="font-semibold text-stone-800 dark:text-stone-100">{sousTotal.toFixed(2)} {DA}</p>
-            {isReduit && <p className="text-[10px] text-stone-400 line-through">{(prixBase * totalQte).toFixed(2)} {DA}</p>}
+            <p className="font-semibold text-stone-800 dark:text-stone-100">{fmt.money(sousTotal)} {DA}</p>
+            {isReduit && <p className="text-[10px] text-stone-400 line-through">{fmt.money(prixBase * totalQte)} {DA}</p>}
           </div>
         </div>
 
@@ -667,7 +667,7 @@ export default function PanierPage() {
                         <div className="flex justify-between items-start gap-2 text-xs">
                           <span className="text-stone-700 dark:text-stone-300 font-medium flex-1 line-clamp-1">{group.product.nom}</span>
                           <span className="text-stone-800 dark:text-stone-200 font-semibold shrink-0 tabular-nums">
-                            {(prixU * qte).toFixed(2)} {DA}
+                            {fmt.money(prixU * qte)} {DA}
                           </span>
                         </div>
                         {group.items.map(item => (
@@ -682,7 +682,7 @@ export default function PanierPage() {
                               {' '}×{item.quantite}
                             </span>
                             <span className="tabular-nums shrink-0">
-                              {(prixU * item.quantite).toFixed(2)} {DA}
+                              {fmt.money(prixU * item.quantite)} {DA}
                             </span>
                           </div>
                         ))}
@@ -696,18 +696,18 @@ export default function PanierPage() {
             <div className="border-t border-stone-100 dark:border-stone-800 pt-4 space-y-2.5">
               <div className="flex justify-between text-sm text-stone-500 dark:text-stone-400">
                 <span>{c.subtotal}</span>
-                <span className="tabular-nums">{sousTotal.toFixed(2)} {DA}</span>
+                <span className="tabular-nums">{fmt.money(sousTotal)} {DA}</span>
               </div>
               {totalEconomies > 0 && (
                 <div className="flex justify-between text-sm text-green-700 dark:text-green-400">
                   <span className="flex items-center gap-1"><Tag className="w-3.5 h-3.5" /> {c.discounts}</span>
-                  <span className="tabular-nums font-semibold">−{totalEconomies.toFixed(2)} {DA}</span>
+                  <span className="tabular-nums font-semibold">−{fmt.money(totalEconomies)} {DA}</span>
                 </div>
               )}
               <p className="text-xs text-stone-400">{c.deliveryNext}</p>
               <div className="flex justify-between font-semibold text-lg pt-1 border-t border-stone-100 dark:border-stone-800">
                 <span className="text-stone-800 dark:text-stone-100">{c.totalItems}</span>
-                <span className="text-orange-700 dark:text-orange-400 tabular-nums">{sousTotal.toFixed(2)} {DA}</span>
+                <span className="text-orange-700 dark:text-orange-400 tabular-nums">{fmt.money(sousTotal)} {DA}</span>
               </div>
             </div>
           </div>
@@ -720,7 +720,7 @@ export default function PanierPage() {
               </div>
               <div>
                 <p className="text-xs font-semibold text-green-700 dark:text-green-400">{c.youSave}</p>
-                <p className="text-sm font-semibold text-green-800 dark:text-green-300">{totalEconomies.toFixed(2)} {DA}</p>
+                <p className="text-sm font-semibold text-green-800 dark:text-green-300">{fmt.money(totalEconomies)} {DA}</p>
               </div>
             </div>
           )}

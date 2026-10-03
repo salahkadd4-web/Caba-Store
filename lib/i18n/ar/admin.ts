@@ -8,6 +8,7 @@ const admin: typeof fr = {
     clients: 'الزبائن',
     orders: 'الطلبات',
     stats: 'الإحصائيات',
+    activeSellers: 'البائعون النشطون',
     seeAll: 'عرض الكل',
     revenue: 'رقم الأعمال',
     deliveredCount: (n: number) => `${n} طلب مُسلَّم`,

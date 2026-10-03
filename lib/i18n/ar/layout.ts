@@ -55,9 +55,7 @@ const layout: typeof fr = {
     system: 'النظام',
   },
   lang: {
-    switchTo: 'Français',
-    switchToShort: 'FR',
-    switchAria: 'Passer en français',
+    choose: 'تغيير اللغة',
   },
 }
 

@@ -16,23 +16,13 @@ type Props = {
  * Saisie de quantité avec stepper +/−.
  * raw === null  →  pas en édition, affiche la prop value
  * raw !== null  →  l'utilisateur tape, affiche ce qu'il tape
- * Pas de useEffect : sync via prev.current comparé au render.
+ * Hors édition, l'affichage suit toujours la prop value.
  */
 export default function QteInput({
   value, stockMax, onChange, onZero, size = 'md', disabled = false,
 }: Props) {
   const [raw, setRaw] = useState<string | null>(null)
   const inputRef      = useRef<HTMLInputElement>(null)
-
-  // Sync externe : si value change et qu'on n'est pas en train de taper, reset raw
-  const prevValue = useRef(value)
-  if (prevValue.current !== value && raw === null) {
-    prevValue.current = value
-  }
-  if (prevValue.current !== value && document.activeElement !== inputRef.current) {
-    prevValue.current = value
-    // raw est non-null seulement si on tape, mais focus est perdu → reset
-  }
 
   const displayValue = raw !== null ? raw : String(value)
 

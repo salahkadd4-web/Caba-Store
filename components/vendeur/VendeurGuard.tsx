@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
@@ -64,12 +65,12 @@ export async function VendeurGuard({ children }: { children: React.ReactNode }) 
               )}
             </>
           )}
-          <a
+          <Link
             href="/"
             className="inline-block mt-2 text-sm text-emerald-600 dark:text-emerald-400 hover:underline"
           >
             {s.backToShopArrow}
-          </a>
+          </Link>
         </div>
       </div>
     )

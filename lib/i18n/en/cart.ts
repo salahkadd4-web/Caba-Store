@@ -1,0 +1,43 @@
+import type fr from '../fr/cart'
+
+const cart: typeof fr = {
+  color: 'Colour',
+  variant: 'Variant',
+  clickToAdd: '— click to add, type the quantity',
+  quantity: 'Quantity',
+  available: (n: number): string => `${n} avail.`,
+  inYourCart: 'In your cart',
+  removeProduct: 'Remove this product',
+  perUnit: '/unit',
+  nextTier: (n: number, price: string): string => `+${n} items → ${price}/unit`,
+  subtotalLine: (n: number): string => `Subtotal — ${n} item${n === 1 ? '' : 's'}`,
+  savingsShort: (amount: string): string => ` · save ${amount}`,
+  close: 'Close',
+  editSelection: 'Edit selection',
+  loading: 'Loading cart…',
+  emptyTitle: 'Your cart is empty',
+  emptyDesc: 'Add products to start shopping.',
+  discover: 'Browse products',
+  eyebrow: 'Shopping',
+  title: 'My cart',
+  counts: (products: number, items: number): string =>
+    `(${products} product${products === 1 ? '' : 's'} · ${items} item${items === 1 ? '' : 's'})`,
+  emptying: 'Emptying…',
+  emptyCart: 'Empty cart',
+  productsCount: (n: number): string => `${n} product${n === 1 ? '' : 's'}`,
+  official: 'Official',
+  continueShopping: 'Continue shopping',
+  summary: 'Summary',
+  subtotal: 'Subtotal',
+  discounts: 'Discounts',
+  deliveryNext: '+ Delivery calculated at the next step',
+  totalItems: 'Items total',
+  youSave: 'You save!',
+  sellersInCart: (n: number): string => `${n} sellers in your cart`,
+  sellersInCartDesc: 'Delivery fees will be calculated separately for each seller at the next step.',
+  checkout: 'Place order',
+  unavailable: 'Unavailable',
+  removeFromCart: 'Remove from cart',
+}
+
+export default cart

@@ -178,6 +178,8 @@ const orders = {
     wilayaCommuneRequired: 'Wilaya et commune de livraison requises',
     emptyCart: 'Panier vide',
     insufficientStock: (name: string): string => `Stock insuffisant pour ${name}`,
+    paymentUnavailable: "Ce mode de paiement n'est pas encore disponible",
+    productUnavailable: (name: string): string => `${name} n'est plus disponible. Retirez-le du panier pour continuer.`,
     created: 'Commande(s) créée(s) avec succès',
   },
 }

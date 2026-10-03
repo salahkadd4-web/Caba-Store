@@ -17,6 +17,7 @@ export async function getLocale(): Promise<Locale> {
 
   const accept = hdrs.get('accept-language') ?? ''
   if (/^\s*ar\b/i.test(accept)) return 'ar'
+  if (/^\s*en\b/i.test(accept)) return 'en'
   return DEFAULT_LOCALE
 }
 

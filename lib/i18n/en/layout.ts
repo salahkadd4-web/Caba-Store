@@ -1,0 +1,62 @@
+import type fr from '../fr/layout'
+
+const layout: typeof fr = {
+  metaDescription: 'Your online store — Caba Store',
+  nav: {
+    home: 'Home',
+    homeShort: 'Home',
+    categories: 'Categories',
+    products: 'Products',
+    search: 'Search',
+    menu: 'Menu',
+    myProfile: 'My Profile',
+    myFavorites: 'My Favourites',
+    myCart: 'My Cart',
+    myOrders: 'My Orders',
+    myReturns: 'My Returns',
+    dashboard: 'Dashboard',
+    adminDashboard: 'Admin dashboard',
+    sellerDashboard: 'Seller dashboard',
+    logout: 'Log out',
+    login: 'Log in',
+    searchProduct: 'Search for a product...',
+  },
+  searchBar: {
+    placeholder: 'Search for a product or category...',
+    categories: 'Categories',
+    products: 'Products',
+    seeAllResults: 'See all results',
+    noResultsFor: 'No results for',
+  },
+  footer: {
+    delivery48: '48h delivery',
+    deliveryDesc: 'Anywhere in Algeria',
+    securePayment: 'Secure payment',
+    securePaymentDesc: 'Pay on delivery',
+    freeReturns: 'Free returns',
+    freeReturnsDesc: '14 days to change your mind',
+    tagline: 'Your favourite products, delivered fast anywhere in Algeria.',
+    navigation: 'Navigation',
+    support: 'Support',
+    myAccount: 'My account',
+    login: 'Log in',
+    register: 'Sign up',
+    returns: 'Returns',
+    myOrders: 'My orders',
+    myFavorites: 'My favourites',
+    contact: 'Contact',
+    algeria: 'Algeria',
+    rights: 'CabaStore. All rights reserved.',
+    madeIn: 'Made with care in Algeria.',
+  },
+  theme: {
+    light: 'Light',
+    dark: 'Dark',
+    system: 'System',
+  },
+  lang: {
+    choose: 'Change language',
+  },
+}
+
+export default layout

@@ -8,7 +8,7 @@
  *     Les anciennes valeurs (nom français, ex. "Alger") restent lisibles grâce à
  *     normalizeWilayaCode().
  *   - User.commune / Order.commune : nom de la commune tel que choisi dans la liste
- *     (FR ou AR). Les listes FR et AR des fichiers JSON ne sont pas alignées
+ *     (FR ou AR ; l'anglais utilise la liste FR). Les listes FR et AR des fichiers JSON ne sont pas alignées
  *     commune par commune, une traduction automatique n'est donc pas possible.
  */
 
@@ -18,6 +18,14 @@ import { WILAYAS, type Wilaya } from './wilayas'
 export { WILAYAS, type Wilaya }
 
 const byCode = new Map(WILAYAS.map(w => [w.code, w]))
+
+/**
+ * Graphie des noms de lieux pour une langue : l'anglais reprend la graphie
+ * latine des noms français (Alger, Béjaïa…) et la liste de communes FR.
+ */
+function placeScript(locale: Locale): 'fr' | 'ar' {
+  return locale === 'ar' ? 'ar' : 'fr'
+}
 
 /** Supprime accents, apostrophes, tirets et casse pour comparer des noms. */
 function simplify(s: string): string {
@@ -62,12 +70,12 @@ export function getWilaya(value: string | null | undefined): Wilaya | null {
 export function wilayaName(value: string | null | undefined, locale: Locale): string {
   if (!value) return ''
   const w = getWilaya(value)
-  return w ? w[locale] : value
+  return w ? w[placeScript(locale)] : value
 }
 
 /** "16 - Alger" / "16 - الجزائر" pour les listes déroulantes. */
 export function wilayaLabel(w: Wilaya, locale: Locale): string {
-  return `${w.code} - ${w[locale]}`
+  return `${w.code} - ${w[placeScript(locale)]}`
 }
 
 /** Adresse complète lisible : "adresse, commune, wilaya". */
@@ -88,7 +96,7 @@ export type CommunesByWilaya = Record<string, string[]>
 
 /** Déduplique et trie les communes d'une wilaya dans l'ordre alphabétique de la langue. */
 export function buildCommunesIndex(raw: RawWilaya[], locale: Locale): CommunesByWilaya {
-  const collator = new Intl.Collator(locale === 'ar' ? 'ar' : 'fr')
+  const collator = new Intl.Collator(placeScript(locale))
   const index: CommunesByWilaya = {}
   for (const w of raw) {
     index[w.code] = [...new Set(w.communes.map(c => c.trim()).filter(Boolean))].sort(collator.compare)
@@ -97,24 +105,25 @@ export function buildCommunesIndex(raw: RawWilaya[], locale: Locale): CommunesBy
 }
 
 export function communesFileUrl(locale: Locale): string {
-  return locale === 'ar' ? '/Wilaya_Commune_AR.json' : '/Wilaya_Commune_FR.json'
+  return placeScript(locale) === 'ar' ? '/Wilaya_Commune_AR.json' : '/Wilaya_Commune_FR.json'
 }
 
-const cache: Partial<Record<Locale, Promise<CommunesByWilaya>>> = {}
+const cache: Partial<Record<'fr' | 'ar', Promise<CommunesByWilaya>>> = {}
 
-/** Charge (une seule fois par langue) les communes depuis /public. Côté client. */
+/** Charge (une seule fois par graphie, FR/EN partagent la liste FR) les communes depuis /public. Côté client. */
 export function loadCommunes(locale: Locale): Promise<CommunesByWilaya> {
-  if (!cache[locale]) {
-    cache[locale] = fetch(communesFileUrl(locale))
+  const key = placeScript(locale)
+  if (!cache[key]) {
+    cache[key] = fetch(communesFileUrl(locale))
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         return r.json() as Promise<RawWilaya[]>
       })
       .then(raw => buildCommunesIndex(raw, locale))
       .catch(err => {
-        delete cache[locale] // permettre une nouvelle tentative
+        delete cache[key] // permettre une nouvelle tentative
         throw err
       })
   }
-  return cache[locale]!
+  return cache[key]!
 }

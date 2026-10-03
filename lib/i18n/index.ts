@@ -13,6 +13,7 @@
 
 import fr from './fr'
 import ar from './ar'
+import en from './en'
 import { localeDir, type Locale } from './config'
 import { makeFormatters, type Formatters } from './format'
 
@@ -20,7 +21,7 @@ export type { Dictionary } from './fr'
 export * from './config'
 export type { Formatters } from './format'
 
-export const dictionaries = { fr, ar } as const
+export const dictionaries = { fr, ar, en } as const
 
 export type I18n = {
   locale: Locale

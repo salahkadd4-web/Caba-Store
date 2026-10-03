@@ -3,10 +3,11 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { getI18n } from '@/lib/i18n/server'
 import { tr } from '@/lib/i18n'
+import { enregistrerApprobation } from '@/lib/commandes'
 
-// Flux linéaire autorisé pour le vendeur
+// Flux linéaire autorisé pour le vendeur. Une commande EN_ATTENTE passe par
+// l'approbation (tous les acteurs doivent approuver) : pas de raccourci ici.
 const FLUX_VENDEUR: Record<string, string> = {
-  EN_ATTENTE:     'EN_PREPARATION',
   CONFIRMEE:      'EN_PREPARATION',
   EN_PREPARATION: 'EXPEDIEE',
   EXPEDIEE:       'LIVREE',
@@ -58,42 +59,15 @@ export async function PATCH(
 
   // ── Cas 1 : Approbation (commande EN_ATTENTE) ──────────────────────────
   if (approuver === true) {
-    if (commande.statut !== 'EN_ATTENTE') {
-      return NextResponse.json({ error: t.msg.orderAlreadyProcessed }, { status: 403 })
+    const r = await enregistrerApprobation(id, vendeur.id)
+    if (!r.ok) {
+      return r.raison === 'introuvable'
+        ? NextResponse.json({ error: t.msg.orderNotFound }, { status: 404 })
+        : NextResponse.json({ error: t.msg.orderAlreadyProcessed }, { status: 403 })
     }
-
-    // Tous les acteurs qui doivent approuver
-    const vendeurIds = [
-      ...new Set(
-        commande.items
-          .map(i => i.product.vendeurId)
-          .filter((v): v is string => v !== null)
-      ),
-    ]
-    const aDesProduitsAdmin = commande.items.some(i => i.product.vendeurId === null)
-
-    // Enregistrer l'approbation de ce vendeur
-    const approbations = ((commande.approbationsVendeurs as Record<string, boolean>) ?? {})
-    approbations[vendeur.id] = true
-
-    // Vérifier si tous ont approuvé
-    const tousVendeursOk = vendeurIds.every(vid => approbations[vid] === true)
-    const adminOk        = aDesProduitsAdmin ? approbations['admin'] === true : true
-    const tousOk         = tousVendeursOk && adminOk
-
-    const updated = await prisma.order.update({
-      where: { id },
-      data: {
-        approbationsVendeurs: approbations,
-        ...(tousOk ? { statut: 'CONFIRMEE' } : {}),
-      },
-    })
-
     return NextResponse.json({
-      ...updated,
-      message: tousOk
-        ? t.msg.orderConfirmedAll
-        : t.msg.approvalSaved,
+      ...r.commande,
+      message: r.tousOk ? t.msg.orderConfirmedAll : t.msg.approvalSaved,
     })
   }
 
@@ -107,12 +81,16 @@ export async function PATCH(
       )
     }
 
-    const updated = await prisma.order.update({
-      where: { id },
+    // Écriture conditionnée au statut lu : deux clics simultanés n'avancent pas deux fois
+    const { count } = await prisma.order.updateMany({
+      where: { id, statut: commande.statut },
       data:  { statut },
     })
+    if (count === 0) {
+      return NextResponse.json({ error: t.msg.orderAlreadyProcessed }, { status: 409 })
+    }
 
-    return NextResponse.json(updated)
+    return NextResponse.json({ id, statut })
   }
 
   return NextResponse.json({ error: t.msg.approveOrStatusRequired }, { status: 400 })

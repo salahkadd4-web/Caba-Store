@@ -229,9 +229,9 @@ function TopBar({
             </svg>
           </button>
 
-          {/* Fil d'ariane / page courante (mobile) */}
+          {/* Page courante (le logo et l'utilisateur sont déjà dans la sidebar sur desktop) */}
           {currentItem && (
-            <div className="lg:hidden flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
               {CurrentIcon && <CurrentIcon className="w-4 h-4 shrink-0 text-stone-400" />}
               <span className="text-sm font-semibold text-stone-700 dark:text-stone-200 truncate">
                 {currentItem.label}
@@ -240,25 +240,17 @@ function TopBar({
           )}
         </div>
 
-        {/* Centre : Logo (desktop seulement) */}
-        <Link href="/" className="hidden lg:flex items-center gap-2 group select-none shrink-0">
-          <CabaLogo className="h-7 w-auto text-orange-700 dark:text-orange-400 transition-transform group-hover:scale-105" />
-          <span className="text-base font-semibold tracking-tight text-stone-800 dark:text-stone-100">
-            Caba<span className="text-orange-700 dark:text-orange-400">Store</span>
-          </span>
-        </Link>
-
         {/* Droite : badge rôle + user + déconnexion */}
         <div className="flex items-center gap-2 shrink-0">
 
-          {/* Badge rôle — desktop */}
-          <span className={`hidden sm:flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full ${pillCls}`}>
+          {/* Badge rôle — tablette (sur desktop il est dans la sidebar) */}
+          <span className={`hidden sm:flex lg:hidden items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full ${pillCls}`}>
             {isAdmin ? <Settings className="w-3 h-3" /> : <Store className="w-3 h-3" />}
             {isAdmin ? t.dashboard.roleAdmin : t.dashboard.roleSeller}
           </span>
 
-          {/* Avatar + nom */}
-          <div className="hidden sm:flex items-center gap-2 bg-stone-100 dark:bg-stone-800 rounded-full ps-1 pe-3 py-1">
+          {/* Avatar + nom — tablette (sur desktop il est dans la sidebar) */}
+          <div className="hidden sm:flex lg:hidden items-center gap-2 bg-stone-100 dark:bg-stone-800 rounded-full ps-1 pe-3 py-1">
             <div className="w-6 h-6 rounded-full bg-orange-700 dark:bg-orange-600 flex items-center justify-center shrink-0">
               <span className="text-white text-[10px] font-bold">
                 {userName?.charAt(0)?.toUpperCase() || '?'}

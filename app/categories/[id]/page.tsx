@@ -7,7 +7,7 @@ import { notFound } from 'next/navigation'
 export const revalidate = 60
 import ProductCard, { type ProductCardData } from '@/components/client/ProductCard'
 import { Package, SlidersHorizontal, Tag } from 'lucide-react'
-import { VENDEUR_SUSPENDU_PRIORITE } from '@/lib/constants'
+import { PRODUIT_VISIBLE } from '@/lib/product-visibility'
 import { getI18n } from '@/lib/i18n/server'
 import { rankProducts, VENDEUR_RANK_SELECT } from '@/lib/product-ranking'
 import { getViewerWilaya } from '@/lib/viewer'
@@ -50,13 +50,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
     where: { id },
     include: {
       products: {
-        where: {
-          actif: true,
-          OR: [
-            { vendeurId: null },
-            { vendeur: { prioriteAffichage: { lt: VENDEUR_SUSPENDU_PRIORITE } } },
-          ],
-        },
+        where: PRODUIT_VISIBLE,
         orderBy: [{ createdAt: 'desc' }],
         include: {
           category: { select: { nom: true } },

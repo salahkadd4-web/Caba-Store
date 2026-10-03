@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useRef, useState } from 'react'
 import { CheckCircle2, ClipboardList, Loader2, Paperclip, Upload, XCircle } from 'lucide-react'
 import { useI18n } from '@/components/I18nProvider'
@@ -204,9 +205,9 @@ export default function VendeurDocumentsClient({ vendeur }: { vendeur: VendeurPr
         </p>
 
         <div className="mt-4 text-center">
-          <a href="/" className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
+          <Link href="/" className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
             {t.seller.status.backToShopArrow}
-          </a>
+          </Link>
         </div>
       </div>
     </div>

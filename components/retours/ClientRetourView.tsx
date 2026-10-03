@@ -234,7 +234,7 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
                   <p className="text-xs text-stone-500 mt-0.5">
                     {fmt.date(c.createdAt)}
                     {' · '}{r.itemsCount(c.items.length)}
-                    {' · '}{c.total.toFixed(2)} {fmt.currency}
+                    {' · '}{fmt.money(c.total)} {fmt.currency}
                   </p>
                 </div>
                 <span className="text-xs bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full font-medium shrink-0">{tr(t.orders.status, c.statut)}</span>
@@ -270,7 +270,7 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
                     <p className="text-xs text-stone-400 mt-0.5">{label}</p>
                   </div>
                   <div className="text-end shrink-0">
-                    <p className={`text-sm font-bold ${isSelected ? 'text-orange-700 dark:text-orange-400' : 'text-stone-700 dark:text-stone-200'}`}>{item.prix.toFixed(2)} {fmt.currency}</p>
+                    <p className={`text-sm font-bold ${isSelected ? 'text-orange-700 dark:text-orange-400' : 'text-stone-700 dark:text-stone-200'}`}>{fmt.money(item.prix)} {fmt.currency}</p>
                     <p className="text-[11px] text-stone-400">{r.qtyOrdered(item.quantite)}</p>
                   </div>
                 </label>

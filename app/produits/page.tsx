@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 
 export const revalidate = 60
 import ProduitsSearch from '@/components/client/ProduitsSearch'
-import { VENDEUR_SUSPENDU_PRIORITE } from '@/lib/constants'
+import { PRODUIT_VISIBLE, VENDEUR_VISIBLE } from '@/lib/product-visibility'
 import { getI18n } from '@/lib/i18n/server'
 import { normalizeWilayaCode } from '@/lib/algeria'
 import { rankProducts, VENDEUR_RANK_SELECT, wilayaDbValues } from '@/lib/product-ranking'
@@ -34,17 +34,13 @@ export default async function ProduitsPage({
   const [produitsRaw, categories, viewerWilaya, { t }] = await Promise.all([
     prisma.product.findMany({
       where: {
-        actif: true,
         ...(wilaya
           // Filtre wilaya : uniquement les vendeurs de cette wilaya
-          ? { vendeur: {
-              prioriteAffichage: { lt: VENDEUR_SUSPENDU_PRIORITE },
+          ? { actif: true, vendeur: {
+              ...VENDEUR_VISIBLE,
               user: { wilaya: { in: wilayaDbValues(wilaya) } },
             } }
-          : { OR: [
-              { vendeurId: null },
-              { vendeur: { prioriteAffichage: { lt: VENDEUR_SUSPENDU_PRIORITE } } },
-            ] }),
+          : PRODUIT_VISIBLE),
         ...(categorie ? { categoryId: categorie } : {}),
         ...(recherche  ? { nom: { contains: recherche, mode: 'insensitive' } } : {}),
       },

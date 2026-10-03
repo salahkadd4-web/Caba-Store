@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import {
   ShoppingCart, Search, ChevronDown, ChevronUp,
-  CheckCircle2, Truck, PackageCheck, Clock, XCircle, RotateCcw,
+  CheckCircle2, Truck, PackageCheck, Clock, XCircle,
   Package, ChevronRight, Loader2, MoreVertical, AlertTriangle,
 } from 'lucide-react'
 import {
@@ -249,7 +249,10 @@ export default function DashboardCommandesView({
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || d.error)
-      setCommandes(prev => prev.map(c => c.id === cmd.id ? { ...c, statut } : c))
+      // Livraison groupée : le serveur livre tous les colis du même groupe (sauf annulés)
+      const memeGroupe = (c: Commande) =>
+        statut === 'LIVREE' && !!cmd.groupeId && c.groupeId === cmd.groupeId && c.statut !== 'ANNULEE'
+      setCommandes(prev => prev.map(c => c.id === cmd.id || memeGroupe(c) ? { ...c, statut } : c))
       showToast(d.statusArrow(tr(t.orders.status, statut)), true)
     } catch (e) {
       showToast(e instanceof Error ? e.message : d.error, false)

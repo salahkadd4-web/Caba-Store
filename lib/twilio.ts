@@ -1,4 +1,5 @@
 import twilio from 'twilio'
+import type { Locale } from '@/lib/i18n/config'
 
 const client = twilio(
   process.env.TWILIO_ACCOUNT_SID!,
@@ -23,8 +24,8 @@ export function validatePhone(telephone: string): boolean {
 }
 
 // Envoyer le code OTP
-// locale : langue du SMS envoyé par Twilio Verify ('fr' | 'ar')
-export async function sendOTP(telephone: string, locale?: 'fr' | 'ar'): Promise<void> {
+// locale : langue du SMS envoyé par Twilio Verify ('fr' | 'ar' | 'en')
+export async function sendOTP(telephone: string, locale?: Locale): Promise<void> {
   const phone = formatPhone(telephone)
   await client.verify.v2
     .services(serviceSid)

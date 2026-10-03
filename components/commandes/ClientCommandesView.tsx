@@ -245,10 +245,10 @@ function VendeurSection({ cmd, showHeader }: { cmd: Order; showHeader: boolean }
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-stone-700 dark:text-stone-300 line-clamp-2">{item.product.nom}</p>
-              <p className="text-[10px] text-stone-400">×{item.quantite} — {item.prix.toFixed(2)} {o.perUnit}</p>
+              <p className="text-[10px] text-stone-400">×{item.quantite} — {fmt.money(item.prix)} {o.perUnit}</p>
             </div>
             <p className="text-xs font-semibold text-stone-700 dark:text-stone-300 shrink-0 tabular-nums">
-              {(item.prix * item.quantite).toFixed(2)} {fmt.currency}
+              {fmt.money(item.prix * item.quantite)} {fmt.currency}
             </p>
           </div>
         ))}
@@ -256,8 +256,8 @@ function VendeurSection({ cmd, showHeader }: { cmd: Order; showHeader: boolean }
 
       <div className="flex items-center justify-between mt-2.5 pt-2.5 border-t border-stone-100 dark:border-stone-800 text-[10px] text-stone-400">
         <span className="flex items-center gap-1"><Truck className="w-3 h-3" /> {tr(t.orders.shipping, cmd.methodeExpedition)}</span>
-        <span>{o.deliveryFee(`${(cmd.fraisLivraison ?? 700).toFixed(0)} ${fmt.currency}`)}</span>
-        <span className="font-semibold text-stone-600 dark:text-stone-300 tabular-nums">{cmd.total.toFixed(2)} {fmt.currency}</span>
+        <span>{o.deliveryFee(`${fmt.money(cmd.fraisLivraison ?? 700)} ${fmt.currency}`)}</span>
+        <span className="font-semibold text-stone-600 dark:text-stone-300 tabular-nums">{fmt.money(cmd.total)} {fmt.currency}</span>
       </div>
     </div>
   )
@@ -389,7 +389,7 @@ function GroupeCard({ groupe }: { groupe: CommandeGroupe }) {
         <div className="flex items-center gap-2 shrink-0">
           <StatutBadge statut={groupe.statutGroupe} />
           <p className="font-bold text-base text-orange-700 dark:text-orange-400 tabular-nums hidden sm:block">
-            {groupe.total.toFixed(2)} {fmt.currency}
+            {fmt.money(groupe.total)} {fmt.currency}
           </p>
           {expanded
             ? <ChevronUp   className="w-4 h-4 text-stone-400" />
@@ -473,7 +473,7 @@ function GroupeCard({ groupe }: { groupe: CommandeGroupe }) {
             <div className="text-end">
               <p className="text-[10px] text-stone-400 mb-0.5">{isMulti ? o.grandTotal : o.total}</p>
               <p className="font-bold text-lg text-orange-700 dark:text-orange-400 tabular-nums">
-                {groupe.total.toFixed(2)} {fmt.currency}
+                {fmt.money(groupe.total)} {fmt.currency}
               </p>
             </div>
           </div>

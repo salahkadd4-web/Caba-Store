@@ -138,7 +138,7 @@ export default function FavorisPage() {
                     {favori.product.nom}
                   </h3>
                   <p className="text-lg font-bold text-orange-700 dark:text-orange-500">
-                    {favori.product.prix.toFixed(2)} {fmt.currency}
+                    {fmt.money(favori.product.prix)} {fmt.currency}
                   </p>
                 </div>
               </Link>

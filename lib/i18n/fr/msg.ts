@@ -21,6 +21,7 @@ const msg = {
   refusalAlreadyReportedFlowmerce: 'Ce refus était déjà signalé à Flowmerce.',
   someDocumentsRefused: 'Certains documents ont été refusés.',
   orderCancelled: 'Cette commande est annulée.',
+  reactivateOutOfStock: 'Stock insuffisant pour réactiver cette commande.',
   invalidAnswers: 'Champ answers invalide',
   missingFields: 'Champs requis manquants',
   clientNotFound: 'Client introuvable',

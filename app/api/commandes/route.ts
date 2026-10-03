@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
 import { getPrixUnitaire } from '@/lib/prix'
-import { FRAIS_EXPEDITION, METHODE_EXPEDITION_DEFAUT } from '@/lib/constants'
+import {
+  ADRESSE_MAX, FRAIS_EXPEDITION, METHODE_EXPEDITION_DEFAUT, MODE_PAIEMENT_DEFAUT, MODES_PAIEMENT_ACTIFS,
+} from '@/lib/constants'
+import { isProduitVisible } from '@/lib/product-visibility'
 import { randomUUID } from 'crypto'
 import { getI18n } from '@/lib/i18n/server'
 import { validateWilayaCommune } from '@/lib/algeria/server'
@@ -67,7 +70,8 @@ export async function POST(req: NextRequest) {
     if (!token) return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
 
     const body = await req.json()
-    const { adresse, modePaiement } = body
+    const adresse      = typeof body.adresse === 'string' ? body.adresse.trim() : ''
+    const modePaiement = body.modePaiement ?? MODE_PAIEMENT_DEFAUT
 
     // Support ancien format (methodeExpedition global) + nouveau format (vendeurGroupes)
     const vendeurGroupes: Array<{ vendeurId: string | null; methodeExpedition: string }> =
@@ -75,8 +79,11 @@ export async function POST(req: NextRequest) {
         ? body.vendeurGroupes
         : [{ vendeurId: null, methodeExpedition: body.methodeExpedition ?? METHODE_EXPEDITION_DEFAUT }]
 
-    if (!adresse) {
+    if (!adresse || adresse.length > ADRESSE_MAX) {
       return NextResponse.json({ error: t.orders.api.addressRequired }, { status: 400 })
+    }
+    if (!MODES_PAIEMENT_ACTIFS.includes(modePaiement)) {
+      return NextResponse.json({ error: t.orders.api.paymentUnavailable }, { status: 400 })
     }
 
     // Wilaya + commune de livraison obligatoires et cohérentes (fichiers JSON)
@@ -99,7 +106,7 @@ export async function POST(req: NextRequest) {
           include: {
             product: {
               include: {
-                vendeur: { select: { id: true } },
+                vendeur: { select: { id: true, statut: true, prioriteAffichage: true } },
               },
             },
             variant:       true,
@@ -111,6 +118,16 @@ export async function POST(req: NextRequest) {
 
     if (!panier || panier.items.length === 0) {
       return NextResponse.json({ error: t.orders.api.emptyCart }, { status: 400 })
+    }
+
+    // Un produit masqué depuis son ajout au panier (désactivé, vendeur suspendu,
+    // abonnement expiré) ne peut plus être commandé.
+    const indisponible = panier.items.find(i => !isProduitVisible(i.product) || i.quantite < 1)
+    if (indisponible) {
+      return NextResponse.json(
+        { error: t.orders.api.productUnavailable(indisponible.product.nom) },
+        { status: 400 },
+      )
     }
 
     // ── Grouper les items du panier par vendeurId ──────────────────────────
@@ -203,7 +220,7 @@ export async function POST(req: NextRequest) {
               wilaya:            lieu.wilaya,
               commune:           lieu.commune,
               total,
-              modePaiement:      modePaiement || 'Paiement à la livraison',
+              modePaiement,
               methodeExpedition: groupe.methodeExpedition,
               fraisLivraison:    frais,
               groupeId,            // ← lien entre toutes les commandes de ce panier

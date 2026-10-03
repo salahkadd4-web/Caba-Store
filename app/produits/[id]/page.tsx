@@ -7,7 +7,8 @@ export const revalidate = 60
 import ProduitDetailClient from '@/components/client/ProduitDetailClient'
 import ProductCard, { type ProductCardData } from '@/components/client/ProductCard'
 import { ChevronRight } from 'lucide-react'
-import { VENDEUR_SUSPENDU_PRIORITE } from '@/lib/constants'
+import { PRODUIT_VISIBLE, isProduitVisible } from '@/lib/product-visibility'
+import { trierOptions } from '@/lib/prix'
 import { getI18n } from '@/lib/i18n/server'
 import { rankProducts, VENDEUR_RANK_SELECT } from '@/lib/product-ranking'
 import { getViewerWilaya } from '@/lib/viewer'
@@ -27,7 +28,7 @@ export async function generateMetadata({
 
   const title       = t.product.metaTitle(produit.nom)
   const description = produit.description
-    ?? t.product.metaDescription(produit.nom, produit.category.nom, `${produit.prix.toFixed(2)} ${fmt.currency}`)
+    ?? t.product.metaDescription(produit.nom, produit.category.nom, fmt.price(produit.prix))
 
   return {
     title,
@@ -65,43 +66,8 @@ export default async function ProduitDetailPage({
     },
   })
 
-  if (!produit || !produit.actif) notFound()
+  if (!produit || !isProduitVisible(produit)) notFound()
 
-  // Si le produit n'a pas de vendeur → on prend le premier admin comme contact
-  const adminFallback = !produit.vendeur
-    ? await prisma.user.findFirst({
-        where:  { role: 'ADMIN' },
-        select: { nom: true, prenom: true, telephone: true, email: true, wilaya: true },
-      })
-    : null
-
-  const vendeurInfo = produit.vendeur
-    ? {
-        id:          produit.vendeur.id,
-        nomBoutique: produit.vendeur.nomBoutique,
-        isAdmin:     false,
-        user: {
-          nom:       produit.vendeur.user.nom,
-          prenom:    produit.vendeur.user.prenom,
-          telephone: produit.vendeur.user.telephone,
-          email:     produit.vendeur.user.email,
-          wilaya:    produit.vendeur.user.wilaya,
-        },
-      }
-    : adminFallback
-    ? {
-        id:          'admin',
-        nomBoutique: t.common.appName,
-        isAdmin:     true,
-        user: {
-          nom:       adminFallback.nom,
-          prenom:    adminFallback.prenom,
-          telephone: adminFallback.telephone,
-          email:     adminFallback.email,
-          wilaya:    adminFallback.wilaya,
-        },
-      }
-    : null
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 md:py-12 pb-52 md:pb-12">
@@ -145,7 +111,7 @@ export default async function ProduitDetailPage({
           images:        produit.images,
           prixVariables: produit.prixVariables,
           typeOption:    produit.typeOption ?? null,
-          variants:      produit.variants,
+          variants:      produit.variants.map(v => ({ ...v, options: trierOptions(v.options) })),
         }}
 
       />
@@ -179,13 +145,9 @@ async function ProduitsSimilaires({
 }) {
   const [viewerWilaya, produitsRaw] = await Promise.all([getViewerWilaya(), prisma.product.findMany({
     where: {
+      ...PRODUIT_VISIBLE,
       categoryId,
-      actif: true,
       NOT: { id: produitId },
-      OR: [
-        { vendeurId: null },
-        { vendeur: { prioriteAffichage: { lt: VENDEUR_SUSPENDU_PRIORITE } } },
-      ],
     },
     orderBy: [{ createdAt: 'desc' }],
     take: 8,

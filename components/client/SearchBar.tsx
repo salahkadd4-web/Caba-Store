@@ -186,7 +186,7 @@ export default function SearchBar({
                     <p className="text-xs text-stone-400 dark:text-stone-500">{prod.category.nom}</p>
                   </div>
                   <span className="text-sm font-semibold text-orange-700 dark:text-orange-400 shrink-0">
-                    {prod.prix.toFixed(2)} {fmt.currency}
+                    {fmt.money(prod.prix)} {fmt.currency}
                   </span>
                 </Link>
               ))}

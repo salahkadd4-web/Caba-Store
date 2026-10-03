@@ -197,12 +197,12 @@ export default function ProduitDetailClient({
         <div className="mb-4">
           <div className="flex items-baseline gap-3 flex-wrap">
             <span className={`text-2xl font-bold ${prixReduit && totalQte > 0 ? 'text-green-600 dark:text-green-400' : 'text-orange-700 dark:text-orange-500'}`}>
-              {prixUnit.toFixed(2)} {DA}
+              {fmt.money(prixUnit)} {DA}
               {totalQte > 1 && <span className="text-sm font-normal text-stone-400 ms-1">{p.perUnit}</span>}
             </span>
             {prixReduit && totalQte > 0 && (
               <>
-                <span className="text-base text-stone-400 line-through">{produit.prix.toFixed(2)} {DA}</span>
+                <span className="text-base text-stone-400 line-through">{fmt.money(produit.prix)} {DA}</span>
                 <span className="text-xs bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 font-semibold px-2 py-0.5 rounded-full">
                   -{Math.round((1 - prixUnit / produit.prix) * 100)}%
                 </span>
@@ -212,7 +212,7 @@ export default function ProduitDetailClient({
           {prochainPalier && totalQte > 0 && (
             <p className="mt-1 text-xs text-orange-700 dark:text-orange-500 flex items-center gap-1">
               <TrendingDown className="w-3 h-3 shrink-0" />
-              {p.addMore} <strong>{prochainPalier.minQte - totalQte}</strong> {p.addMoreSuffix} {p.arrow} {prochainPalier.prix.toFixed(2)} {DA}{p.perUnit}
+              {p.addMore} <strong>{prochainPalier.minQte - totalQte}</strong> {p.addMoreSuffix} {p.arrow} {fmt.money(prochainPalier.prix)} {DA}{p.perUnit}
             </p>
           )}
         </div>
@@ -234,7 +234,7 @@ export default function ProduitDetailClient({
                 const isPast   = tier.maxQte !== null && totalQte > tier.maxQte
                 return (
                   <div key={i} className={`flex flex-col items-center px-3 py-1.5 rounded-lg text-xs shrink-0 transition-all ${isActive ? 'bg-orange-700 text-white shadow-md scale-105' : isPast ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 opacity-60' : 'bg-white dark:bg-stone-800 text-stone-500 dark:text-stone-400 border border-stone-200 dark:border-stone-700'}`}>
-                    <span className="font-bold">{tier.prix.toFixed(2)} {DA}</span>
+                    <span className="font-bold">{fmt.money(tier.prix)} {DA}</span>
                     <span className="opacity-75">{tier.maxQte ? `${tier.minQte}-${tier.maxQte} ${p.unit}` : `>=${tier.minQte} ${p.unit}`}</span>
                     {isActive && <Check className="w-3 h-3 mt-0.5" />}
                   </div>
@@ -383,7 +383,7 @@ export default function ProduitDetailClient({
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`text-sm font-bold ${prixReduit ? 'text-green-600 dark:text-green-400' : 'text-orange-700 dark:text-orange-500'}`}>
-                    {totalPrix.toFixed(2)} {DA}
+                    {fmt.money(totalPrix)} {DA}
                   </span>
                   {recapOpen ? <ChevronDown className="w-4 h-4 text-stone-400" /> : <ChevronUp className="w-4 h-4 text-stone-400" />}
                 </div>
@@ -409,14 +409,14 @@ export default function ProduitDetailClient({
                         </div>
                       </div>
                       <QteInput size="sm" value={ligne.quantite} stockMax={ligne.stockMax} onChange={v => setLigneQte(ligne.key, v)} onZero={() => removeLigne(ligne.key)} />
-                      <span className="text-xs font-semibold text-stone-700 dark:text-stone-300 w-16 text-end shrink-0">{(prixUnit * ligne.quantite).toFixed(2)} {DA}</span>
+                      <span className="text-xs font-semibold text-stone-700 dark:text-stone-300 w-16 text-end shrink-0">{fmt.money(prixUnit * ligne.quantite)} {DA}</span>
                       <button onClick={() => removeLigne(ligne.key)} className="text-red-400 hover:text-red-600 p-1 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   ))}
                   {hasTiers && prixReduit && (
                     <div className="bg-green-50 dark:bg-green-950/40 px-4 py-2 flex items-center justify-between">
-                      <span className="text-xs text-green-700 dark:text-green-400 flex items-center gap-1"><TrendingDown className="w-3 h-3" /> {p.degressiveShort} {prixUnit.toFixed(2)} {DA}{p.perUnit}</span>
-                      <span className="text-xs text-green-600 dark:text-green-400 font-semibold">{p.savingsShort} {((produit.prix - prixUnit) * totalQte).toFixed(2)} {DA}</span>
+                      <span className="text-xs text-green-700 dark:text-green-400 flex items-center gap-1"><TrendingDown className="w-3 h-3" /> {p.degressiveShort} {fmt.money(prixUnit)} {DA}{p.perUnit}</span>
+                      <span className="text-xs text-green-600 dark:text-green-400 font-semibold">{p.savingsShort} {fmt.money((produit.prix - prixUnit) * totalQte)} {DA}</span>
                     </div>
                   )}
                 </div>
@@ -433,7 +433,7 @@ export default function ProduitDetailClient({
                 {sent ? <><Check className="w-5 h-5" /> {p.addedToCart}</>
                   : sending ? <><Loader2 className="w-5 h-5 animate-spin" /> {p.adding}</>
                   : lignes.length === 0 ? <><ShoppingBag className="w-5 h-5" /> {p.selectItems}</>
-                  : <><ShoppingCart className="w-5 h-5" /><span>{p.addNToCart(totalQte)}</span><span className="ms-auto text-sm font-bold opacity-90">{totalPrix.toFixed(2)} {DA}</span></>
+                  : <><ShoppingCart className="w-5 h-5" /><span>{p.addNToCart(totalQte)}</span><span className="ms-auto text-sm font-bold opacity-90">{fmt.money(totalPrix)} {DA}</span></>
                 }
               </button>
             ) : (
@@ -488,12 +488,12 @@ export default function ProduitDetailClient({
         <div>
           <div className="flex items-baseline gap-3 flex-wrap">
             <span className={`text-3xl font-bold transition-colors duration-300 ${prixReduit && totalQte > 0 ? 'text-green-600 dark:text-green-400' : 'text-orange-700 dark:text-orange-500'}`}>
-              {prixUnit.toFixed(2)} {DA}
+              {fmt.money(prixUnit)} {DA}
               {totalQte > 1 && <span className="text-base font-normal text-stone-400 ms-1">{p.perUnit}</span>}
             </span>
             {prixReduit && totalQte > 0 && (
               <>
-                <span className="text-lg text-stone-400 line-through font-medium">{produit.prix.toFixed(2)} {DA}</span>
+                <span className="text-lg text-stone-400 line-through font-medium">{fmt.money(produit.prix)} {DA}</span>
                 <span className="text-xs bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 font-semibold px-2 py-0.5 rounded-full">-{Math.round((1 - prixUnit / produit.prix) * 100)}%</span>
               </>
             )}
@@ -501,7 +501,7 @@ export default function ProduitDetailClient({
           {prochainPalier && totalQte > 0 && (
             <p className="mt-1.5 text-xs text-orange-700 dark:text-orange-500 flex items-center gap-1.5 animate-pulse">
               <TrendingDown className="w-3.5 h-3.5 shrink-0" />
-              {p.addMore} <strong>{prochainPalier.minQte - totalQte}</strong> {p.addMoreSuffix} {p.arrow} {prochainPalier.prix.toFixed(2)} {DA}{p.perUnit}
+              {p.addMore} <strong>{prochainPalier.minQte - totalQte}</strong> {p.addMoreSuffix} {p.arrow} {fmt.money(prochainPalier.prix)} {DA}{p.perUnit}
             </p>
           )}
         </div>
@@ -518,7 +518,7 @@ export default function ProduitDetailClient({
                 const isPast   = tier.maxQte !== null && totalQte > tier.maxQte
                 return (
                   <div key={i} className={`flex flex-col items-center px-3 py-1.5 rounded-lg text-xs transition-all duration-300 ${isActive ? 'bg-orange-700 text-white shadow-md shadow-orange-700/20 scale-105' : isPast ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 opacity-60' : 'bg-white dark:bg-stone-800 text-stone-500 dark:text-stone-400 border border-stone-200 dark:border-stone-700'}`}>
-                    <span className="font-bold">{tier.prix.toFixed(2)} {DA}</span>
+                    <span className="font-bold">{fmt.money(tier.prix)} {DA}</span>
                     <span className="opacity-75">{tier.maxQte ? `${tier.minQte}-${tier.maxQte} ${p.unit}` : `>=${tier.minQte} ${p.unit}`}</span>
                     {isActive && <Check className="w-3 h-3 mt-0.5" />}
                   </div>
@@ -652,7 +652,7 @@ export default function ProduitDetailClient({
                   <p className="text-xs font-bold text-stone-600 dark:text-stone-400 uppercase tracking-widest">{p.mySelection}</p>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-stone-500 dark:text-stone-400">{p.itemsCount(totalQte)}</span>
-                    {totalQte > 0 && <span className={`text-sm font-bold ${prixReduit ? 'text-green-600 dark:text-green-400' : 'text-orange-700 dark:text-orange-500'}`}>= {totalPrix.toFixed(2)} {DA}</span>}
+                    {totalQte > 0 && <span className={`text-sm font-bold ${prixReduit ? 'text-green-600 dark:text-green-400' : 'text-orange-700 dark:text-orange-500'}`}>= {fmt.money(totalPrix)} {DA}</span>}
                   </div>
                 </div>
                 <div className="divide-y divide-stone-100 dark:divide-stone-800">
@@ -673,7 +673,7 @@ export default function ProduitDetailClient({
                       <div className="shrink-0">
                         <QteInput value={ligne.quantite} stockMax={ligne.stockMax} onChange={v => setLigneQte(ligne.key, v)} onZero={() => removeLigne(ligne.key)} />
                       </div>
-                      <span className="text-sm font-semibold text-stone-700 dark:text-stone-300 w-20 text-end shrink-0">{(prixUnit * ligne.quantite).toFixed(2)} {DA}</span>
+                      <span className="text-sm font-semibold text-stone-700 dark:text-stone-300 w-20 text-end shrink-0">{fmt.money(prixUnit * ligne.quantite)} {DA}</span>
                       <button onClick={() => removeLigne(ligne.key)} className="opacity-0 group-hover:opacity-100 transition text-red-400 hover:text-red-600 p-1 shrink-0">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -682,8 +682,8 @@ export default function ProduitDetailClient({
                 </div>
                 {hasTiers && prixReduit && (
                   <div className="bg-green-50 dark:bg-green-950/40 border-t border-green-100 dark:border-green-900 px-4 py-2 flex items-center justify-between">
-                    <span className="text-xs text-green-700 dark:text-green-400 flex items-center gap-1"><TrendingDown className="w-3.5 h-3.5" /> {p.degressiveApplied} {prixUnit.toFixed(2)} {DA}{p.perUnit}</span>
-                    <span className="text-xs text-green-600 dark:text-green-400 font-semibold">{p.savings} {((produit.prix - prixUnit) * totalQte).toFixed(2)} {DA}</span>
+                    <span className="text-xs text-green-700 dark:text-green-400 flex items-center gap-1"><TrendingDown className="w-3.5 h-3.5" /> {p.degressiveApplied} {fmt.money(prixUnit)} {DA}{p.perUnit}</span>
+                    <span className="text-xs text-green-600 dark:text-green-400 font-semibold">{p.savings} {fmt.money((produit.prix - prixUnit) * totalQte)} {DA}</span>
                   </div>
                 )}
               </div>
@@ -701,7 +701,7 @@ export default function ProduitDetailClient({
               {sent ? <><Check className="w-5 h-5" /> {p.addedToCart}</>
                 : sending ? <><Loader2 className="w-5 h-5 animate-spin" /> {p.adding}</>
                 : lignes.length === 0 ? <><ShoppingBag className="w-5 h-5" /> {p.selectItems}</>
-                : <><ShoppingCart className="w-5 h-5" /><span>{p.addNToCart(totalQte)}</span><span className="ms-auto text-sm font-bold opacity-90">{totalPrix.toFixed(2)} {DA}</span></>
+                : <><ShoppingCart className="w-5 h-5" /><span>{p.addNToCart(totalQte)}</span><span className="ms-auto text-sm font-bold opacity-90">{fmt.money(totalPrix)} {DA}</span></>
               }
             </button>
 

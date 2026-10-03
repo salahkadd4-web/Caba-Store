@@ -47,7 +47,8 @@ export default function SuitcaseAnimationBg() {
     // Après l'intro → mode scroll (valise reste ouverte jusqu'au 1er scroll)
     schedule(() => setMode('scroll'),        4200)
 
-    return () => timers.current.forEach(clearTimeout)
+    const pending = timers.current
+    return () => pending.forEach(clearTimeout)
   }, [])
 
   // ── Scroll : pilote l'animation après l'intro ───────────────────────────

@@ -14,7 +14,6 @@ import { WILAYAS, wilayaLabel } from '@/lib/algeria'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type PrixTier = { minQte: number; maxQte: number | null; prix: number }
 type Variant  = { id: string; nom: string; couleur: string | null }
 
 export type ProduitSearch = {
@@ -413,12 +412,12 @@ function ProduitCard({ produit }: { produit: ProduitSearch }) {
               estReduit ? 'text-green-700 dark:text-green-400' : 'text-stone-900 dark:text-stone-50'
             }`}
           >
-            {prixMin.toFixed(2)} {fmt.currency}
+            {fmt.money(prixMin)} {fmt.currency}
           </span>
           {estReduit && (
             <>
               <span className="text-xs text-stone-400 line-through font-normal">
-                {produit.prix.toFixed(2)}
+                {fmt.money(produit.prix)}
               </span>
               <span className="text-[9px] bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-300 font-semibold px-1.5 py-0.5 rounded-full">
                 −{reduction}%

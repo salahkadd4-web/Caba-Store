@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { VENDEUR_SUSPENDU_PRIORITE } from '@/lib/constants'
+import { PRODUIT_VISIBLE } from '@/lib/product-visibility'
 import { rankProducts, VENDEUR_RANK_SELECT } from '@/lib/product-ranking'
 import { getViewerWilaya } from '@/lib/viewer'
 
@@ -19,12 +19,8 @@ export async function GET(req: NextRequest) {
     }),
     prisma.product.findMany({
       where: {
-        actif: true,
+        ...PRODUIT_VISIBLE,
         nom: { contains: q, mode: 'insensitive' },
-        OR: [
-          { vendeurId: null },
-          { vendeur: { prioriteAffichage: { lt: VENDEUR_SUSPENDU_PRIORITE } } },
-        ],
       },
       // On prend plus pour trier puis limiter à 5
       take: 20,

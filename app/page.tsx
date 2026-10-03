@@ -5,20 +5,14 @@ import { prisma } from '@/lib/prisma'
 import ProductCard, { type ProductCardData } from '@/components/client/ProductCard'
 import CabaLogo from '@/components/CabaLogo'
 import { Flame, RotateCcw, ShieldCheck, Tag, Truck, Wallet, Headphones } from 'lucide-react'
-import { VENDEUR_SUSPENDU_PRIORITE } from '@/lib/constants'
+import { PRODUIT_VISIBLE } from '@/lib/product-visibility'
 import { getI18n } from '@/lib/i18n/server'
 import { rankProducts, VENDEUR_RANK_SELECT } from '@/lib/product-ranking'
 import { getViewerWilaya } from '@/lib/viewer'
 
 // ─── Filtres Prisma réutilisables ─────────────────────────────────────────────
 
-const PRODUIT_ACTIF_WHERE = {
-  actif: true,
-  OR: [
-    { vendeurId: null as null },
-    { vendeur: { prioriteAffichage: { lt: VENDEUR_SUSPENDU_PRIORITE } } },
-  ],
-}
+const PRODUIT_ACTIF_WHERE = PRODUIT_VISIBLE
 
 const VARIANT_SELECT = {
   select: { id: true, nom: true, couleur: true },
@@ -274,7 +268,7 @@ async function CategoriesSection() {
     getI18n(),
     getViewerWilaya(),
     prisma.category.findMany({
-      where:   { products: { some: { actif: true } } },
+      where:   { products: { some: PRODUIT_ACTIF_WHERE } },
       include: {
         products: {
           where:   PRODUIT_ACTIF_WHERE,

@@ -1,7 +1,7 @@
 'use client'
 
 import { useTheme } from '@/components/ThemeProvider'
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo, useSyncExternalStore } from 'react'
 import { Sun, Moon, Monitor } from 'lucide-react'
 import { useI18n } from '@/components/I18nProvider'
 
@@ -16,6 +16,8 @@ const EDGE = 16
 const NAV_BOTTOM = 88
 const DRAG_THRESHOLD = 6
 const SNAP_MS = 300
+
+const noopSubscribe = () => () => {}
 
 function getInitialPos(): { x: number; y: number } {
   const defaultPos = { x: EDGE, y: window.innerHeight - BTN - NAV_BOTTOM }
@@ -40,9 +42,12 @@ export default function ThemeToggle() {
   const [dragging, setDragging] = useState(false)
   const [snapping, setSnapping] = useState(false)
 
-  const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
-
-  useEffect(() => { setPos(getInitialPos()) }, [])
+  // Position : lue dans le localStorage une fois côté client (null au rendu serveur),
+  // puis remplacée par celle du glisser-déposer.
+  const isClient   = useSyncExternalStore(noopSubscribe, () => true, () => false)
+  const initialPos = useMemo(() => (isClient ? getInitialPos() : null), [isClient])
+  const [movedPos, setPos] = useState<{ x: number; y: number } | null>(null)
+  const pos = movedPos ?? initialPos
 
   const desktopRef = useRef<HTMLDivElement>(null)
   const mobileRef  = useRef<HTMLDivElement>(null)
@@ -68,10 +73,13 @@ export default function ThemeToggle() {
   }, [])
 
   useEffect(() => {
-    const onResize = () => setPos(prev => prev ? clamp(prev.x, prev.y) : prev)
+    const onResize = () => setPos(prev => {
+      const p = prev ?? initialPos
+      return p ? clamp(p.x, p.y) : p
+    })
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
-  }, [clamp])
+  }, [clamp, initialPos])
 
   // FIX: utilise 'pointerup' au lieu de 'pointerdown' pour la fermeture globale.
   // Dans le WebView Android (Capacitor), 'pointerdown' se déclenche AVANT le onClick

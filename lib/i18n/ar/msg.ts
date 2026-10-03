@@ -22,6 +22,7 @@ const msg: typeof fr = {
   refusalAlreadyReportedFlowmerce: 'تم الإبلاغ عن هذا الرفض إلى Flowmerce مسبقًا.',
   someDocumentsRefused: 'تم رفض بعض الوثائق.',
   orderCancelled: 'هذا الطلب ملغى.',
+  reactivateOutOfStock: 'المخزون غير كافٍ لإعادة تفعيل هذا الطلب.',
   invalidAnswers: 'حقل الإجابات غير صالح',
   missingFields: 'حقول مطلوبة ناقصة',
   clientNotFound: 'الزبون غير موجود',

@@ -16,6 +16,15 @@ export const FRAIS_EXPEDITION: Record<string, number> = {
 
 export const METHODE_EXPEDITION_DEFAUT = 'Livraison standard'
 
+// ── Modes de paiement ─────────────────────────────────────────────────────
+// Valeurs stockées en base. Seuls les modes listés ici sont acceptés par
+// app/api/commandes/route.ts ; les autres sont affichés « bientôt disponible ».
+export const MODE_PAIEMENT_DEFAUT = 'Paiement à la livraison'
+export const MODES_PAIEMENT_ACTIFS: readonly string[] = [MODE_PAIEMENT_DEFAUT]
+
+/** Longueur maximale d'une adresse de livraison (caractères). */
+export const ADRESSE_MAX = 300
+
 // ── Vendeurs ──────────────────────────────────────────────────────────────
 // Un vendeur avec prioriteAffichage >= cette valeur est considéré suspendu
 // et ses produits ne sont pas affichés.

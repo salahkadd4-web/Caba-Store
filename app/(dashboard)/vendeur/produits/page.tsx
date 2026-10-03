@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import {
   heading, inputCls, selectCls, btnPrimaryEmerald, btnSecondary,
-  modalOverlay, modalBox, loadingPage, card, kpiCard,
+  modalOverlay, modalBox, loadingPage, kpiCard,
 } from '@/lib/dashboard-ui'
 import { useI18n } from '@/components/I18nProvider'
 import { usePhotoPicker } from '@/components/PhotoPicker'
@@ -526,7 +526,7 @@ export default function VendeurProduitsPage() {
                                   <div key={i} className="flex justify-between text-xs text-stone-600 dark:text-stone-400">
                                     <span>{t.maxQte ? p_.unitsRange(t.minQte, t.maxQte) : p_.unitsPlus(t.minQte)}</span>
                                     <span className="font-semibold text-stone-800 dark:text-stone-200">
-                                      {parseFloat(t.prix).toFixed(2)} {fmt.currency}
+                                      {fmt.money(parseFloat(t.prix))} {fmt.currency}
                                       {r > 0 && <span className="ms-1 text-emerald-600 dark:text-emerald-400">−{r}%</span>}
                                     </span>
                                   </div>

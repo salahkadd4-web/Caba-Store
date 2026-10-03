@@ -13,7 +13,7 @@ import {
   Store,
 } from 'lucide-react'
 import { getPrixUnitaire as getPrixUnitaireLib } from '@/lib/prix'
-import { FRAIS_EXPEDITION } from '@/lib/constants'
+import { FRAIS_EXPEDITION, MODES_PAIEMENT_ACTIFS } from '@/lib/constants'
 import VendeurButton from '@/components/client/VendeurButton'
 import WilayaCommuneSelect from '@/components/WilayaCommuneSelect'
 import { useI18n } from '@/components/I18nProvider'
@@ -81,12 +81,12 @@ function groupByVendeur(items: CartItem[]): VendeurGroup[] {
 
 /* ── Modes de paiement ── (label = valeur stockée en base) */
 const MODES_PAIEMENT = [
-  { label: 'Paiement à la livraison', icon: Banknote,       disabled: false },
-  { label: 'CCP',                      icon: Landmark,       disabled: true  },
-  { label: 'Dahabia',                  icon: CreditCard,     disabled: true  },
-  { label: 'Virement bancaire',        icon: ArrowLeftRight, disabled: true  },
-  { label: 'BaridiMob',               icon: Smartphone,     disabled: true  },
-]
+  { label: 'Paiement à la livraison', icon: Banknote       },
+  { label: 'CCP',                      icon: Landmark       },
+  { label: 'Dahabia',                  icon: CreditCard     },
+  { label: 'Virement bancaire',        icon: ArrowLeftRight },
+  { label: 'BaridiMob',               icon: Smartphone     },
+].map(m => ({ ...m, disabled: !MODES_PAIEMENT_ACTIFS.includes(m.label) }))
 
 /* label = valeur stockée en base et clé des frais côté serveur */
 const METHODES_EXPEDITION = [
@@ -451,11 +451,11 @@ export default function NouvelleCommandePage() {
                         {/* Sous-total de ce groupe */}
                         <div className="flex justify-between items-center mt-3 px-1 text-xs text-stone-500 dark:text-stone-400">
                           <span>{c.itemsCount(vc.items.length)}</span>
-                          <span className="tabular-nums">{vc.sousTotal.toFixed(2)} {DA}</span>
+                          <span className="tabular-nums">{fmt.money(vc.sousTotal)} {DA}</span>
                         </div>
                         <div className="flex justify-between items-center px-1 text-xs font-semibold text-stone-700 dark:text-stone-300 mt-0.5">
                           <span>{c.subtotalWithDelivery}</span>
-                          <span className="tabular-nums text-orange-700 dark:text-orange-400">{vc.totalGroupe.toFixed(2)} {DA}</span>
+                          <span className="tabular-nums text-orange-700 dark:text-orange-400">{fmt.money(vc.totalGroupe)} {DA}</span>
                         </div>
                       </div>
                     </div>
@@ -467,7 +467,7 @@ export default function NouvelleCommandePage() {
             <button type="button" onClick={() => lieuComplet ? setShowModal(true) : null}
               disabled={submitting || !hasTelephone || !lieuComplet}
               className="w-full bg-orange-700 hover:bg-orange-800 text-white font-semibold py-3.5 rounded-xl transition disabled:opacity-40 flex items-center justify-center gap-2">
-              {submitting ? c.processing : c.confirmTotal(`${total.toFixed(2)} ${DA}`)}
+              {submitting ? c.processing : c.confirmTotal(`${fmt.money(total)} ${DA}`)}
             </button>
 
             <Link href="/panier" className="block text-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 text-sm transition">
@@ -531,19 +531,19 @@ export default function NouvelleCommandePage() {
                                 <span className="text-xs text-stone-400">×{item.quantite}</span>
                                 {estReduit ? (
                                   <>
-                                    <span className="text-xs font-semibold text-green-700 dark:text-green-400">{prixUnit.toFixed(2)} {DA}{c.perUnit}</span>
-                                    <span className="text-[10px] text-stone-400 line-through">{prixBase.toFixed(2)}</span>
+                                    <span className="text-xs font-semibold text-green-700 dark:text-green-400">{fmt.money(prixUnit)} {DA}{c.perUnit}</span>
+                                    <span className="text-[10px] text-stone-400 line-through">{fmt.money(prixBase)}</span>
                                     <span className="text-[10px] bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 px-1 py-0.5 rounded-full font-bold flex items-center gap-0.5">
                                       <TrendingDown className="w-2.5 h-2.5" />−{Math.round((1 - prixUnit / prixBase) * 100)}%
                                     </span>
                                   </>
                                 ) : (
-                                  <span className="text-xs text-stone-500 dark:text-stone-400">{prixUnit.toFixed(2)} {DA}{c.perUnit}</span>
+                                  <span className="text-xs text-stone-500 dark:text-stone-400">{fmt.money(prixUnit)} {DA}{c.perUnit}</span>
                                 )}
                               </div>
                             </div>
                             <span className="text-xs font-bold text-stone-800 dark:text-stone-200 shrink-0">
-                              {sousLigne.toFixed(2)} {DA}
+                              {fmt.money(sousLigne)} {DA}
                             </span>
                           </div>
                         )
@@ -563,12 +563,12 @@ export default function NouvelleCommandePage() {
 
             <div className="border-t border-stone-100 dark:border-stone-800 pt-3 space-y-2">
               <div className="flex justify-between text-sm text-stone-500 dark:text-stone-400">
-                <span>{c.subtotal}</span><span>{sousTotal.toFixed(2)} {DA}</span>
+                <span>{c.subtotal}</span><span>{fmt.money(sousTotal)} {DA}</span>
               </div>
               {totalEconomies > 0 && (
                 <div className="flex justify-between text-sm text-green-700 dark:text-green-400">
                   <span className="flex items-center gap-1"><TrendingDown className="w-3.5 h-3.5" /> {c.savings}</span>
-                  <span>−{totalEconomies.toFixed(2)} {DA}</span>
+                  <span>−{fmt.money(totalEconomies)} {DA}</span>
                 </div>
               )}
               <div className="flex justify-between text-sm text-stone-500 dark:text-stone-400">
@@ -577,7 +577,7 @@ export default function NouvelleCommandePage() {
               </div>
               <div className="flex justify-between font-bold text-lg pt-1 border-t border-stone-100 dark:border-stone-800">
                 <span className="text-stone-800 dark:text-stone-100">{c.total}</span>
-                <span className="text-orange-700 dark:text-orange-500">{total.toFixed(2)} {DA}</span>
+                <span className="text-orange-700 dark:text-orange-500">{fmt.money(total)} {DA}</span>
               </div>
             </div>
           </div>
@@ -633,7 +633,7 @@ export default function NouvelleCommandePage() {
                       <p className="text-sm font-medium text-stone-700 dark:text-stone-300 flex items-center gap-1">
                         <Truck className="w-3.5 h-3.5 text-orange-700" /> {tr(t.orders.shipping, vc.methode)}
                       </p>
-                      <p className="text-sm font-semibold text-orange-700 dark:text-orange-400">{vc.totalGroupe.toFixed(2)} {DA}</p>
+                      <p className="text-sm font-semibold text-orange-700 dark:text-orange-400">{fmt.money(vc.totalGroupe)} {DA}</p>
                     </div>
                   </div>
                 ))}
@@ -642,11 +642,11 @@ export default function NouvelleCommandePage() {
               {/* Totaux */}
               <div className="border-t border-stone-100 dark:border-stone-800 pt-3 space-y-1.5 mb-5">
                 <div className="flex justify-between text-sm text-stone-500 dark:text-stone-400">
-                  <span>{c.subtotal}</span><span>{sousTotal.toFixed(2)} {DA}</span>
+                  <span>{c.subtotal}</span><span>{fmt.money(sousTotal)} {DA}</span>
                 </div>
                 {totalEconomies > 0 && (
                   <div className="flex justify-between text-sm text-green-700 dark:text-green-400">
-                    <span>{c.savings}</span><span>−{totalEconomies.toFixed(2)} {DA}</span>
+                    <span>{c.savings}</span><span>−{fmt.money(totalEconomies)} {DA}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm text-stone-500 dark:text-stone-400">
@@ -654,7 +654,7 @@ export default function NouvelleCommandePage() {
                 </div>
                 <div className="flex justify-between font-bold text-lg border-t border-stone-100 dark:border-stone-800 pt-2">
                   <span className="text-stone-800 dark:text-stone-100">{c.total}</span>
-                  <span className="text-orange-700 dark:text-orange-500">{total.toFixed(2)} {DA}</span>
+                  <span className="text-orange-700 dark:text-orange-500">{fmt.money(total)} {DA}</span>
                 </div>
               </div>
 

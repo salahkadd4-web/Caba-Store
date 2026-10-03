@@ -1,8 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
-import { BarChart2, Package, ShoppingCart, Users, TrendingUp, ArrowRight, RefreshCw } from 'lucide-react'
+import { BarChart2, Package, ShoppingCart, Users, Store, ArrowRight, RefreshCw } from 'lucide-react'
 import {
-  card, cardSm, heading, subtext, kpiCard, kpiCardDark,
+  cardSm, heading, subtext, kpiCard, kpiCardDark,
   tableWrapper, tableHead, tableTh, tableTd, tableRow,
   statutOrderColor,
 } from '@/lib/dashboard-ui'
@@ -13,12 +13,13 @@ export default async function AdminPage() {
   const { t, fmt } = await getI18n()
   const h = t.admin.home
   const [
-    totalProduits, totalClients, totalCommandes,
+    totalProduits, totalClients, totalCommandes, vendeursActifs,
     commandesLivrees, chiffreAffaireBrut, dernieresCommandes,
   ] = await Promise.all([
     prisma.product.count(),
     prisma.user.count({ where: { role: 'CLIENT' } }),
     prisma.order.count(),
+    prisma.vendeurProfile.count({ where: { statut: 'APPROUVE' } }),
     prisma.order.count({ where: { statut: 'LIVREE' } }),
     prisma.order.aggregate({ _sum: { total: true }, where: { statut: 'LIVREE' } }),
     prisma.order.findMany({
@@ -33,7 +34,7 @@ export default async function AdminPage() {
     { href: '/admin/produits',  label: h.products,   value: totalProduits,   Icon: Package,      accent: 'text-orange-600 dark:text-orange-400',   bg: 'bg-orange-50 dark:bg-orange-950/40' },
     { href: '/admin/clients',   label: h.clients,    value: totalClients,    Icon: Users,        accent: 'text-purple-600 dark:text-purple-400',   bg: 'bg-purple-50 dark:bg-purple-950/40' },
     { href: '/commandes',       label: h.orders,     value: totalCommandes,  Icon: ShoppingCart, accent: 'text-blue-600   dark:text-blue-400',     bg: 'bg-blue-50   dark:bg-blue-950/40'   },
-    { href: '/admin/stats',     label: h.stats,      value: t.product.arrow,           Icon: TrendingUp,   accent: 'text-teal-600  dark:text-teal-400',     bg: 'bg-teal-50   dark:bg-teal-950/40'  },
+    { href: '/admin/vendeurs',  label: h.activeSellers, value: vendeursActifs, Icon: Store,       accent: 'text-teal-600  dark:text-teal-400',     bg: 'bg-teal-50   dark:bg-teal-950/40'  },
   ]
 
   return (
@@ -51,7 +52,7 @@ export default async function AdminPage() {
               <Icon className={`w-4 h-4 ${accent}`} />
             </div>
             <p className="text-xs text-stone-500 dark:text-stone-400">{label}</p>
-            <p className="text-2xl font-bold text-stone-800 dark:text-stone-100">{value}</p>
+            <p className="text-2xl font-bold text-stone-800 dark:text-stone-100 tabular-nums">{fmt.number(value)}</p>
             <p className={`text-xs ${accent} flex items-center gap-0.5 mt-0.5`}>
               {h.seeAll} <ArrowRight className="w-3 h-3 rtl-flip" />
             </p>
@@ -115,7 +116,7 @@ export default async function AdminPage() {
                     <span className="font-mono text-xs text-stone-500 dark:text-stone-400">#{cmd.id.slice(-6).toUpperCase()}</span>
                   </td>
                   <td className={tableTd}>
-                    <span className="font-bold text-stone-800 dark:text-stone-100">{cmd.total.toFixed(0)} {fmt.currency}</span>
+                    <span className="font-bold text-stone-800 dark:text-stone-100">{fmt.money(cmd.total)} {fmt.currency}</span>
                   </td>
                   <td className={tableTd}>
                     <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statutOrderColor[cmd.statut] ?? 'bg-stone-100 text-stone-600'}`}>
@@ -137,7 +138,7 @@ export default async function AdminPage() {
                 <p className="text-xs font-mono text-stone-400 mt-0.5">#{cmd.id.slice(-6).toUpperCase()}</p>
               </div>
               <div className="text-end">
-                <p className="text-sm font-bold text-stone-800 dark:text-stone-100">{cmd.total.toFixed(0)} {fmt.currency}</p>
+                <p className="text-sm font-bold text-stone-800 dark:text-stone-100">{fmt.money(cmd.total)} {fmt.currency}</p>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statutOrderColor[cmd.statut] ?? 'bg-stone-100 text-stone-600'}`}>
                   {tr(t.orders.status, cmd.statut)}
                 </span>

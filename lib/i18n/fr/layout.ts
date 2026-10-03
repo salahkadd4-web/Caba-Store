@@ -53,9 +53,7 @@ const layout = {
     system: 'Système',
   },
   lang: {
-    switchTo: 'العربية',
-    switchToShort: 'ع',
-    switchAria: 'التبديل إلى العربية',
+    choose: 'Changer de langue',
   },
 }
 

@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { prisma } from '@/lib/prisma'
 import { Tag } from 'lucide-react'
 import ProductCard from '@/components/client/ProductCard'
-import { VENDEUR_SUSPENDU_PRIORITE } from '@/lib/constants'
+import { PRODUIT_VISIBLE } from '@/lib/product-visibility'
 import { getI18n } from '@/lib/i18n/server'
 import { rankProducts, VENDEUR_RANK_SELECT } from '@/lib/product-ranking'
 import { getViewerWilaya } from '@/lib/viewer'
@@ -15,17 +15,11 @@ export default async function CategoriesPage() {
   const [{ t }, viewerWilaya] = await Promise.all([getI18n(), getViewerWilaya()])
   const c = t.catalog.categories
   const categories = await prisma.category.findMany({
-    where: { products: { some: { actif: true } } },
+    where: { products: { some: PRODUIT_VISIBLE } },
     orderBy: { nom: 'asc' },
     include: {
       products: {
-        where: {
-          actif: true,
-          OR: [
-            { vendeurId: null },
-            { vendeur: { prioriteAffichage: { lt: VENDEUR_SUSPENDU_PRIORITE } } },
-          ],
-        },
+        where: PRODUIT_VISIBLE,
         orderBy: [{ createdAt: 'desc' }],
         // On en prend plus que les 10 affichés pour que le classement ait du choix
         take: 30,

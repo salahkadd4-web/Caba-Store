@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { VENDEUR_SUSPENDU_PRIORITE } from '@/lib/constants'
+import { PRODUIT_VISIBLE, VENDEUR_VISIBLE } from '@/lib/product-visibility'
 import { normalizeWilayaCode } from '@/lib/algeria'
 import { rankProducts, VENDEUR_RANK_SELECT, wilayaDbValues } from '@/lib/product-ranking'
 
@@ -20,17 +20,13 @@ export async function GET(req: NextRequest) {
 
   const produitsRaw = await prisma.product.findMany({
     where: {
-      actif: true,
       ...(wilaya
         // Filtre wilaya : uniquement les vendeurs de cette wilaya (exclut le catalogue sans vendeur)
-        ? { vendeur: {
-            prioriteAffichage: { lt: VENDEUR_SUSPENDU_PRIORITE },
+        ? { actif: true, vendeur: {
+            ...VENDEUR_VISIBLE,
             user: { wilaya: { in: wilayaDbValues(wilaya) } },
           } }
-        : { OR: [
-            { vendeurId: null },
-            { vendeur: { prioriteAffichage: { lt: VENDEUR_SUSPENDU_PRIORITE } } },
-          ] }),
+        : PRODUIT_VISIBLE),
       ...(categorie ? { categoryId: categorie } : {}),
       ...(recherche ? { nom: { contains: recherche, mode: 'insensitive' } } : {}),
     },

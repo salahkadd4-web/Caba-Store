@@ -63,6 +63,25 @@ export function hasPrixDegressif(prixVariables: unknown): boolean {
 }
 
 /**
+ * Ordonne les options d'une variante (tailles, pointures…) pour l'affichage.
+ * Valeurs toutes numériques (39, 40, 41) → ordre croissant ; sinon (S, M, L)
+ * l'ordre de saisie du vendeur est conservé.
+ */
+export function trierOptions<T extends { valeur: string }>(options: T[]): T[] {
+  const nombre = (v: string) => Number(v.trim().replace(',', '.'))
+  if (!options.every(o => o.valeur.trim() !== '' && Number.isFinite(nombre(o.valeur)))) return options
+  return [...options].sort((a, b) => nombre(a.valeur) - nombre(b.valeur))
+}
+
+/** Quantité maximale d'une ligne de panier (garde-fou contre les saisies aberrantes). */
+export const QUANTITE_MAX = 999
+
+/** Quantité de panier acceptable : entier entre 1 et QUANTITE_MAX. */
+export function isQuantiteValide(q: unknown): q is number {
+  return typeof q === 'number' && Number.isInteger(q) && q >= 1 && q <= QUANTITE_MAX
+}
+
+/**
  * Calcule le pourcentage de réduction entre le prix min et le prix de base.
  * Retourne null si pas de réduction.
  */

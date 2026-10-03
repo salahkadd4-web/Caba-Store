@@ -57,7 +57,8 @@ export default async function RootLayout({
         <script
           nonce={nonce}
           dangerouslySetInnerHTML={{
-            __html: `(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.classList.add('dark')})()`,
+            // Anti-flash : même règle que ThemeProvider (défaut sombre, « système » = préférence de l'OS)
+            __html: `(function(){try{var t=localStorage.getItem('theme')||'dark';if(t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})()`,
           }}
         />
       </head>

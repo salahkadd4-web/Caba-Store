@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
 import { getI18n } from '@/lib/i18n/server'
 import { tr } from '@/lib/i18n'
+import {
+  APPROBATION_ADMIN, StockInsuffisantError, annulerCommande, enregistrerApprobation, reactiverCommande,
+} from '@/lib/commandes'
 
 async function checkAdmin() {
   const token = await getAuthToken()
@@ -27,54 +30,15 @@ export async function PATCH(
 
     // ── Cas 1 : l'admin approuve sa part ──────────────────────────────────
     if (approuver === true) {
-      const commande = await prisma.order.findUnique({
-        where: { id },
-        include: {
-          items: {
-            include: {
-              product: { select: { vendeurId: true } },
-            },
-          },
-        },
-      })
-
-      if (!commande) return NextResponse.json({ error: t.msg.orderNotFound }, { status: 404 })
-      if (commande.statut !== 'EN_ATTENTE') {
-        return NextResponse.json({ error: t.msg.orderAlreadyProcessed }, { status: 403 })
+      const r = await enregistrerApprobation(id, APPROBATION_ADMIN)
+      if (!r.ok) {
+        return r.raison === 'introuvable'
+          ? NextResponse.json({ error: t.msg.orderNotFound }, { status: 404 })
+          : NextResponse.json({ error: t.msg.orderAlreadyProcessed }, { status: 403 })
       }
-
-      const vendeurIds = [
-        ...new Set(
-          commande.items
-            .map((item: { product: { vendeurId: string | null } }) => item.product.vendeurId)
-            .filter((v: string | null): v is string => v !== null)
-        ),
-      ]
-      const aDesProduitsAdmin = commande.items.some(
-        (item: { product: { vendeurId: string | null } }) => item.product.vendeurId === null
-      )
-
-      const approbations: Record<string, boolean> =
-        (commande.approbationsVendeurs as Record<string, boolean>) ?? {}
-      if (aDesProduitsAdmin) approbations['admin'] = true
-
-      const tousVendeursOk = (vendeurIds as string[]).every((vid: string) => approbations[vid] === true)
-      const adminOk = aDesProduitsAdmin ? approbations['admin'] === true : true
-      const tousOk  = tousVendeursOk && adminOk
-
-      const updated = await prisma.order.update({
-        where: { id },
-        data: {
-          approbationsVendeurs: approbations,
-          ...(tousOk ? { statut: 'CONFIRMEE' } : {}),
-        },
-      })
-
       return NextResponse.json({
-        ...updated,
-        message: tousOk
-          ? t.msg.orderConfirmedAll
-          : t.msg.approvalSaved,
+        ...r.commande,
+        message: r.tousOk ? t.msg.orderConfirmedAll : t.msg.approvalSaved,
       })
     }
 
@@ -86,15 +50,42 @@ export async function PATCH(
       )
     }
 
+    const actuelle = await prisma.order.findUnique({ where: { id }, select: { statut: true, groupeId: true } })
+    if (!actuelle) return NextResponse.json({ error: t.msg.orderNotFound }, { status: 404 })
+
+    // ── Sortie de l'état ANNULEE : le stock restitué à l'annulation est repris ──
+    if (actuelle.statut === 'ANNULEE') {
+      if (statut !== 'EN_ATTENTE' && statut !== 'CONFIRMEE') {
+        return NextResponse.json({ error: t.msg.orderCancelled }, { status: 403 })
+      }
+      try {
+        if (!(await reactiverCommande(id, statut))) {
+          return NextResponse.json({ error: t.msg.orderAlreadyProcessed }, { status: 409 })
+        }
+      } catch (e) {
+        if (e instanceof StockInsuffisantError) {
+          return NextResponse.json({ error: t.msg.reactivateOutOfStock }, { status: 409 })
+        }
+        throw e
+      }
+      return NextResponse.json({ id, statut, message: t.msg.statusUpdated(tr(t.orders.status, statut)) })
+    }
+
+    // ── Cas ANNULEE : remise en stock des articles ─────────────────────────
+    if (statut === 'ANNULEE') {
+      // Une commande livrée ne s'annule pas : elle passe par une demande de retour.
+      if (!(await annulerCommande(id))) {
+        return NextResponse.json({ error: t.msg.orderAlreadyProcessed }, { status: 403 })
+      }
+      return NextResponse.json({ id, statut, message: t.msg.statusUpdated(tr(t.orders.status, statut)) })
+    }
+
     // ── Cas LIVREE : livrer tout le groupe si groupeId existe ──────────────
     // Le bureau de livraison livre tous les colis du même panier en même temps.
     if (statut === 'LIVREE') {
-      const orderRef = await prisma.order.findUnique({
-        where: { id },
-        select: { groupeId: true },
-      })
+      const orderRef = actuelle
 
-      if (orderRef?.groupeId) {
+      if (orderRef.groupeId) {
         // Livraison groupée : tous les colis du même panier sont livrés ensemble
         await prisma.order.updateMany({
           where: {

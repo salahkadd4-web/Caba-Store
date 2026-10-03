@@ -9,7 +9,7 @@ import {
   Package, X, AlertTriangle, ClipboardList, Ruler,
 } from 'lucide-react'
 import {
-  heading, inputCls, selectCls, btnPrimaryPurple, btnSecondary, btnDangerSolid,
+  heading, inputCls, selectCls, btnPrimaryPurple, btnSecondary,
   tableWrapper, tableHead, tableTh, tableTd, tableRow,
   modalOverlay, modalBox, loadingPage,
 } from '@/lib/dashboard-ui'
@@ -206,7 +206,7 @@ export default function AdminProduitsPage() {
                     : <span className="text-xs bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-900">{p_.admin}</span>}
                 </td>
                 <td className={tableTd}>
-                  <p className="font-semibold text-orange-600 dark:text-orange-400">{produit.prix.toFixed(2)} {fmt.currency}</p>
+                  <p className="font-semibold text-orange-600 dark:text-orange-400">{fmt.money(produit.prix)} {fmt.currency}</p>
                   {Array.isArray(produit.prixVariables) && produit.prixVariables.length > 0 && (
                     <p className="text-xs text-green-600 dark:text-green-400 mt-0.5 flex items-center gap-1"><TrendingDown className="w-3 h-3" />{p_.tiers(produit.prixVariables.length)}</p>
                   )}
@@ -262,7 +262,7 @@ export default function AdminProduitsPage() {
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-stone-800 dark:text-stone-100 text-sm truncate">{produit.nom}</p>
                 <p className="text-xs text-stone-400 mt-0.5 truncate">{produit.description}</p>
-                <p className="text-sm font-bold text-orange-600 dark:text-orange-400 mt-1">{produit.prix.toFixed(2)} {fmt.currency}</p>
+                <p className="text-sm font-bold text-orange-600 dark:text-orange-400 mt-1">{fmt.money(produit.prix)} {fmt.currency}</p>
               </div>
             </div>
             <div className="flex gap-2">

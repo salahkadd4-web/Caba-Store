@@ -168,6 +168,8 @@ const orders: typeof fr = {
     wilayaCommuneRequired: 'ولاية وبلدية التوصيل مطلوبتان',
     emptyCart: 'السلة فارغة',
     insufficientStock: (name: string) => `المخزون غير كافٍ لـ ${name}`,
+    paymentUnavailable: 'طريقة الدفع هذه غير متاحة بعد',
+    productUnavailable: (name: string): string => `${name} لم يعد متوفرًا. احذفه من السلة للمتابعة.`,
     created: 'تم إنشاء الطلب(ات) بنجاح',
   },
 }
