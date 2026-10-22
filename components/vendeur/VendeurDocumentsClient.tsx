@@ -93,7 +93,7 @@ export default function VendeurDocumentsClient({ vendeur }: { vendeur: VendeurPr
     if (s === 'ACCEPTE')    return 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
     if (s === 'REFUSE')     return 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
     if (s === 'EN_ATTENTE') return 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
-    return 'bg-gray-100 text-gray-600'
+    return 'bg-stone-100 text-stone-600'
   }
 
   const statutLabel = (s: string) => {
@@ -104,14 +104,14 @@ export default function VendeurDocumentsClient({ vendeur }: { vendeur: VendeurPr
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 p-4">
-      <div className="max-w-xl w-full bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-8">
+    <div className="min-h-screen flex items-center justify-center bg-stone-50 dark:bg-stone-950 p-4">
+      <div className="max-w-xl w-full bg-white dark:bg-stone-900 rounded-2xl shadow-lg p-8">
         <div className="text-center mb-6">
           <ClipboardList className="w-14 h-14" />
-          <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+          <h1 className="text-xl font-bold text-stone-800 dark:text-stone-100">
             {d.title}
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
             {d.subtitle}
           </p>
           {vendeur.adminNote && (
@@ -136,15 +136,15 @@ export default function VendeurDocumentsClient({ vendeur }: { vendeur: VendeurPr
           {docs.map((doc) => (
             <div
               key={doc.id}
-              className="border border-gray-200 dark:border-gray-700 rounded-xl p-4"
+              className="border border-stone-200 dark:border-stone-700 rounded-xl p-4"
             >
               <div className="flex items-start justify-between mb-2">
                 <div>
-                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                  <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">
                     {t.admin.sellers.docTypes[doc.type]?.label ?? doc.label}
                   </p>
                   {doc.description && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
                       {t.admin.sellers.docTypes[doc.type]?.description ?? doc.description}
                     </p>
                   )}
@@ -177,9 +177,9 @@ export default function VendeurDocumentsClient({ vendeur }: { vendeur: VendeurPr
                 >
                   <span className={`
                     inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all
-                    bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300
-                    hover:bg-emerald-100 dark:hover:bg-emerald-900
-                    border border-emerald-200 dark:border-emerald-800
+                    bg-orange-50 dark:bg-orange-950/50 text-orange-800 dark:text-orange-300
+                    hover:bg-orange-100 dark:hover:bg-orange-900/60
+                    border border-orange-200 dark:border-orange-900
                   `}>
                     {uploading === doc.id ? (
                       <>
@@ -200,12 +200,12 @@ export default function VendeurDocumentsClient({ vendeur }: { vendeur: VendeurPr
         </div>
         {picker}
 
-        <p className="text-center text-xs text-gray-400 dark:text-gray-600 mt-6">
+        <p className="text-center text-xs text-stone-400 dark:text-stone-600 mt-6">
           {d.autoActivation}
         </p>
 
         <div className="mt-4 text-center">
-          <Link href="/" className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
+          <Link href="/" className="text-sm text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition">
             {t.seller.status.backToShopArrow}
           </Link>
         </div>

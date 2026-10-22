@@ -20,7 +20,7 @@ const home = {
   bestSellersSoon: 'Bientôt nos meilleures ventes.',
   noCategories: 'Aucune catégorie disponible.',
   noProducts: 'Aucun produit disponible.',
-  productsCount: (n: number): string => `${n} produits`,
+  productsCount: (n: number): string => `${n} ${n > 1 ? 'produits' : 'produit'}`,
   topRank: (n: number): string => `Top ${n}`,
   trust: [
     { title: 'Livraison 48h', desc: 'Partout en Algérie' },

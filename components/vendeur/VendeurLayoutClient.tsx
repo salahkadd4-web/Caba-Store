@@ -48,7 +48,7 @@ function VendeurTopBar({
   }
 
   return (
-    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50 shadow-sm safe-top">
+    <header className="bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 sticky top-0 z-50 shadow-sm safe-top">
       <div className="flex items-center justify-between px-4 py-3">
 
         {/* Gauche : hamburger (mobile, uniquement si sidebar dispo) + logo */}
@@ -57,7 +57,7 @@ function VendeurTopBar({
             <button
               onClick={onMenuOpen}
               aria-label="Ouvrir le menu"
-              className="lg:hidden p-2 -ms-1 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition active:scale-95"
+              className="lg:hidden p-2 -ms-1 rounded-xl text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition active:scale-95"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="3" y1="6" x2="21" y2="6"/>
@@ -94,7 +94,7 @@ function VendeurTopBar({
         <div className="flex items-center gap-2">
           <Link
             href="/"
-            className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-all active:scale-95"
+            className="flex items-center gap-1.5 text-xs text-stone-600 dark:text-stone-300 hover:text-black dark:hover:text-white px-3 py-2 rounded-xl border border-stone-200 dark:border-stone-700 hover:border-stone-400 dark:hover:border-stone-500 transition-all active:scale-95"
           >
             {/* Icône maison */}
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -127,7 +127,7 @@ function StatusPage({ statut, adminNote }: { statut: string; adminNote: string |
 
   return (
     <div className="flex-1 flex items-center justify-center p-4 min-h-[calc(100vh-64px)]">
-      <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-2xl shadow-lg overflow-hidden">
+      <div className="max-w-md w-full bg-white dark:bg-stone-900 rounded-2xl shadow-lg overflow-hidden">
         {/* Bande colorée en haut */}
         <div className={`h-1.5 w-full ${isAttente ? 'bg-amber-400' : 'bg-red-500'}`} />
 
@@ -144,12 +144,12 @@ function StatusPage({ statut, adminNote }: { statut: string; adminNote: string |
           </div>
 
           {/* Titre */}
-          <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-3">
+          <h1 className="text-xl font-bold text-stone-800 dark:text-stone-100 mb-3">
             {isAttente ? 'Compte en attente de validation' : 'Compte suspendu'}
           </h1>
 
           {/* Description */}
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-5 leading-relaxed">
+          <p className="text-sm text-stone-500 dark:text-stone-400 mb-5 leading-relaxed">
             {isAttente
               ? "Votre demande d'inscription en tant que vendeur est en cours d'examen. Notre équipe vous contactera prochainement."
               : "Votre compte vendeur a été suspendu. Contactez le support pour plus d'informations."
@@ -205,7 +205,7 @@ function ApprouveLayout({
   const pathname = usePathname()
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-950 transition-colors duration-300">
+    <div className="min-h-screen bg-stone-100 dark:bg-stone-950 transition-colors duration-300">
 
       {/* Overlay sidebar mobile */}
       {sidebarOpen && (
@@ -218,23 +218,23 @@ function ApprouveLayout({
       {/* Sidebar */}
       <aside className={`
  fixed top-0 start-0 h-full z-40 w-64
- bg-white dark:bg-gray-900
- border-e border-gray-200 dark:border-gray-800
+ bg-white dark:bg-stone-900
+ border-e border-stone-200 dark:border-stone-800
  shadow-xl transition-transform duration-300
  ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
  lg:translate-x-0
  `}>
         {/* En-tête sidebar */}
-        <div className="p-5 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between safe-top">
+        <div className="p-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between safe-top">
           <div>
             <h1 className="text-sm font-bold text-emerald-600 dark:text-emerald-400"><Store className="w-4 h-4 inline me-1" />{' '}Espace Vendeur</h1>
             {nomBoutique && (
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate max-w-40">{nomBoutique}</p>
+              <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 truncate max-w-40">{nomBoutique}</p>
             )}
           </div>
           <button
             onClick={onMenuClose}
-            className="lg:hidden text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+            className="lg:hidden text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 p-1 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition"
           ><X className="w-4 h-4" /></button>
         </div>
 
@@ -252,7 +252,7 @@ function ApprouveLayout({
  active:scale-[0.98]
  ${isActive
  ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 shadow-sm'
- : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+ : 'text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
  }
  `}
               >
@@ -267,10 +267,10 @@ function ApprouveLayout({
         </nav>
 
         {/* Bas sidebar : retour boutique */}
-        <div className="absolute bottom-0 start-0 end-0 p-3 border-t border-gray-200 dark:border-gray-800 safe-bottom">
+        <div className="absolute bottom-0 start-0 end-0 p-3 border-t border-stone-200 dark:border-stone-800 safe-bottom">
           <Link
             href="/"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition-all"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
@@ -309,7 +309,7 @@ export default function VendeurLayoutClient({
   // ── Compte en attente ou suspendu ─────────────────
   if (statut === 'EN_ATTENTE' || statut === 'SUSPENDU') {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
+      <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex flex-col">
         <VendeurTopBar onMenuOpen={() => {}} showMenuButton={false} />
         <StatusPage statut={statut} adminNote={adminNote} />
       </div>
@@ -319,7 +319,7 @@ export default function VendeurLayoutClient({
   // ── Pièces requises → upload documents ─────────────
   if (statut === 'PIECES_REQUISES' && vendeurForDocs) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
+      <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex flex-col">
         <VendeurTopBar onMenuOpen={() => {}} showMenuButton={false} />
         <div className="flex-1 p-4 md:p-6">
           <VendeurDocumentsClient vendeur={vendeurForDocs} />

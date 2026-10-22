@@ -10,6 +10,7 @@ import CabaLogo from '@/components/CabaLogo'
 import GoogleIcon from '@/components/client/GoogleIcon'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import { useI18n } from '@/components/I18nProvider'
+import AuthBrandPanel from '@/components/client/AuthBrandPanel'
 
 const GOOGLE_WEB_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? ''
 
@@ -234,21 +235,7 @@ function ConnexionContent() {
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex flex-col lg:flex-row transition-colors duration-300">
 
-      {/* ── Panneau gauche (desktop) ── */}
-      <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-stone-900 dark:bg-stone-950 items-center justify-center p-12 border-e border-stone-800">
-        {/* Logo watermark */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-[0.06]">
-          <CabaLogo className="w-120 h-120 text-white" />
-        </div>
-        {/* Contenu centré */}
-        <div className="relative z-10 text-center">
-          <CabaLogo className="w-20 h-20 text-orange-500 mx-auto mb-6" />
-          <div className="w-10 h-px bg-stone-700 mx-auto mb-5" />
-          <p className="text-stone-400 font-light text-sm ">
-            {a.tagline}
-          </p>
-        </div>
-      </div>
+      <AuthBrandPanel />
 
       {/* ── Formulaire ── */}
       <div className="flex-1 flex flex-col items-center justify-center p-8 overflow-y-auto">
@@ -259,10 +246,9 @@ function ConnexionContent() {
           </div>
 
           {/* Header */}
-          <div className="mb-10">
-            <p className="text-xs font-semibold text-orange-700 dark:text-orange-500 mb-2">{s.welcome}</p>
-            <h2 className="text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">{s.title}</h2>
-            <div className="w-8 h-px bg-orange-700 dark:bg-orange-500 mt-4" />
+          <div className="mb-8">
+            <h1 className="text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">{s.title}</h1>
+            <p className="text-stone-500 dark:text-stone-400 mt-1">{s.welcome}</p>
           </div>
 
           {/* ── Bannière succès inscription client ── */}
@@ -334,7 +320,7 @@ function ConnexionContent() {
           <button
             onClick={handleGoogle}
             disabled={loadingGoogle || loading}
-            className="w-full flex items-center justify-center gap-3 border border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600 hover:bg-stone-100 dark:hover:bg-stone-900 text-stone-700 dark:text-stone-200 text-xs py-3.5 rounded-xl transition-colors duration-300 disabled:opacity-50 mb-6"
+            className="w-full flex items-center justify-center gap-3 border border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600 hover:bg-stone-100 dark:hover:bg-stone-900 text-stone-700 dark:text-stone-200 text-sm font-medium h-11 rounded-xl transition-colors duration-300 disabled:opacity-50 mb-6"
           >
             {loadingGoogle
               ? <span className="w-4 h-4 border-2 border-stone-200 border-t-stone-500 rounded-full animate-spin" />
@@ -351,9 +337,9 @@ function ConnexionContent() {
           </div>
 
           {/* ── Formulaire email/mdp ── */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-xs text-stone-500 dark:text-stone-400 mb-2">
+              <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1.5">
                 {s.identifier}
               </label>
               <input
@@ -362,19 +348,19 @@ function ConnexionContent() {
                 value={form.identifiant}
                 onChange={handleChange}
                 required
-                className="w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-3 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors duration-300"
+                className="w-full h-11 px-3.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 focus:border-orange-700 dark:focus:border-orange-500 focus:ring-2 focus:ring-orange-700/15 outline-none text-sm text-stone-800 dark:text-stone-100 transition-colors duration-300"
                 placeholder={s.identifierPlaceholder}
                 dir="ltr"
               />
             </div>
             <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="block text-xs text-stone-500 dark:text-stone-400">
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="block text-sm font-medium text-stone-700 dark:text-stone-300">
                   {s.password}
                 </label>
                 <Link
                   href="/recuperer-mot-de-passe"
-                  className="text-xs text-stone-400 dark:text-stone-500 hover:text-orange-700 dark:hover:text-orange-500 transition-colors "
+                  className="text-sm font-medium text-orange-700 dark:text-orange-400 hover:text-orange-800 transition-colors"
                 >
                   {s.forgot}
                 </Link>
@@ -385,14 +371,14 @@ function ConnexionContent() {
                 value={form.motDePasse}
                 onChange={handleChange}
                 required
-                className="w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-3 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors duration-300"
+                className="w-full h-11 px-3.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 focus:border-orange-700 dark:focus:border-orange-500 focus:ring-2 focus:ring-orange-700/15 outline-none text-sm text-stone-800 dark:text-stone-100 transition-colors duration-300"
                 placeholder="••••••••"
               />
             </div>
             <button
               type="submit"
               disabled={loading || loadingGoogle}
-              className="w-full bg-orange-700 hover:bg-orange-800 text-white text-xs py-4 rounded-xl transition-colors duration-300 disabled:opacity-50 mt-4 flex items-center justify-center gap-2"
+              className="w-full bg-orange-700 hover:bg-orange-800 text-white text-sm font-semibold h-12 rounded-xl transition-colors duration-300 disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
             >
               {loading
                 ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {s.loggingIn}</>
@@ -402,11 +388,11 @@ function ConnexionContent() {
           </form>
 
           {/* ── Lien inscription ── */}
-          <p className="text-center text-xs text-stone-400 dark:text-stone-500 mt-8 ">
+          <p className="text-center text-sm text-stone-500 dark:text-stone-400 mt-8">
             {s.noAccount}{' '}
             <Link
               href="/inscription"
-              className="text-orange-700 dark:text-orange-500 hover:text-orange-800 dark:hover:text-orange-400 underline underline-offset-4 transition-colors font-medium"
+              className="text-orange-700 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-300 transition-colors font-medium"
             >
               {s.register}
             </Link>

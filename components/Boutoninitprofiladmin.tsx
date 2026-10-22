@@ -63,8 +63,8 @@ export default function BoutonInitProfilAdmin() {
   }
 
   return (
-    <div className="border border-orange-200 dark:border-orange-800 rounded-xl p-4 bg-orange-50 dark:bg-orange-950/30 space-y-3 max-w-lg">
-      <h3 className="text-sm font-semibold text-orange-800 dark:text-orange-300 flex items-center gap-2">
+    <div className="border border-stone-200 dark:border-stone-800 rounded-2xl p-4 bg-white dark:bg-stone-900 space-y-3 max-w-lg">
+      <h3 className="text-sm font-semibold text-stone-800 dark:text-stone-100 flex items-center gap-2">
         <Shield className="w-4 h-4" /> {a.title}
       </h3>
 
@@ -72,14 +72,14 @@ export default function BoutonInitProfilAdmin() {
       <button
         onClick={verifier}
         disabled={loading}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-orange-400 text-orange-800 dark:text-orange-300 text-sm hover:bg-orange-100 dark:hover:bg-orange-900 disabled:opacity-50 transition w-fit"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-300 dark:border-stone-700 text-stone-700 dark:text-stone-200 text-sm hover:bg-stone-50 dark:hover:bg-stone-800 disabled:opacity-50 transition w-fit"
       >
         <CheckCircle2 className="w-4 h-4" />
         {loading ? a.checking : a.refresh}
       </button>
 
       {/* Explication */}
-      <div className="flex items-start gap-2 text-xs text-orange-800 dark:text-orange-300 bg-orange-100 dark:bg-orange-900/40 rounded-xl p-3">
+      <div className="flex items-start gap-2 text-xs text-stone-600 dark:text-stone-300 bg-stone-50 dark:bg-stone-800 rounded-xl p-3">
         <Info className="w-4 h-4 shrink-0 mt-0.5" />
         <p>
           {a.explainBefore} <strong>{a.explainStrong}</strong>{a.explainAfter}
@@ -89,15 +89,15 @@ export default function BoutonInitProfilAdmin() {
       {/* État du profil existant */}
       {!loading && info && (
         info.existe ? (
-          <div className="text-xs rounded-xl bg-white dark:bg-gray-900 border border-orange-200 dark:border-orange-800 p-3 space-y-2">
-            <p className="text-orange-600 dark:text-orange-400 font-medium">
+          <div className="text-xs rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 p-3 space-y-2">
+            <p className="text-amber-800 dark:text-amber-300 font-medium">
               {a.stillExists}
             </p>
-            <p className="text-gray-500 dark:text-gray-400">
-              {a.shop} <span className="font-medium text-gray-700 dark:text-gray-200">{info.nomBoutique}</span>
+            <p className="text-stone-500 dark:text-stone-400">
+              {a.shop} <span className="font-medium text-stone-700 dark:text-stone-200">{info.nomBoutique}</span>
               {' · '}{a.linkedProducts(info.nbProduits ?? 0)}
             </p>
-            <p className="text-gray-400 dark:text-gray-500">
+            <p className="text-stone-400 dark:text-stone-500">
               {a.uselessNote}
             </p>
             <button
@@ -118,7 +118,7 @@ export default function BoutonInitProfilAdmin() {
       )}
 
       {loading && (
-        <p className="text-xs text-gray-400 animate-pulse">{a.checking}</p>
+        <p className="text-xs text-stone-400 animate-pulse">{a.checking}</p>
       )}
 
       {/* Toast */}

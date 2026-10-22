@@ -344,10 +344,10 @@ export default function ProfilPage() {
   }
 
   // ── Styles ────────────────────────────────────────────────────────────────
-  const inputClass = "w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-3 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors"
-  const selectClass = "w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-3 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors"
+  const inputClass = "w-full h-11 px-3.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 focus:border-orange-700 dark:focus:border-orange-500 focus:ring-2 focus:ring-orange-700/15 outline-none text-sm text-stone-800 dark:text-stone-100 transition-colors"
+  const selectClass = "w-full h-11 px-3.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 focus:border-orange-700 dark:focus:border-orange-500 focus:ring-2 focus:ring-orange-700/15 outline-none text-sm text-stone-800 dark:text-stone-100 transition-colors"
   const labelClass = "block text-xs   text-stone-500 dark:text-stone-400 mb-2"
-  const otpClass   = "w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-3 text-xl text-center  text-stone-800 dark:text-stone-100 bg-transparent transition-colors"
+  const otpClass   = "w-full h-11 px-3.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 focus:border-orange-700 dark:focus:border-orange-500 focus:ring-2 focus:ring-orange-700/15 outline-none text-xl text-center text-stone-800 dark:text-stone-100 transition-colors"
   const tabClass   = (s: Section) => `flex-1 py-2.5 text-xs   border-b-2 transition-colors text-center ${section === s ? 'border-orange-700 dark:border-orange-500 text-orange-700 dark:text-orange-500' : 'border-transparent text-stone-400 dark:text-stone-500'}`
   const btnCancel  = "flex-1 border border-stone-300 dark:border-stone-600 text-stone-500 dark:text-stone-400 hover:border-stone-700 dark:hover:border-stone-300 hover:text-stone-800 dark:hover:text-stone-100 text-xs   py-3.5 transition-colors rounded-none"
   const btnSubmit  = "flex-1 bg-orange-700 dark:bg-orange-600 hover:bg-orange-800 dark:hover:bg-orange-700 text-white text-xs   py-3.5 transition-colors disabled:opacity-50 rounded-none"
@@ -492,7 +492,7 @@ export default function ProfilPage() {
               onChange={e => setProfil({...profil, adresse: e.target.value})}
               rows={2}
               placeholder={p.addressPlaceholder}
-              className="w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-3 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors resize-none"
+              className="w-full py-2.5 px-3.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 focus:border-orange-700 dark:focus:border-orange-500 focus:ring-2 focus:ring-orange-700/15 outline-none text-sm text-stone-800 dark:text-stone-100 transition-colors resize-none"
             />
             <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">
               {p.addressHint}
@@ -633,9 +633,9 @@ export default function ProfilPage() {
                 <div className="relative">
                   <input type="email" value={emailForm.nouvelEmail}
                     onChange={e => setEmailForm(f => ({ ...f, nouvelEmail: e.target.value }))} required
-                    className={`w-full border-b focus:outline-none outline-none py-3 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors pe-8 ${emailInputBorder}`}
+                    className={`w-full h-11 ps-3.5 pe-9 rounded-xl border bg-white dark:bg-stone-900 outline-none focus:ring-2 focus:ring-orange-700/15 text-sm text-stone-800 dark:text-stone-100 transition-colors ${emailInputBorder}`}
                     placeholder={p.newEmailPlaceholder} />
-                  <div className="absolute end-0 top-1/2 -translate-y-1/2">
+                  <div className="absolute end-3 top-1/2 -translate-y-1/2">
                     {emailChecking && <svg className="animate-spin w-4 h-4 text-stone-400" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>}
                     {!emailChecking && emailStatus === 'available' && <Check className="w-4 h-4 text-green-500" />}
                     {!emailChecking && (emailStatus === 'taken' || emailStatus === 'same') && <X className="w-4 h-4 text-red-500" />}

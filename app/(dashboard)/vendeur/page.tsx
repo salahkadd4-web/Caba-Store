@@ -73,22 +73,24 @@ export default async function VendeurDashboard() {
     {
       href: '/vendeur/produits', label: h.products, value: totalProduits,
       sub: h.activeCount(produitsActifs),
-      Icon: Package, accent: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-950/40',
+      Icon: Package, accent: 'text-stone-600 dark:text-stone-300', bg: 'bg-stone-100 dark:bg-stone-800',
     },
     {
       href: '/commandes', label: h.orders, value: totalCommandes,
       sub: commandesEnAttente > 0 ? h.pendingCount(commandesEnAttente) : h.upToDate,
-      Icon: ShoppingCart, accent: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/40',
+      // Seule information qui appelle une action : des commandes à traiter
+      subTone: commandesEnAttente > 0 ? 'text-amber-700 dark:text-amber-400 font-medium' : undefined,
+      Icon: ShoppingCart, accent: 'text-stone-600 dark:text-stone-300', bg: 'bg-stone-100 dark:bg-stone-800',
     },
     {
       href: '/vendeur/abonnement', label: h.salesFee, value: fmt.price(billing.salesFee),
       sub: h.feeOn(Math.round(SELLER_SALE_FEE_RATE * 100), fmt.price(billing.grossSales)),
-      Icon: Percent, accent: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/40',
+      Icon: Percent, accent: 'text-stone-600 dark:text-stone-300', bg: 'bg-stone-100 dark:bg-stone-800',
     },
     {
       href: '/vendeur/abonnement', label: h.totalDue, value: fmt.price(billing.totalDue),
       sub: h.totalDueSub,
-      Icon: Receipt, accent: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/40',
+      Icon: Receipt, accent: 'text-stone-600 dark:text-stone-300', bg: 'bg-stone-100 dark:bg-stone-800',
     },
   ]
 
@@ -105,14 +107,14 @@ export default async function VendeurDashboard() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {kpis.map(({ href, label, value, sub, Icon, accent, bg }) => (
+        {kpis.map(({ href, label, value, sub, subTone, Icon, accent, bg }) => (
           <Link key={href} href={href} className={`${kpiCard} group`}>
             <div className={`w-9 h-9 rounded-xl ${bg} flex items-center justify-center mb-1`}>
               <Icon className={`w-4 h-4 ${accent}`} />
             </div>
             <p className="text-xs text-stone-500 dark:text-stone-400">{label}</p>
-            <p className="text-2xl font-bold text-stone-800 dark:text-stone-100">{value}</p>
-            <p className={`text-xs ${accent} mt-0.5`}>{sub}</p>
+            <p className="text-2xl font-semibold tabular-nums text-stone-900 dark:text-stone-50">{value}</p>
+            <p className={`text-xs mt-0.5 ${subTone ?? 'text-stone-500 dark:text-stone-400'}`}>{sub}</p>
           </Link>
         ))}
 
@@ -126,7 +128,7 @@ export default async function VendeurDashboard() {
                 <TrendingUp className="w-3 h-3" /> {h.deliveredOrders}
               </p>
             </div>
-            <Link href="/vendeur/abonnement" className="text-xs text-emerald-400 hover:underline flex items-center gap-0.5 mt-1">
+            <Link href="/vendeur/abonnement" className="text-xs text-orange-400 hover:underline flex items-center gap-0.5 mt-1">
               {h.subscription} <ArrowRight className="w-3 h-3 rtl-flip" />
             </Link>
           </div>
@@ -140,7 +142,7 @@ export default async function VendeurDashboard() {
         <div className={tableWrapper}>
           <div className="px-5 py-4 border-b border-stone-100 dark:border-stone-800 flex items-center justify-between">
             <h2 className="font-semibold text-stone-800 dark:text-stone-100 text-sm">{h.latestOrders}</h2>
-            <Link href="/commandes" className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-0.5">
+            <Link href="/commandes" className="text-xs text-orange-700 dark:text-orange-400 hover:underline flex items-center gap-0.5">
               {h.seeAll} <ArrowRight className="w-3 h-3 rtl-flip" />
             </Link>
           </div>
@@ -170,7 +172,7 @@ export default async function VendeurDashboard() {
         <div className={tableWrapper}>
           <div className="px-5 py-4 border-b border-stone-100 dark:border-stone-800 flex items-center justify-between">
             <h2 className="font-semibold text-stone-800 dark:text-stone-100 text-sm">{h.bestProducts}</h2>
-            <Link href="/vendeur/produits" className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-0.5">
+            <Link href="/vendeur/produits" className="text-xs text-orange-700 dark:text-orange-400 hover:underline flex items-center gap-0.5">
               {h.seeAll} <ArrowRight className="w-3 h-3 rtl-flip" />
             </Link>
           </div>
@@ -190,7 +192,7 @@ export default async function VendeurDashboard() {
                   <p className="text-sm font-medium text-stone-800 dark:text-stone-100 truncate">{p.nom}</p>
                   <p className="text-xs text-stone-400">{fmt.price(p.prix)}</p>
                 </div>
-                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
+                <span className="text-xs font-semibold text-stone-700 dark:text-stone-200 tabular-nums shrink-0">
                   {h.salesCount(p._count.orderItems)}
                 </span>
               </div>

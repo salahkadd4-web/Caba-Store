@@ -189,7 +189,7 @@ function StatTable<T extends StatRow>({ title, icon, rows, getValue, getLabel, g
   return (
     <div className={`${tableWrapper}`}>
       <div className="px-5 py-3.5 border-b border-stone-100 dark:border-stone-800 flex items-center gap-2">
-        <Icon className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+        <Icon className="w-4 h-4 text-stone-500 dark:text-stone-400" />
         <h3 className="text-sm font-semibold text-stone-700 dark:text-stone-200">{title}</h3>
       </div>
       <div className="divide-y divide-stone-50 dark:divide-stone-800">
@@ -197,11 +197,11 @@ function StatTable<T extends StatRow>({ title, icon, rows, getValue, getLabel, g
           <p className="p-5 text-xs text-stone-400 text-center">{emptyLabel}</p>
         ) : rows.map((r, i) => (
           <div key={r.id} className="px-5 py-3 flex items-center gap-3">
-            <span className={`text-lg font-bold shrink-0 w-6 ${i === 0 ? 'text-amber-400' : i === 1 ? 'text-stone-400' : i === 2 ? 'text-amber-600' : 'text-stone-300 dark:text-stone-600'}`}>
+            <span className={`text-sm font-semibold tabular-nums shrink-0 w-6 ${i < 3 ? 'text-stone-900 dark:text-stone-100' : 'text-stone-400 dark:text-stone-500'}`}>
               {i + 1}
             </span>
             {r.images?.[0] && (
-              <Image src={r.images[0]} alt={r.nom ?? ''} width={32} height={32} className="w-8 h-8 rounded-xl object-cover shrink-0 border border-stone-100 dark:border-stone-800" />
+              <Image src={r.images[0]} alt={r.nom ?? ''} width={40} height={40} className="w-10 h-10 rounded-xl object-contain p-1 bg-white shrink-0 border border-stone-200 dark:border-stone-700" />
             )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-stone-800 dark:text-stone-100 truncate">{getLabel(r)}</p>
@@ -242,12 +242,12 @@ export default async function AdminStatsPage() {
           kpi.dark ? (
             <div key={kpi.label} className={`${kpiCardDark} col-span-2 lg:col-span-1`}>
               <p className="text-xs text-stone-400">{kpi.label}</p>
-              <p className="text-2xl font-bold text-white mt-1">{String(kpi.value)}</p>
+              <p className="text-2xl font-semibold tabular-nums text-white mt-1">{String(kpi.value)}</p>
             </div>
           ) : (
             <div key={kpi.label} className={kpiCard}>
               <p className="text-xs text-stone-500 dark:text-stone-400">{kpi.label}</p>
-              <p className="text-2xl font-bold text-stone-800 dark:text-stone-100">{String(kpi.value)}</p>
+              <p className="text-2xl font-semibold tabular-nums text-stone-900 dark:text-stone-50">{String(kpi.value)}</p>
             </div>
           )
         ))}
@@ -255,25 +255,25 @@ export default async function AdminStatsPage() {
 
       {/* Priorités admin */}
       <div>
-        <h2 className={sectionHeading}><ShieldCheck className="w-4 h-4 text-orange-700" /> {s_.priorities}</h2>
+        <h2 className={sectionHeading}><ShieldCheck className="w-4 h-4 text-stone-500 dark:text-stone-400" /> {s_.priorities}</h2>
         <BoutonInitProfilAdmin />
       </div>
 
       {/* Abonnements */}
       <div>
-        <h2 className={sectionHeading}><CreditCard className="w-4 h-4 text-emerald-600" /> {s_.subscriptions}</h2>
+        <h2 className={sectionHeading}><CreditCard className="w-4 h-4 text-stone-500 dark:text-stone-400" /> {s_.subscriptions}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {stats.statsAbonnements.map(a => {
-            const cfg = {
-              NIVEAU_1: { border: 'border-orange-300 dark:border-orange-800', badge: 'bg-orange-700 text-white' },
-              NIVEAU_2: { border: 'border-blue-300 dark:border-blue-700',     badge: 'bg-blue-500 text-white'   },
-              NIVEAU_3: { border: 'border-stone-300 dark:border-stone-600',   badge: 'bg-stone-500 text-white'  },
-            }[a.niveau]!
+            // Cartes neutres ; seul le niveau qui compte le plus de vendeurs est souligné en orange
+            const plusUtilise = a.total > 0 && a.total === Math.max(...stats.statsAbonnements.map(x => x.total))
+            const cfg = plusUtilise
+              ? { border: 'border-orange-600 dark:border-orange-500', badge: 'bg-orange-50 dark:bg-orange-950/50 text-orange-800 dark:text-orange-300' }
+              : { border: 'border-stone-200 dark:border-stone-800',   badge: 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200' }
             const label = t.billing.levels[a.niveau]?.label ?? a.niveau
             const tarif = s_.perMonth(fmt.price(SELLER_SUBSCRIPTION_PRICING[a.niveau].mensuel))
             const tauxActif = a.total > 0 ? Math.round(((a.actif + a.gratuit) / a.total) * 100) : 0
             return (
-              <div key={a.niveau} className={`bg-white dark:bg-stone-900 rounded-2xl border-2 ${cfg.border} p-5 space-y-4`}>
+              <div key={a.niveau} className={`bg-white dark:bg-stone-900 rounded-2xl ${plusUtilise ? 'border-2' : 'border'} ${cfg.border} p-5 space-y-4`}>
                 <div className="flex items-center justify-between">
                   <div>
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${cfg.badge}`}>{label}</span>
@@ -286,15 +286,15 @@ export default async function AdminStatsPage() {
                     <span>{s_.activeRate}</span><span className="font-medium">{tauxActif}%</span>
                   </div>
                   <div className="w-full bg-stone-100 dark:bg-stone-800 rounded-full h-1.5">
-                    <div className="h-1.5 rounded-full bg-emerald-500 transition-all" style={{ width: `${tauxActif}%` }} />
+                    <div className="h-1.5 rounded-full bg-emerald-600 transition-all" style={{ width: `${tauxActif}%` }} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   {[
-                    { label: s_.active,    value: a.actif,   cls: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'     },
-                    { label: s_.free,      value: a.gratuit, cls: 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300'  },
-                    { label: s_.expired,   value: a.expire,  cls: 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300'         },
-                    { label: s_.suspended, value: a.suspendu,cls: 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300'},
+                    { label: s_.active,    value: a.actif,   cls: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300' },
+                    { label: s_.free,      value: a.gratuit, cls: 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300'             },
+                    { label: s_.expired,   value: a.expire,  cls: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'         },
+                    { label: s_.suspended, value: a.suspendu,cls: 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300'                 },
                   ].map(s => (
                     <div key={s.label} className={`${s.cls} rounded-xl p-2 text-center`}>
                       <p className="font-bold text-base">{s.value}</p>
@@ -309,8 +309,8 @@ export default async function AdminStatsPage() {
                   </div>
                   {a.bientotExpire > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-orange-500">{s_.expiring30}</span>
-                      <span className="font-bold text-orange-600">{a.bientotExpire}</span>
+                      <span className="text-amber-700 dark:text-amber-400">{s_.expiring30}</span>
+                      <span className="font-bold text-amber-700 dark:text-amber-400">{a.bientotExpire}</span>
                     </div>
                   )}
                 </div>

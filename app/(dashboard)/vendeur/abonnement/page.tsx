@@ -69,8 +69,8 @@ export default async function VendeurAbonnementPage() {
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/50 flex items-center justify-center">
-          <CreditCard className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+        <div className="w-10 h-10 rounded-xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center">
+          <CreditCard className="w-5 h-5 text-stone-600 dark:text-stone-300" />
         </div>
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-stone-800 dark:text-stone-100">{b.title}</h1>
@@ -98,7 +98,7 @@ export default async function VendeurAbonnementPage() {
           {abo.statut !== 'EXPIRE' && (
             <div className="w-full bg-stone-200 dark:bg-stone-700 rounded-full h-2 mb-4">
               <div
-                className={`h-2 rounded-full transition-all ${joursRestants <= 7 ? 'bg-orange-500' : 'bg-emerald-500'}`}
+                className={`h-2 rounded-full transition-all ${joursRestants <= 7 ? 'bg-amber-500' : 'bg-emerald-600'}`}
                 style={{ width: `${progressPct}%` }}
               />
             </div>
@@ -154,7 +154,7 @@ export default async function VendeurAbonnementPage() {
               <div key={key}
                 className={`rounded-2xl border p-4 flex justify-between items-center transition ${
  isActuel
- ? 'border-emerald-400 dark:border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40'
+ ? 'border-orange-600 dark:border-orange-500 border-2 bg-white dark:bg-stone-900'
  : 'border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 hover:border-stone-300 dark:hover:border-stone-600'
  }`}>
                 <div>
@@ -171,7 +171,7 @@ export default async function VendeurAbonnementPage() {
                   </p>
                 </div>
                 {isActuel && (
-                  <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900 px-3 py-1.5 rounded-full shrink-0">
+                  <span className="text-xs font-semibold text-orange-800 dark:text-orange-300 bg-orange-50 dark:bg-orange-950/50 px-3 py-1.5 rounded-full shrink-0">
                     {b.currentPlan}
                   </span>
                 )}
@@ -199,12 +199,12 @@ export default async function VendeurAbonnementPage() {
           <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{fmt.price(billing.salesFee)}</p>
           <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">{b.salesFeesDesc(Math.round(SELLER_SALE_FEE_RATE * 100), fmt.price(billing.grossSales))}</p>
         </div>
-        <div className="rounded-2xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 p-4">
-          <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 text-xs mb-2">
+        <div className="rounded-2xl bg-stone-900 dark:bg-stone-800 p-4">
+          <div className="flex items-center gap-2 text-stone-400 text-xs mb-2">
             <Receipt className="w-3.5 h-3.5" /> {b.totalDue}
           </div>
-          <p className="text-2xl font-bold text-emerald-800 dark:text-emerald-200">{fmt.price(billing.totalDue)}</p>
-          <p className="text-xs text-emerald-700/80 dark:text-emerald-300/80 mt-1">{b.totalDueDesc}</p>
+          <p className="text-2xl font-semibold tabular-nums text-white">{fmt.price(billing.totalDue)}</p>
+          <p className="text-xs text-stone-400 mt-1">{b.totalDueDesc}</p>
         </div>
       </div>
 

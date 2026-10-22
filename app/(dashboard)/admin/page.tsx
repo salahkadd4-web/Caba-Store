@@ -31,10 +31,10 @@ export default async function AdminPage() {
   const ca = chiffreAffaireBrut._sum.total || 0
 
   const kpis = [
-    { href: '/admin/produits',  label: h.products,   value: totalProduits,   Icon: Package,      accent: 'text-orange-600 dark:text-orange-400',   bg: 'bg-orange-50 dark:bg-orange-950/40' },
-    { href: '/admin/clients',   label: h.clients,    value: totalClients,    Icon: Users,        accent: 'text-orange-700 dark:text-orange-400',   bg: 'bg-orange-50 dark:bg-orange-950/40' },
-    { href: '/commandes',       label: h.orders,     value: totalCommandes,  Icon: ShoppingCart, accent: 'text-blue-600   dark:text-blue-400',     bg: 'bg-blue-50   dark:bg-blue-950/40'   },
-    { href: '/admin/vendeurs',  label: h.activeSellers, value: vendeursActifs, Icon: Store,       accent: 'text-emerald-600  dark:text-emerald-400',     bg: 'bg-emerald-50   dark:bg-emerald-950/40'  },
+    { href: '/admin/produits',  label: h.products,   value: totalProduits,   Icon: Package,      accent: 'text-stone-600 dark:text-stone-300', bg: 'bg-stone-100 dark:bg-stone-800' },
+    { href: '/admin/clients',   label: h.clients,    value: totalClients,    Icon: Users,        accent: 'text-stone-600 dark:text-stone-300', bg: 'bg-stone-100 dark:bg-stone-800' },
+    { href: '/commandes',       label: h.orders,     value: totalCommandes,  Icon: ShoppingCart, accent: 'text-stone-600 dark:text-stone-300', bg: 'bg-stone-100 dark:bg-stone-800'   },
+    { href: '/admin/vendeurs',  label: h.activeSellers, value: vendeursActifs, Icon: Store,       accent: 'text-stone-600 dark:text-stone-300', bg: 'bg-stone-100 dark:bg-stone-800'  },
   ]
 
   return (
@@ -52,8 +52,8 @@ export default async function AdminPage() {
               <Icon className={`w-4 h-4 ${accent}`} />
             </div>
             <p className="text-xs text-stone-500 dark:text-stone-400">{label}</p>
-            <p className="text-2xl font-bold text-stone-800 dark:text-stone-100 tabular-nums">{fmt.number(value)}</p>
-            <p className={`text-xs ${accent} flex items-center gap-0.5 mt-0.5`}>
+            <p className="text-2xl font-semibold text-stone-900 dark:text-stone-50 tabular-nums">{fmt.number(value)}</p>
+            <p className="text-xs font-medium text-orange-700 dark:text-orange-400 flex items-center gap-0.5 mt-0.5">
               {h.seeAll} <ArrowRight className="w-3 h-3 rtl-flip" />
             </p>
           </Link>
@@ -70,8 +70,8 @@ export default async function AdminPage() {
           </p>
         </Link>
         <Link href="/retours" className={`${cardSm} p-4 hover:border-stone-300 dark:hover:border-stone-600 transition group`}>
-          <div className="w-9 h-9 rounded-xl bg-red-50 dark:bg-red-950/40 flex items-center justify-center mb-1">
-            <RefreshCw className="w-4 h-4 text-red-500 dark:text-red-400" />
+          <div className="w-9 h-9 rounded-xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center mb-1">
+            <RefreshCw className="w-4 h-4 text-stone-600 dark:text-stone-300" />
           </div>
           <p className="text-xs text-stone-500 dark:text-stone-400">{h.returns}</p>
           <p className="text-sm font-semibold text-stone-700 dark:text-stone-200 mt-1">

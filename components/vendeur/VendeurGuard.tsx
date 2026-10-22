@@ -31,15 +31,15 @@ export async function VendeurGuard({ children }: { children: React.ReactNode }) 
   // Compte en attente ou suspendu → page de statut
   if (vendeur.statut === 'EN_ATTENTE' || vendeur.statut === 'SUSPENDU') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 p-4">
-        <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-8 text-center">
+      <div className="min-h-screen flex items-center justify-center bg-stone-50 dark:bg-stone-950 p-4">
+        <div className="max-w-md w-full bg-white dark:bg-stone-900 rounded-2xl shadow-lg p-8 text-center">
           {vendeur.statut === 'EN_ATTENTE' ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">
+              <h1 className="text-xl font-bold text-stone-800 dark:text-stone-100 mb-2">
                 {s.pendingTitle}
               </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              <p className="text-sm text-stone-500 dark:text-stone-400 mb-4">
                 {s.pendingDesc}
               </p>
               {vendeur.adminNote && (
@@ -51,10 +51,10 @@ export async function VendeurGuard({ children }: { children: React.ReactNode }) 
           ) : (
             <>
               <Ban className="w-14 h-14" />
-              <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">
+              <h1 className="text-xl font-bold text-stone-800 dark:text-stone-100 mb-2">
                 {s.suspendedTitle}
               </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              <p className="text-sm text-stone-500 dark:text-stone-400 mb-4">
                 {s.suspendedDesc}
               </p>
               {vendeur.adminNote && (
@@ -67,7 +67,7 @@ export async function VendeurGuard({ children }: { children: React.ReactNode }) 
           )}
           <Link
             href="/"
-            className="inline-block mt-2 text-sm text-emerald-600 dark:text-emerald-400 hover:underline"
+            className="inline-block mt-2 text-sm text-orange-700 dark:text-orange-400 hover:underline"
           >
             {s.backToShopArrow}
           </Link>

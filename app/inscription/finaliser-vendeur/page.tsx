@@ -10,6 +10,7 @@ import CabaLogo from '@/components/CabaLogo'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import WilayaCommuneSelect from '@/components/WilayaCommuneSelect'
 import { useI18n } from '@/components/I18nProvider'
+import AuthBrandPanel from '@/components/client/AuthBrandPanel'
 
 function FinaliserVendeurContent() {
   const { t } = useI18n()
@@ -97,7 +98,7 @@ function FinaliserVendeurContent() {
 
   // ── Styles ────────────────────────────────────────────────────────────────
   const labelCls  = 'block text-xs   text-stone-500 dark:text-stone-400 mb-2'
-  const baseInput = 'w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-2.5 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors duration-300 placeholder-stone-300 dark:placeholder-stone-700'
+  const baseInput = 'w-full h-11 px-3.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 focus:border-orange-700 dark:focus:border-orange-500 focus:ring-2 focus:ring-orange-700/15 outline-none text-sm text-stone-800 dark:text-stone-100 transition-colors duration-300 placeholder-stone-300 dark:placeholder-stone-700'
   const btnPrimary = 'w-full bg-orange-700 hover:bg-orange-800 text-white text-xs   py-4 rounded-xl transition-colors duration-300 disabled:opacity-40 flex items-center justify-center gap-2'
 
   const Stepper = () => (
@@ -138,31 +139,14 @@ function FinaliserVendeurContent() {
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex flex-col lg:flex-row transition-colors duration-300">
 
-      {/* ── Panneau gauche ── */}
-      <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-stone-900 dark:bg-stone-950 items-center justify-center p-12 border-e border-stone-800">
-        <div className="absolute inset-0 flex items-center justify-center opacity-[0.06]">
-          <CabaLogo className="w-120 h-120 text-white" />
-        </div>
-        <div className="relative z-10 text-center text-white space-y-6 max-w-xs">
-          <CabaLogo className="w-16 h-16 text-orange-500 mx-auto" />
-          <div className="w-10 h-px bg-stone-700 mx-auto" />
-          <p className="text-stone-400 font-light text-sm ">
-            {v.sideTitle}
-          </p>
-          <div className="space-y-4 text-start mt-8">
-            {[
-              { icon: Store,       text: v.sideShop },
-              { icon: Phone,       text: skipPhone ? v.sidePhoneVerified : v.sideSms },
-              { icon: ShieldCheck, text: v.sideValidation },
-            ].map(({ icon: Icon, text }) => (
-              <div key={text} className="flex items-center gap-3 text-stone-400">
-                <Icon className="w-4 h-4 shrink-0 text-orange-500/60" />
-                <span className="text-xs ">{text}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <AuthBrandPanel
+        title={v.sideTitle}
+        points={[
+          { icon: Store,       text: v.sideShop },
+          { icon: Phone,       text: skipPhone ? v.sidePhoneVerified : v.sideSms },
+          { icon: ShieldCheck, text: v.sideValidation },
+        ]}
+      />
 
       {/* ── Formulaire ── */}
       <div className="flex-1 flex flex-col items-center justify-center p-8 overflow-y-auto">
@@ -332,7 +316,7 @@ function FinaliserVendeurContent() {
                       <input type="text" inputMode="numeric" value={code}
                         onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                         maxLength={6} placeholder="• • • • • •"
-                        className="w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-3 text-center text-2xl font-mono tracking-[0.5em] text-stone-800 dark:text-stone-100 bg-transparent transition-colors duration-300 placeholder-stone-300 dark:placeholder-stone-700" />
+                        className="w-full h-14 px-3.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 focus:border-orange-700 dark:focus:border-orange-500 focus:ring-2 focus:ring-orange-700/15 outline-none text-center text-2xl font-mono tracking-[0.5em] text-stone-800 dark:text-stone-100 transition-colors duration-300 placeholder-stone-300 dark:placeholder-stone-700" />
                       <div className="flex gap-1.5 mt-2 justify-center">
                         {Array.from({ length: 6 }).map((_, i) => (
                           <div key={i} className={`h-0.5 flex-1 transition-colors duration-200 ${

@@ -28,7 +28,7 @@ const seller = {
   home: {
     title: 'Tableau de bord',
     products: 'Produits',
-    activeCount: (n: number): string => `${n} actifs`,
+    activeCount: (n: number): string => `${n} ${n > 1 ? 'actifs' : 'actif'}`,
     orders: 'Commandes',
     pendingCount: (n: number): string => `${n} en attente`,
     upToDate: 'À jour',
@@ -44,7 +44,7 @@ const seller = {
     noOrders: 'Aucune commande',
     bestProducts: 'Meilleurs produits',
     noProducts: 'Aucun produit',
-    salesCount: (n: number): string => `${n} ventes`,
+    salesCount: (n: number): string => `${n} ${n > 1 ? 'ventes' : 'vente'}`,
   },
   documents: {
     uploadFailed: "Échec de l'envoi du fichier",

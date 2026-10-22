@@ -484,7 +484,7 @@ export default function VendeurProduitsPage() {
                         <p className="text-xs text-stone-400 mt-0.5">{p_.degressiveHint}</p>
                       </div>
                       <button type="button" onClick={() => setPrixTiers(t => [...t, emptyTier()])}
-                        className="text-xs bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-xl hover:bg-emerald-200 transition flex items-center gap-1">
+                        className="text-xs bg-orange-50 dark:bg-orange-950/50 text-orange-800 dark:text-orange-300 px-2 py-1 rounded-xl hover:bg-emerald-200 transition flex items-center gap-1">
                         <Plus className="w-3 h-3" /> {p_.addTier}
                       </button>
                     </div>
@@ -566,7 +566,7 @@ export default function VendeurProduitsPage() {
                       <p className="text-xs text-stone-400 mt-0.5">{p_.variantsHint}</p>
                     </div>
                     <button type="button" onClick={() => setVariants(vs => [...vs, emptyVariant()])}
-                      className="text-xs bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-xl hover:bg-emerald-200 transition flex items-center gap-1">
+                      className="text-xs bg-orange-50 dark:bg-orange-950/50 text-orange-800 dark:text-orange-300 px-2 py-1 rounded-xl hover:bg-emerald-200 transition flex items-center gap-1">
                       <Plus className="w-3 h-3" /> {p_.addVariant}
                     </button>
                   </div>
@@ -654,7 +654,7 @@ export default function VendeurProduitsPage() {
                                 <button type="button"
                                   onClick={() => setVariants(vs => vs.map((x, j) => j === i
                                     ? { ...x, options: [...x.options, emptyOption()] } : x))}
-                                  className="text-xs bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded flex items-center gap-0.5 hover:bg-emerald-200 transition">
+                                  className="text-xs bg-orange-50 dark:bg-orange-950/50 text-orange-800 dark:text-orange-300 px-1.5 py-0.5 rounded flex items-center gap-0.5 hover:bg-emerald-200 transition">
                                   <Plus className="w-2.5 h-2.5" /> {p_.add}
                                 </button>
                               </div>

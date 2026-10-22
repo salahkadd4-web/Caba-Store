@@ -10,6 +10,7 @@ import GoogleIcon from '@/components/client/GoogleIcon'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import WilayaCommuneSelect from '@/components/WilayaCommuneSelect'
 import { useI18n } from '@/components/I18nProvider'
+import AuthBrandPanel from '@/components/client/AuthBrandPanel'
 
 const GOOGLE_WEB_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? ''
 
@@ -167,13 +168,13 @@ export default function InscriptionPage() {
 
   // ── Styles partagés ────────────────────────────────────────────────────────
   const inputCls = (status?: 'available' | 'taken' | 'idle') =>
-    `w-full border-b outline-none py-2.5 pe-7 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors duration-300 placeholder-stone-300 dark:placeholder-stone-700 ${
+    `w-full h-11 ps-3.5 pe-9 rounded-xl border bg-white dark:bg-stone-900 outline-none focus:ring-2 focus:ring-orange-700/15 text-sm text-stone-800 dark:text-stone-100 transition-colors duration-300 placeholder-stone-300 dark:placeholder-stone-700 ${
       status === 'available' ? 'border-green-500 dark:border-green-400' :
       status === 'taken'     ? 'border-red-400 dark:border-red-500' :
-      'border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500'
+      'border-stone-300 dark:border-stone-700 focus:border-orange-700 dark:focus:border-orange-500'
     }`
 
-  const baseInput = 'w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-2.5 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors duration-300 placeholder-stone-300 dark:placeholder-stone-700'
+  const baseInput = 'w-full h-11 px-3.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 focus:border-orange-700 dark:focus:border-orange-500 focus:ring-2 focus:ring-orange-700/15 outline-none text-sm text-stone-800 dark:text-stone-100 transition-colors duration-300 placeholder-stone-300 dark:placeholder-stone-700'
   const labelCls  = 'block text-xs   text-stone-500 dark:text-stone-400 mb-2'
 
   const handleGoogle = async () => {
@@ -208,19 +209,7 @@ export default function InscriptionPage() {
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex flex-col lg:flex-row transition-colors duration-300">
 
-      {/* ── Panneau gauche (desktop) ── */}
-      <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-stone-900 dark:bg-stone-950 items-center justify-center p-12 border-e border-stone-800">
-        <div className="absolute inset-0 flex items-center justify-center opacity-[0.06]">
-          <CabaLogo className="w-120 h-120 text-white" />
-        </div>
-        <div className="relative z-10 text-center">
-          <CabaLogo className="w-20 h-20 text-orange-500 mx-auto mb-6" />
-          <div className="w-10 h-px bg-stone-700 mx-auto mb-5" />
-          <p className="text-stone-400 font-light text-sm ">
-            {a.tagline}
-          </p>
-        </div>
-      </div>
+      <AuthBrandPanel />
 
       {/* ── Formulaire ── */}
       <div className="flex-1 flex flex-col items-center justify-center p-8 overflow-y-auto">
@@ -231,9 +220,8 @@ export default function InscriptionPage() {
           </div>
 
           <div className="mb-8">
-            <p className="text-xs font-semibold text-orange-700 dark:text-orange-500 mb-2">{s.newAccount}</p>
-            <h2 className="text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">{s.title}</h2>
-            <div className="w-8 h-px bg-orange-700 dark:bg-orange-500 mt-4" />
+            <h1 className="text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">{s.title}</h1>
+            <p className="text-stone-500 dark:text-stone-400 mt-1">{s.newAccount}</p>
           </div>
 
           <Stepper etape={etape} />
@@ -341,7 +329,7 @@ export default function InscriptionPage() {
                       placeholder={s.phonePlaceholder}
                       className={inputCls(idStatus === 'idle' ? undefined : idStatus)} />
                   )}
-                  <div className="absolute end-0 top-1/2 -translate-y-1/2">
+                  <div className="absolute end-3 top-1/2 -translate-y-1/2">
                     {checkingId && <svg className="animate-spin w-3.5 h-3.5 text-stone-400" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>}
                     {!checkingId && idStatus === 'available' && <Check className="w-4 h-4 text-green-500" />}
                     {!checkingId && idStatus === 'taken'     && <X className="w-4 h-4 text-red-400" />}
@@ -366,9 +354,9 @@ export default function InscriptionPage() {
                 <div className="relative">
                   <input type={showPwd ? 'text' : 'password'} value={form.motDePasse}
                     onChange={handleChange('motDePasse')} placeholder={s.passwordPlaceholder}
-                    className={`${baseInput} pe-8`} />
+                    className={`${baseInput} pe-16`} />
                   <button type="button" onClick={() => setShowPwd(v => !v)}
-                    className="absolute end-0 top-1/2 -translate-y-1/2 text-xs text-stone-400 dark:text-stone-600 hover:text-orange-700 dark:hover:text-orange-500 transition-colors ">
+                    className="absolute end-3 top-1/2 -translate-y-1/2 text-xs font-medium text-stone-500 dark:text-stone-400 hover:text-orange-700 dark:hover:text-orange-500 transition-colors">
                     {showPwd ? s.hide : s.show}
                   </button>
                 </div>
@@ -428,7 +416,7 @@ export default function InscriptionPage() {
                 <input type="text" inputMode="numeric" value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   maxLength={6} placeholder="• • • • • •"
-                  className="w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-3 text-center text-2xl font-mono tracking-[0.5em] text-stone-800 dark:text-stone-100 bg-transparent transition-colors duration-300 placeholder-stone-300 dark:placeholder-stone-700" />
+                  className="w-full h-14 px-3.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 focus:border-orange-700 dark:focus:border-orange-500 focus:ring-2 focus:ring-orange-700/15 outline-none text-center text-2xl font-mono tracking-[0.5em] text-stone-800 dark:text-stone-100 transition-colors duration-300 placeholder-stone-300 dark:placeholder-stone-700" />
                 <div className="flex gap-1.5 mt-2 justify-center">
                   {Array.from({ length: 6 }).map((_, i) => (
                     <div key={i} className={`h-0.5 flex-1 transition-colors duration-200 ${i < code.length ? 'bg-orange-700 dark:bg-orange-500' : 'bg-stone-200 dark:bg-stone-800'}`} />
