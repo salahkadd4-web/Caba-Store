@@ -1,4 +1,5 @@
 import type fr from '../fr/cart'
+import { produits } from './pluriel'
 
 const cart: typeof fr = {
   color: 'اللون',
@@ -20,10 +21,10 @@ const cart: typeof fr = {
   discover: 'اكتشف المنتجات',
   eyebrow: 'التسوق',
   title: 'سلتي',
-  counts: (products: number, items: number) => `(${products} منتج · ${items} قطعة)`,
+  counts: (products: number, items: number) => `(${products} ${produits(products)} · ${items} قطعة)`,
   emptying: 'جارٍ الإفراغ…',
   emptyCart: 'إفراغ السلة',
-  productsCount: (n: number) => `${n} منتج`,
+  productsCount: (n: number) => `${n} ${produits(n)}`,
   official: 'رسمي',
   continueShopping: 'متابعة التسوق',
   summary: 'الملخص',

@@ -383,7 +383,7 @@ export default function DashboardCommandesView({
                           {cmd.user?.prenom} {cmd.user?.nom}
                         </p>
                         <p className="text-xs text-stone-400">
-                          {new Date(cmd.createdAt).toLocaleDateString(fmt.intl)} · {cmd.items.length} {d.itemsShort} · <span className="font-semibold text-stone-700 dark:text-stone-200">{fmt.price(Number(montant))}</span>
+                          {new Date(cmd.createdAt).toLocaleDateString(fmt.intl)} · {d.itemsCount(cmd.items.length)} · <span className="font-semibold text-stone-700 dark:text-stone-200">{fmt.price(Number(montant))}</span>
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-2 shrink-0" onClick={e => e.stopPropagation()}>

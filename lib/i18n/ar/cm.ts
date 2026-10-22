@@ -1,4 +1,5 @@
 import type fr from '../fr/cm'
+import { produits } from './pluriel'
 
 const cm: typeof fr = {
   status: {
@@ -34,7 +35,7 @@ const cm: typeof fr = {
   approve: 'موافقة',
   refuse: 'رفض',
   noApproved: 'لا توجد فئة معتمدة',
-  productsCount: (n: number) => `${n} منتج`,
+  productsCount: (n: number) => `${n} ${produits(n)}`,
   seller: 'بائع',
   admin: 'مشرف',
   editTitle: '✏️ تعديل الفئة',

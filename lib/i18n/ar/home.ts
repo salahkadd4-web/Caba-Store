@@ -1,4 +1,5 @@
 import type fr from '../fr/home'
+import { produits } from './pluriel'
 
 const home: typeof fr = {
   heroBadge: 'جديد · توصيل خلال 48 ساعة في الجزائر',
@@ -22,7 +23,7 @@ const home: typeof fr = {
   bestSellersSoon: 'قريبًا: المنتجات الأكثر مبيعًا.',
   noCategories: 'لا توجد فئات متاحة.',
   noProducts: 'لا توجد منتجات متاحة.',
-  productsCount: (n: number) => `${n} منتج`,
+  productsCount: (n: number) => `${n} ${produits(n)}`,
   topRank: (n: number): string => `الأفضل ${n}`,
   trust: [
     { title: 'توصيل خلال 48 ساعة', desc: 'في كل أنحاء الجزائر' },

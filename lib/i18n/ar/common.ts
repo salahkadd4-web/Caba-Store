@@ -1,4 +1,5 @@
 import type fr from '../fr/common'
+import { produits } from './pluriel'
 
 const common: typeof fr = {
   appName: 'كابا ستور',
@@ -43,7 +44,7 @@ const common: typeof fr = {
     chooseFromGallery: 'اختيار من المعرض',
     chooseFile: 'اختيار ملف',
   },
-  products: (n: number) => (n === 1 ? 'منتج' : n === 2 ? 'منتجان' : n >= 3 && n <= 10 ? 'منتجات' : 'منتج'),
+  products: (n: number) => produits(n),
   items: (n: number) => (n === 1 ? 'سلعة' : n === 2 ? 'سلعتان' : n >= 3 && n <= 10 ? 'سلع' : 'سلعة'),
 }
 

@@ -1,4 +1,5 @@
 import type fr from '../fr/returns'
+import { produits } from './pluriel'
 
 const returns: typeof fr = {
   steps: ['الطلب', 'المنتج', 'السبب', 'التأكيد'],
@@ -16,7 +17,7 @@ const returns: typeof fr = {
   policyNote: 'تخضع عمليات الإرجاع لسياسة Flowmerce.',
   title: 'طلب إرجاع',
   whichOrder: 'ما الطلب الذي تريد إرجاعه؟',
-  itemsCount: (n: number) => `${n} منتج`,
+  itemsCount: (n: number) => `${n} ${produits(n)}`,
   selectItemHint: 'اختر المنتج المراد إرجاعه. يمكن تقديم طلب واحد فقط لكل طلبية.',
   qtyOrdered: (n: number) => `الكمية المطلوبة: ${n}`,
   previous: '→ السابق',

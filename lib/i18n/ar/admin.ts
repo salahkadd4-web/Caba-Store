@@ -1,4 +1,5 @@
 import type fr from '../fr/admin'
+import { produits, produitsLies } from './pluriel'
 
 const admin: typeof fr = {
   home: {
@@ -100,7 +101,7 @@ const admin: typeof fr = {
     allStatuses: 'كل الحالات',
     noResultFor: (q: string) => `لا توجد نتائج لـ "${q}"`,
     none: 'لم يتم العثور على أي بائع',
-    productsCount: (n: number) => `${n} منتج`,
+    productsCount: (n: number) => `${n} ${produits(n)}`,
     ordersShort: (n: number) => `${n} طلب`,
     tabInfo: 'المعلومات والإجراءات',
     tabSubscription: 'الاشتراك',
@@ -193,7 +194,7 @@ const admin: typeof fr = {
     categoriesSection: 'الفئات',
     bestCategories: 'أفضل الفئات',
     worstCategories: 'الفئات الأقل مبيعًا',
-    productsCount: (n: number) => `${n} منتج`,
+    productsCount: (n: number) => `${n} ${produits(n)}`,
     sellersSection: 'البائعون',
     bestSellers: 'أفضل البائعين',
     leastActiveSellers: 'البائعون الأقل نشاطًا',
@@ -203,7 +204,7 @@ const admin: typeof fr = {
     inactiveClients: 'الزبائن غير النشطين',
     ordersAndReturns: (o: number, r: number) => `${o} طلب · ${r} إرجاع`,
     adminProfile: {
-      cannotDelete: (n: number) => `تعذّر ذلك: ${n} منتج مرتبط. احذفها أولًا.`,
+      cannotDelete: (n: number) => `تعذّر ذلك: ${n} ${produitsLies(n)}. احذفها أولًا.`,
       confirmDelete: 'حذف ملف البائع الخاص بالمشرف « CabaStore Officiel »؟',
       error: 'خطأ',
       title: 'الأولوية 0 — منتجات المشرف',
@@ -214,7 +215,7 @@ const admin: typeof fr = {
       explainAfter: ' (الأولى في العرض)، لأنها غير مرتبطة بأي ملف بائع. لا حاجة لأي إجراء.',
       stillExists: '⚠️ ما يزال ملف بائع خاص بالمشرف موجودًا في قاعدة البيانات.',
       shop: 'المتجر:',
-      linkedProducts: (n: number) => `${n} منتج مرتبط`,
+      linkedProducts: (n: number) => `${n} ${produitsLies(n)}`,
       uselessNote: 'يظهر هذا الملف دون فائدة في قائمة البائعين. احذفه — ستبقى منتجات المشرف معروضة بالأولوية 0 بدونه.',
       deleteProfile: 'حذف ملف البائع الخاص بالمشرف',
       allGood: 'لا يوجد ملف بائع للمشرف. كل شيء سليم.',

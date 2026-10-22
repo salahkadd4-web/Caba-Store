@@ -1,4 +1,5 @@
 import type fr from '../fr/catalog'
+import { produits } from './pluriel'
 
 const catalog: typeof fr = {
   products: {
@@ -12,7 +13,7 @@ const catalog: typeof fr = {
     title: 'الفئات',
     subtitle: 'تصفّح فئات منتجاتنا',
     empty: 'لا توجد فئات متاحة حاليًا.',
-    productsCount: (n: number) => `${n} منتج`,
+    productsCount: (n: number) => `${n} ${produits(n)}`,
     seeAll: 'عرض الكل ←',
   },
   category: {
@@ -27,7 +28,7 @@ const catalog: typeof fr = {
     loadError: 'تعذّر تحميل مفضلاتك. يرجى المحاولة مرة أخرى.',
     retry: 'إعادة المحاولة',
     title: 'مفضلاتي',
-    count: (n: number) => `${n} منتج في المفضلة`,
+    count: (n: number) => `${n} ${produits(n)} في المفضلة`,
     empty: 'ليس لديك أي منتج في المفضلة بعد.',
     browse: 'تصفّح المنتجات',
     remove: 'إزالة من المفضلة',
@@ -47,7 +48,7 @@ const catalog: typeof fr = {
     filters: 'الفلاتر',
     searching: 'جارٍ البحث…',
     searchingFull: 'جارٍ البحث…',
-    count: () => 'منتج',
+    count: (n: number) => produits(n),
     found: () => '',
     emptyTitle: 'لم يتم العثور على أي منتج',
     emptyDesc: 'حاول تعديل معايير البحث.',

@@ -1,4 +1,5 @@
 import type fr from '../fr/orders'
+import { produits } from './pluriel'
 
 const orders: typeof fr = {
   status: {
@@ -73,7 +74,7 @@ const orders: typeof fr = {
     colStatus: 'الحالة',
     colAction: 'إجراء',
     itemsShort: 'منتج',
-    itemsCount: (n: number) => `${n} منتج`,
+    itemsCount: (n: number) => `${n} ${produits(n)}`,
     actions: 'إجراءات',
     changeStatus: 'تغيير الحالة',
     reportRefusal: '🚫 الإبلاغ عن رفض الاستلام',
@@ -125,7 +126,7 @@ const orders: typeof fr = {
     processing: 'جارٍ المعالجة…',
     confirmTotal: (total: string) => `تأكيد — ${total}`,
     backToCart: '→ العودة إلى السلة',
-    summary: (n: number) => `الملخص (${n} منتج)`,
+    summary: (n: number) => `الملخص (${n} ${produits(n)})`,
     perUnit: '/للوحدة',
     sizeDefault: 'المقاس',
     deliveryWith: (method: string) => `التوصيل (${method})`,

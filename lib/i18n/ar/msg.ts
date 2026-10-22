@@ -1,4 +1,5 @@
 import type fr from '../fr/msg'
+import { produits, produitsLies } from './pluriel'
 
 const msg: typeof fr = {
   subscriptionNotFound: 'الاشتراك غير موجود',
@@ -122,8 +123,8 @@ const msg: typeof fr = {
   categoryApproved: 'تمت الموافقة على الفئة بنجاح',
   categoryRefused: 'تم رفض الفئة بنجاح',
   groupDelivered: (ref: string) => `تم تحديد مجموعة التوصيل كمُسلَّمة (${ref}…)`,
-  profileHasProducts: (n: number) => `تعذّر ذلك: ${n} منتج مرتبط بهذا الملف. احذفها أولًا.`,
-  categoryHasProducts: (n: number) => `تعذّر الحذف: يوجد ${n} منتج في هذه الفئة`,
+  profileHasProducts: (n: number) => `تعذّر ذلك: ${n} ${produitsLies(n)} بهذا الملف. احذفها أولًا.`,
+  categoryHasProducts: (n: number) => `تعذّر الحذف: يوجد ${n} ${produits(n)} في هذه الفئة`,
   invalidReason: (list: string) => `سبب غير صالح. القيم المقبولة: ${list}`,
   invalidStatus: (list: string) => `حالة غير صالحة. القيم المقبولة: ${list}`,
   statusUpdated: (statut: string) => `تم تحديث الحالة: ${statut}`,

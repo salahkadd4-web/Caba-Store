@@ -1,9 +1,10 @@
 import type fr from '../fr/pm'
+import { produits } from './pluriel'
 
 const pm: typeof fr = {
   sellerTitle: 'منتجاتي',
   adminTitle: 'المنتجات',
-  count: (n: number) => `${n} منتج`,
+  count: (n: number) => `${n} ${produits(n)}`,
   add: 'إضافة',
   total: 'المجموع',
   active: 'النشطة',

@@ -1,4 +1,5 @@
 import type fr from '../fr/product'
+import { produits } from './pluriel'
 
 const product: typeof fr = {
   notFoundTitle: 'المنتج غير موجود — كابا ستور',
@@ -34,10 +35,10 @@ const product: typeof fr = {
   adding: 'جارٍ الإضافة…',
   chooseOption: (type: string): string => `اختر: ${type}`,
   selectItems: 'اختر المنتجات',
-  addNToCart: (n: number) => `أضف ${n} منتج إلى السلة`,
+  addNToCart: (n: number) => `أضف ${n} ${produits(n)} إلى السلة`,
   added: 'تمت الإضافة!',
   addToCart: 'أضف إلى السلة',
-  itemsCount: (n: number) => `${n} منتج`,
+  itemsCount: (n: number) => `${n} ${produits(n)}`,
   error: 'خطأ',
   networkError: 'خطأ في الشبكة',
 
