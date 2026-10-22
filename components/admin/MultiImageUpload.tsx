@@ -67,7 +67,7 @@ export default function MultiImageUpload({ values, onChange, label }: MultiImage
                   alt={`image ${index + 1}`}
                   fill
                   sizes="(max-width: 768px) 33vw, 200px"
-                  className="object-cover rounded-lg border border-stone-200 dark:border-stone-700"
+                  className="object-cover rounded-xl border border-stone-200 dark:border-stone-700"
                 />
               </div>
               <button

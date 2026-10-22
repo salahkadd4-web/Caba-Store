@@ -41,7 +41,7 @@ const emptyTier    = (): PrixTier => ({ minQte: '', maxQte: '', prix: '' })
 
 const inputSm =
   'border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 ' +
-  'text-stone-800 dark:text-stone-100 rounded-lg px-2 py-1.5 text-sm ' +
+  'text-stone-800 dark:text-stone-100 rounded-xl px-2 py-1.5 text-sm ' +
   'focus:outline-none focus:ring-1 focus:ring-orange-400 transition'
 
 const Spinner = () => (
@@ -232,10 +232,10 @@ export default function VendeurProduitsPage() {
           {(['all', 'true', 'false'] as const).map(v => (
             <button key={v} onClick={() => setFilterActif(v)}
               className={`text-xs px-3.5 py-1.5 rounded-xl font-medium border transition ${
-                filterActif === v
-                  ? 'bg-stone-900 text-white border-stone-900 dark:bg-stone-100 dark:text-stone-900 dark:border-stone-100'
-                  : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-stone-400'
-              }`}>
+ filterActif === v
+ ? 'bg-stone-900 text-white border-stone-900 dark:bg-stone-100 dark:text-stone-900 dark:border-stone-100'
+ : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-stone-400'
+ }`}>
               {v === 'all' ? p_.all : v === 'true' ? p_.active : p_.inactive}
             </button>
           ))}
@@ -259,8 +259,8 @@ export default function VendeurProduitsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(p => (
             <div key={p.id} className={`bg-white dark:bg-stone-900 rounded-xl border overflow-hidden transition-all ${
-              p.actif ? 'border-stone-200 dark:border-stone-800' : 'border-stone-200 dark:border-stone-700 opacity-60'
-            }`}>
+ p.actif ? 'border-stone-200 dark:border-stone-800' : 'border-stone-200 dark:border-stone-700 opacity-60'
+ }`}>
               {p.images[0]
                 ? <div className="relative w-full h-36">
                     <Image src={p.images[0]} alt={p.nom} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover" />
@@ -274,10 +274,10 @@ export default function VendeurProduitsPage() {
                 <div className="flex items-start justify-between gap-2 mb-1">
                   <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 truncate">{p.nom}</p>
                   <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full ${
-                    p.actif
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
-                      : 'bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400'
-                  }`}>
+ p.actif
+ ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+ : 'bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400'
+ }`}>
                     {p.actif ? p_.statusActive : p_.statusInactive}
                   </span>
                 </div>
@@ -289,7 +289,7 @@ export default function VendeurProduitsPage() {
                     {fmt.price(p.prix)}
                   </p>
                   {Array.isArray(p.prixVariables) && p.prixVariables.length > 0 && (
-                    <span className="flex items-center gap-0.5 text-[10px] bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-300 font-semibold px-1.5 py-0.5 rounded-full">
+                    <span className="flex items-center gap-0.5 text-xs bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-300 font-semibold px-1.5 py-0.5 rounded-full">
                       <TrendingDown className="w-2.5 h-2.5" />
                       {p_.tiers(p.prixVariables.length)}
                     </span>
@@ -301,7 +301,7 @@ export default function VendeurProduitsPage() {
                   <div className="flex items-center gap-1 mb-2 flex-wrap">
                     {p.variants.slice(0, 6).map(v => (
                       <span key={v.id} title={v.nom}
-                        className="flex items-center gap-0.5 text-[10px] bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 rounded-full text-stone-600 dark:text-stone-400">
+                        className="flex items-center gap-0.5 text-xs bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 rounded-full text-stone-600 dark:text-stone-400">
                         {v.couleur && (
                           <span className="w-2.5 h-2.5 rounded-full inline-block border border-stone-300"
                             style={{ backgroundColor: v.couleur }} />
@@ -310,7 +310,7 @@ export default function VendeurProduitsPage() {
                       </span>
                     ))}
                     {p.variants.length > 6 && (
-                      <span className="text-[10px] text-stone-400">+{p.variants.length - 6}</span>
+                      <span className="text-xs text-stone-400">+{p.variants.length - 6}</span>
                     )}
                   </div>
                 )}
@@ -325,18 +325,18 @@ export default function VendeurProduitsPage() {
 
                 <div className="flex gap-2">
                   <button onClick={() => openEdit(p)}
-                    className="flex-1 text-xs bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 px-2 py-1.5 rounded-lg transition flex items-center justify-center gap-1">
+                    className="flex-1 text-xs bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 px-2 py-1.5 rounded-xl transition flex items-center justify-center gap-1">
                     <Pencil className="w-3 h-3" /> {p_.edit}
                   </button>
                   <button onClick={() => toggleActif(p)}
-                    className="flex-1 text-xs bg-amber-50 dark:bg-amber-950 hover:bg-amber-100 dark:hover:bg-amber-900 text-amber-700 dark:text-amber-300 px-2 py-1.5 rounded-lg transition flex items-center justify-center gap-1">
+                    className="flex-1 text-xs bg-amber-50 dark:bg-amber-950 hover:bg-amber-100 dark:hover:bg-amber-900 text-amber-700 dark:text-amber-300 px-2 py-1.5 rounded-xl transition flex items-center justify-center gap-1">
                     {p.actif
                       ? <><EyeOff className="w-3 h-3" /> {p_.deactivate}</>
                       : <><Eye className="w-3 h-3" /> {p_.activate}</>
                     }
                   </button>
                   <button onClick={() => handleDelete(p)}
-                    className="text-xs bg-red-50 dark:bg-red-950 hover:bg-red-100 dark:hover:bg-red-900 text-red-600 dark:text-red-400 px-2 py-1.5 rounded-lg transition flex items-center justify-center">
+                    className="text-xs bg-red-50 dark:bg-red-950 hover:bg-red-100 dark:hover:bg-red-900 text-red-600 dark:text-red-400 px-2 py-1.5 rounded-xl transition flex items-center justify-center">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -367,11 +367,11 @@ export default function VendeurProduitsPage() {
               <div className="flex gap-1 bg-stone-100 dark:bg-stone-800 p-1 rounded-xl">
                 {(['infos', 'prix', 'variantes'] as const).map(tab => (
                   <button key={tab} onClick={() => setActiveTab(tab)}
-                    className={`flex-1 py-2 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1 ${
-                      activeTab === tab
-                        ? 'bg-white dark:bg-stone-700 text-stone-800 dark:text-stone-100 shadow-sm'
-                        : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
-                    }`}>
+                    className={`flex-1 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1 ${
+ activeTab === tab
+ ? 'bg-white dark:bg-stone-700 text-stone-800 dark:text-stone-100 shadow-sm'
+ : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
+ }`}>
                     {tab === 'infos'
                       ? <><ClipboardList className="w-3 h-3" />{p_.tabInfo}</>
                       : tab === 'prix'
@@ -379,12 +379,12 @@ export default function VendeurProduitsPage() {
                         : <><Palette className="w-3 h-3" />{p_.tabVariants}</>
                     }
                     {tab === 'prix' && prixTiers.length > 0 && (
-                      <span className="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-[9px] px-1 rounded-full">
+                      <span className="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-xs px-1 rounded-full">
                         {prixTiers.length}
                       </span>
                     )}
                     {tab === 'variantes' && variants.length > 0 && (
-                      <span className="bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 text-[9px] px-1 rounded-full">
+                      <span className="bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300 text-xs px-1 rounded-full">
                         {variants.length}
                       </span>
                     )}
@@ -481,10 +481,10 @@ export default function VendeurProduitsPage() {
                     <div className="flex items-center justify-between mb-2">
                       <div>
                         <p className="text-xs font-medium text-stone-600 dark:text-stone-300">{p_.degressiveTitle}</p>
-                        <p className="text-[10px] text-stone-400 mt-0.5">{p_.degressiveHint}</p>
+                        <p className="text-xs text-stone-400 mt-0.5">{p_.degressiveHint}</p>
                       </div>
                       <button type="button" onClick={() => setPrixTiers(t => [...t, emptyTier()])}
-                        className="text-xs bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-lg hover:bg-emerald-200 transition flex items-center gap-1">
+                        className="text-xs bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-xl hover:bg-emerald-200 transition flex items-center gap-1">
                         <Plus className="w-3 h-3" /> {p_.addTier}
                       </button>
                     </div>
@@ -496,7 +496,7 @@ export default function VendeurProduitsPage() {
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 text-[10px] text-stone-500 dark:text-stone-400 px-1 font-semibold uppercase tracking-wide">
+                        <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 text-xs text-stone-500 dark:text-stone-400 px-1 font-semibold ">
                           <span>{p_.minQty}</span><span>{p_.maxQty}</span><span>{p_.unitPrice}</span><span />
                         </div>
                         {prixTiers.map((tier, i) => (
@@ -518,7 +518,7 @@ export default function VendeurProduitsPage() {
                         ))}
                         {form.prix && prixTiers.some(t => t.minQte && t.prix) && (
                           <div className="mt-3 p-3 bg-stone-50 dark:bg-stone-800 rounded-xl">
-                            <p className="text-[10px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wide mb-2">{p_.preview}</p>
+                            <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 mb-2">{p_.preview}</p>
                             <div className="space-y-1">
                               {prixTiers.filter(t => t.minQte && t.prix).map((t, i) => {
                                 const r = Math.round((1 - parseFloat(t.prix) / parseFloat(form.prix)) * 100)
@@ -535,7 +535,7 @@ export default function VendeurProduitsPage() {
                             </div>
                           </div>
                         )}
-                        <p className="text-[10px] text-stone-400">{p_.maxEmptyHint}</p>
+                        <p className="text-xs text-stone-400">{p_.maxEmptyHint}</p>
                       </div>
                     )}
                   </div>
@@ -553,7 +553,7 @@ export default function VendeurProduitsPage() {
                       onChange={e => setForm(f => ({ ...f, typeOption: e.target.value }))}
                       placeholder={p_.optionTypePlaceholder}
                       className={inputCls} />
-                    <p className="text-[10px] text-stone-400 mt-1">
+                    <p className="text-xs text-stone-400 mt-1">
                       {p_.optionTypeHint}
                     </p>
                   </div>
@@ -563,10 +563,10 @@ export default function VendeurProduitsPage() {
                       <p className="text-xs font-medium text-stone-600 dark:text-stone-300 flex items-center gap-1">
                         <Palette className="w-3.5 h-3.5" /> {p_.colorsOrScents}
                       </p>
-                      <p className="text-[10px] text-stone-400 mt-0.5">{p_.variantsHint}</p>
+                      <p className="text-xs text-stone-400 mt-0.5">{p_.variantsHint}</p>
                     </div>
                     <button type="button" onClick={() => setVariants(vs => [...vs, emptyVariant()])}
-                      className="text-xs bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-lg hover:bg-emerald-200 transition flex items-center gap-1">
+                      className="text-xs bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-xl hover:bg-emerald-200 transition flex items-center gap-1">
                       <Plus className="w-3 h-3" /> {p_.addVariant}
                     </button>
                   </div>
@@ -582,7 +582,7 @@ export default function VendeurProduitsPage() {
                         <div key={i} className="border border-stone-200 dark:border-stone-700 rounded-xl p-3 space-y-2.5 bg-stone-50/50 dark:bg-stone-800/30">
                           {/* Swatch + Nom + Supprimer */}
                           <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg border border-stone-200 dark:border-stone-600 shrink-0"
+                            <div className="w-8 h-8 rounded-xl border border-stone-200 dark:border-stone-600 shrink-0"
                               style={{ backgroundColor: v.couleur || '#e5e7eb' }} />
                             <input type="text" value={v.nom}
                               onChange={e => setVariants(vs => vs.map((x, j) => j === i ? { ...x, nom: e.target.value } : x))}
@@ -597,7 +597,7 @@ export default function VendeurProduitsPage() {
                           {/* Couleur + Stock */}
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <label className="text-[10px] text-stone-500 dark:text-stone-400 mb-1 block">{p_.colorOptional}</label>
+                              <label className="text-xs text-stone-500 dark:text-stone-400 mb-1 block">{p_.colorOptional}</label>
                               <div className="flex items-center gap-1.5">
                                 <input type="color" value={v.couleur || '#000000'}
                                   onChange={e => setVariants(vs => vs.map((x, j) => j === i ? { ...x, couleur: e.target.value } : x))}
@@ -609,7 +609,7 @@ export default function VendeurProduitsPage() {
                               </div>
                             </div>
                             <div>
-                              <label className="text-[10px] text-stone-500 dark:text-stone-400 mb-1 block">{p_.stockRequired}</label>
+                              <label className="text-xs text-stone-500 dark:text-stone-400 mb-1 block">{p_.stockRequired}</label>
                               <input type="number" value={v.stock} min="0"
                                 onChange={e => setVariants(vs => vs.map((x, j) => j === i ? { ...x, stock: e.target.value } : x))}
                                 placeholder="0" className={`w-full ${inputSm}`} />
@@ -618,14 +618,14 @@ export default function VendeurProduitsPage() {
 
                           {/* Images de la variante */}
                           <div>
-                            <label className="text-[10px] text-stone-500 dark:text-stone-400 mb-1.5 block">
+                            <label className="text-xs text-stone-500 dark:text-stone-400 mb-1.5 block">
                               {p_.variantImages(v.nom || p_.variantFallback)}{' '}
                               <span className="text-stone-300 dark:text-stone-600">{p_.replacesProductImages}</span>
                             </label>
                             <div className="flex flex-wrap gap-2">
                               {v.images.map((img, imgIdx) => (
                                 <div key={imgIdx} className="relative group">
-                                  <Image src={img} alt="" width={48} height={48} className="w-12 h-12 object-cover rounded-lg border border-stone-200 dark:border-stone-700" />
+                                  <Image src={img} alt="" width={48} height={48} className="w-12 h-12 object-cover rounded-xl border border-stone-200 dark:border-stone-700" />
                                   <button
                                     onClick={() => setVariants(vs => vs.map((x, j) => j === i
                                       ? { ...x, images: x.images.filter((_, k) => k !== imgIdx) } : x))}
@@ -637,7 +637,7 @@ export default function VendeurProduitsPage() {
                               <button type="button"
                                 onClick={() => { varTargetRef.current = i; varPhoto.open() }}
                                 disabled={varUploadIdx === i}
-                                className="w-12 h-12 border-2 border-dashed border-stone-200 dark:border-stone-700 rounded-lg flex items-center justify-center text-stone-400 hover:border-orange-400 hover:text-orange-400 transition">
+                                className="w-12 h-12 border-2 border-dashed border-stone-200 dark:border-stone-700 rounded-xl flex items-center justify-center text-stone-400 hover:border-orange-400 hover:text-orange-400 transition">
                                 {varUploadIdx === i ? <Spinner /> : <Plus className="w-4 h-4" />}
                               </button>
                             </div>
@@ -647,26 +647,26 @@ export default function VendeurProduitsPage() {
                           {form.typeOption && (
                             <div className="border-t border-stone-200 dark:border-stone-700 pt-2.5">
                               <div className="flex items-center justify-between mb-1.5">
-                                <label className="text-[10px] text-stone-500 dark:text-stone-400 flex items-center gap-1 font-medium">
+                                <label className="text-xs text-stone-500 dark:text-stone-400 flex items-center gap-1 font-medium">
                                   <Ruler className="w-3 h-3" />
                                   {p_.optionsAvailable(form.typeOption, v.nom)}
                                 </label>
                                 <button type="button"
                                   onClick={() => setVariants(vs => vs.map((x, j) => j === i
                                     ? { ...x, options: [...x.options, emptyOption()] } : x))}
-                                  className="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded flex items-center gap-0.5 hover:bg-emerald-200 transition">
+                                  className="text-xs bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded flex items-center gap-0.5 hover:bg-emerald-200 transition">
                                   <Plus className="w-2.5 h-2.5" /> {p_.add}
                                 </button>
                               </div>
                               {v.options.length === 0 ? (
-                                <p className="text-[10px] text-stone-400 italic flex items-center gap-1">
+                                <p className="text-xs text-stone-400 italic flex items-center gap-1">
                                   <AlertCircle className="w-3 h-3" /> {p_.noOptionClickAdd}
                                 </p>
                               ) : (
                                 <div className="flex flex-wrap gap-2">
                                   {v.options.map((opt, oi) => (
                                     <div key={oi}
-                                      className="flex items-center gap-1 bg-white dark:bg-stone-800 rounded-lg px-2 py-1 border border-stone-200 dark:border-stone-700">
+                                      className="flex items-center gap-1 bg-white dark:bg-stone-800 rounded-xl px-2 py-1 border border-stone-200 dark:border-stone-700">
                                       <input type="text" value={opt.valeur}
                                         onChange={e => setVariants(vs => vs.map((x, j) => j === i
                                           ? { ...x, options: x.options.map((o, k) => k === oi ? { ...o, valeur: e.target.value } : o) }

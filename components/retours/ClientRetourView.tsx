@@ -271,7 +271,7 @@ function RetourContent({ orderId: preOrderId }: { orderId: string }) {
                   </div>
                   <div className="text-end shrink-0">
                     <p className={`text-sm font-bold ${isSelected ? 'text-orange-700 dark:text-orange-400' : 'text-stone-700 dark:text-stone-200'}`}>{fmt.money(item.prix)} {fmt.currency}</p>
-                    <p className="text-[11px] text-stone-400">{r.qtyOrdered(item.quantite)}</p>
+                    <p className="text-xs text-stone-400">{r.qtyOrdered(item.quantite)}</p>
                   </div>
                 </label>
               )

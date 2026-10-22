@@ -83,7 +83,7 @@ export default async function VendeurDashboard() {
     {
       href: '/vendeur/abonnement', label: h.salesFee, value: fmt.price(billing.salesFee),
       sub: h.feeOn(Math.round(SELLER_SALE_FEE_RATE * 100), fmt.price(billing.grossSales)),
-      Icon: Percent, accent: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/40',
+      Icon: Percent, accent: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/40',
     },
     {
       href: '/vendeur/abonnement', label: h.totalDue, value: fmt.price(billing.totalDue),
@@ -180,7 +180,7 @@ export default async function VendeurDashboard() {
             ) : top5.map((p, i) => (
               <div key={p.id} className="px-5 py-3.5 flex items-center gap-3">
                 <span className={`text-lg font-bold w-6 shrink-0 ${
-                  i === 0 ? 'text-yellow-400' : i === 1 ? 'text-stone-400' : i === 2 ? 'text-amber-600' : 'text-stone-300 dark:text-stone-600'
+                  i === 0 ? 'text-amber-400' : i === 1 ? 'text-stone-400' : i === 2 ? 'text-amber-600' : 'text-stone-300 dark:text-stone-600'
                 }`}>{i + 1}</span>
                 {p.images[0] && (
                   <Image src={p.images[0]} alt={p.nom} width={36} height={36}

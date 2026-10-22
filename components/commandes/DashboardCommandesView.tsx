@@ -58,7 +58,7 @@ const STATUT_ICON: Record<string, React.ElementType> = {
 const NEXT_ACTION_VENDEUR: Record<string, { statut?: string; approuver?: boolean; color: string }> = {
   EN_ATTENTE:     { approuver: true,             color: 'bg-emerald-600 hover:bg-emerald-700 text-white' },
   CONFIRMEE:      { statut: 'EN_PREPARATION',    color: 'bg-orange-600 hover:bg-orange-700 text-white' },
-  EN_PREPARATION: { statut: 'EXPEDIEE',          color: 'bg-indigo-600 hover:bg-indigo-700 text-white' },
+  EN_PREPARATION: { statut: 'EXPEDIEE',          color: 'bg-blue-600 hover:bg-blue-700 text-white' },
   EXPEDIEE:       { statut: 'LIVREE',            color: 'bg-green-600 hover:bg-green-700 text-white' },
 }
 
@@ -76,7 +76,7 @@ const ADMIN_ACTIONS: Record<string, { label: AdminActionKey; statut: string; col
     { label: 'cancel',        statut: 'ANNULEE',        color: 'text-red-600    dark:text-red-400'     },
   ],
   EN_PREPARATION: [
-    { label: 'ship',          statut: 'EXPEDIEE',       color: 'text-indigo-600 dark:text-indigo-400' },
+    { label: 'ship',          statut: 'EXPEDIEE',       color: 'text-blue-600 dark:text-blue-400' },
     { label: 'cancel',        statut: 'ANNULEE',        color: 'text-red-600    dark:text-red-400'     },
   ],
   EXPEDIEE: [
@@ -131,8 +131,8 @@ function AdminActionsMenu({
         onClick={e => { e.stopPropagation(); setOpen(o => !o) }}
         disabled={isLoading}
         className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-semibold transition-all active:scale-95 disabled:opacity-50
-          bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700
-          text-stone-700 dark:text-stone-200 whitespace-nowrap border border-stone-200 dark:border-stone-700"
+ bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700
+ text-stone-700 dark:text-stone-200 whitespace-nowrap border border-stone-200 dark:border-stone-700"
       >
         {isLoading
           ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -145,12 +145,12 @@ function AdminActionsMenu({
       {open && (
         <div
           className="absolute end-0 top-full mt-1.5 z-50 min-w-48 rounded-xl border border-stone-200 dark:border-stone-700
-            bg-white dark:bg-stone-900 shadow-xl py-1 overflow-hidden"
+ bg-white dark:bg-stone-900 shadow-xl py-1 overflow-hidden"
           onClick={e => e.stopPropagation()}
         >
           {actions.length > 0 && (
             <>
-              <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500 border-b border-stone-100 dark:border-stone-800 mb-1">
+              <p className="px-3 py-1.5 text-xs font-semibold text-stone-400 dark:text-stone-500 border-b border-stone-100 dark:border-stone-800 mb-1">
                 {d.changeStatus}
               </p>
               {actions.map(a => (
@@ -285,8 +285,8 @@ export default function DashboardCommandesView({
       {/* Toast */}
       {toast && (
         <div className={`fixed top-4 end-4 z-[100] text-sm px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 ${
-          toast.ok ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
-        }`}>
+ toast.ok ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
+ }`}>
           {toast.ok
             ? <CheckCircle2 className="w-4 h-4 shrink-0" />
             : <XCircle className="w-4 h-4 shrink-0" />
@@ -394,7 +394,7 @@ export default function DashboardCommandesView({
                             <button
                               onClick={() => handleVendeurAction(cmd)}
                               disabled={isLoading}
-                              className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1 ${vendeurAction.color}`}
+                              className={`text-xs px-3 py-1.5 rounded-xl font-semibold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1 ${vendeurAction.color}`}
                             >
                               {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
                               {vendeurLabel}
@@ -403,7 +403,7 @@ export default function DashboardCommandesView({
                               <button
                                 onClick={() => setRefusCmd(cmd)}
                                 title={d.reportRefusalTitle}
-                                className="p-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+                                className="p-1.5 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
                               >
                                 <AlertTriangle className="w-3.5 h-3.5" />
                               </button>
@@ -503,11 +503,11 @@ export default function DashboardCommandesView({
                                     alt={item.product.nom}
                                     fill
                                     sizes="40px"
-                                    className="object-cover rounded-lg"
+                                    className="object-cover rounded-xl"
                                   />
                                 </div>
                               ) : (
-                                <div className="w-10 h-10 shrink-0 bg-stone-100 dark:bg-stone-800 rounded-lg flex items-center justify-center">
+                                <div className="w-10 h-10 shrink-0 bg-stone-100 dark:bg-stone-800 rounded-xl flex items-center justify-center">
                                   <Package className="w-4 h-4 text-stone-400" />
                                 </div>
                               )}

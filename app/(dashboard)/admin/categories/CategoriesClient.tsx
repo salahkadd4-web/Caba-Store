@@ -99,7 +99,7 @@ export default function CategoriesClient({ initialData }: { initialData: Categor
         <div>
           <div className="flex items-center gap-2 mb-3">
             <span className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" />
-            <h2 className="text-sm font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wide">
+            <h2 className="text-sm font-bold text-orange-600 dark:text-orange-400 ">
               {c_.proposedPending}
             </h2>
           </div>
@@ -158,10 +158,10 @@ export default function CategoriesClient({ initialData }: { initialData: Categor
                 </div>
               </div>
               <div className="flex flex-col gap-1.5 shrink-0">
-                <button onClick={() => openEdit(cat)} className="bg-stone-100 dark:bg-stone-800 hover:bg-orange-50 dark:hover:bg-orange-950/40 text-stone-600 dark:text-stone-300 hover:text-orange-700 dark:hover:text-orange-400 p-2 rounded-lg transition">
+                <button onClick={() => openEdit(cat)} className="bg-stone-100 dark:bg-stone-800 hover:bg-orange-50 dark:hover:bg-orange-950/40 text-stone-600 dark:text-stone-300 hover:text-orange-700 dark:hover:text-orange-400 p-2 rounded-xl transition">
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
-                <button onClick={() => { setDeleteId(cat.id); setDeleteError('') }} className="bg-stone-100 dark:bg-stone-800 hover:bg-red-50 dark:hover:bg-red-950 text-stone-500 hover:text-red-600 dark:hover:text-red-400 p-2 rounded-lg transition">
+                <button onClick={() => { setDeleteId(cat.id); setDeleteError('') }} className="bg-stone-100 dark:bg-stone-800 hover:bg-red-50 dark:hover:bg-red-950 text-stone-500 hover:text-red-600 dark:hover:text-red-400 p-2 rounded-xl transition">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>

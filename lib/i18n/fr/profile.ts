@@ -1,6 +1,6 @@
 const profile = {
   account: 'Compte',
-  title: 'Mon Profil',
+  title: 'Mon profil',
   editTitle: 'Modifier',
   googleLogin: 'Connexion Google',
   lastName: 'Nom',

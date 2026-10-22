@@ -54,6 +54,15 @@ const layout: typeof fr = {
     dark: 'Dark',
     system: 'System',
   },
+  errors: {
+    notFoundTitle: 'Page not found',
+    notFoundDesc: 'The link may be old or copied incorrectly. Search for a product or go back to the home page.',
+    errorTitle: 'Loading interrupted',
+    errorDesc: 'The connection to the server dropped while loading. Try again in a moment.',
+    retry: 'Try again',
+    backHome: 'Back to home',
+    seeProducts: 'See products',
+  },
   lang: {
     choose: 'Change language',
   },

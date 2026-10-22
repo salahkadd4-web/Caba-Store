@@ -129,14 +129,14 @@ export default function SellerInvoiceActions({ invoice }: { invoice: SellerInvoi
       <button
         type="button"
         onClick={handleExport}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 dark:border-stone-700 px-3 py-1.5 text-xs font-medium text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-800 transition"
+        className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-stone-700 px-3 py-1.5 text-xs font-medium text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-800 transition"
       >
         <Download className="w-3.5 h-3.5" /> {L.export}
       </button>
       <button
         type="button"
         onClick={handlePrint}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-stone-900 dark:bg-stone-100 px-3 py-1.5 text-xs font-medium text-white dark:text-stone-900 hover:opacity-90 transition"
+        className="inline-flex items-center gap-1.5 rounded-xl bg-stone-900 dark:bg-stone-100 px-3 py-1.5 text-xs font-medium text-white dark:text-stone-900 hover:opacity-90 transition"
       >
         <Printer className="w-3.5 h-3.5" /> {L.print}
       </button>

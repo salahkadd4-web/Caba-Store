@@ -136,7 +136,7 @@ export default function SearchBar({
           {/* Catégories */}
           {results.categories.length > 0 && (
             <div>
-              <p className="px-4 pt-3 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+              <p className="px-4 pt-3 pb-1.5 text-xs font-semibold text-stone-400 dark:text-stone-500">
                 {s.categories}
               </p>
               {results.categories.map((cat) => (
@@ -162,7 +162,7 @@ export default function SearchBar({
           {/* Produits */}
           {results.produits.length > 0 && (
             <div className="border-t border-stone-100 dark:border-stone-800">
-              <p className="px-4 pt-3 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+              <p className="px-4 pt-3 pb-1.5 text-xs font-semibold text-stone-400 dark:text-stone-500">
                 {s.products}
               </p>
               {results.produits.map((prod) => (
@@ -172,7 +172,7 @@ export default function SearchBar({
                   onClick={() => { setOpen(false); setQuery(''); setResults(null); onClose?.() }}
                   className="flex items-center gap-3 px-4 py-2.5 hover:bg-orange-50 dark:hover:bg-stone-800 transition-colors"
                 >
-                  <div className="relative w-10 h-10 rounded-lg bg-stone-100 dark:bg-stone-800 overflow-hidden shrink-0">
+                  <div className="relative w-10 h-10 rounded-xl bg-stone-100 dark:bg-stone-800 overflow-hidden shrink-0">
                     {prod.images[0] ? (
                       <Image src={prod.images[0]} alt={prod.nom} fill sizes="40px" className="object-cover" />
                     ) : (

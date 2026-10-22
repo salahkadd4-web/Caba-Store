@@ -23,19 +23,19 @@ function Stepper({ etape }: { etape: number }) {
         <div key={s} className="flex items-center gap-3">
           <div
             className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium transition-colors duration-300 ${
-              etape === s
-                ? 'bg-orange-700 text-white'
-                : s < etape
-                  ? 'border-2 border-orange-700 text-orange-700'
-                  : 'border border-stone-300 dark:border-stone-700 text-stone-400 dark:text-stone-600'
-            }`}
+ etape === s
+ ? 'bg-orange-700 text-white'
+ : s < etape
+ ? 'border-2 border-orange-700 text-orange-700'
+ : 'border border-stone-300 dark:border-stone-700 text-stone-400 dark:text-stone-600'
+ }`}
           >
             {s < etape ? <Check className="w-3.5 h-3.5" /> : s}
           </div>
           <span
-            className={`text-xs uppercase tracking-[0.2em] hidden sm:block transition-colors duration-300 ${
-              etape === s ? 'text-orange-700 dark:text-orange-500 font-medium' : 'text-stone-400 dark:text-stone-600'
-            }`}
+            className={`text-xs hidden sm:block transition-colors duration-300 ${
+ etape === s ? 'text-orange-700 dark:text-orange-500 font-medium' : 'text-stone-400 dark:text-stone-600'
+ }`}
           >
             {s === 1 ? t.auth.signup.stepInfo : t.auth.signup.stepConfirm}
           </span>
@@ -174,7 +174,7 @@ export default function InscriptionPage() {
     }`
 
   const baseInput = 'w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-2.5 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors duration-300 placeholder-stone-300 dark:placeholder-stone-700'
-  const labelCls  = 'block text-xs uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400 mb-2'
+  const labelCls  = 'block text-xs   text-stone-500 dark:text-stone-400 mb-2'
 
   const handleGoogle = async () => {
     setLoadingGoogle(true); setError(null)
@@ -216,7 +216,7 @@ export default function InscriptionPage() {
         <div className="relative z-10 text-center">
           <CabaLogo className="w-20 h-20 text-orange-500 mx-auto mb-6" />
           <div className="w-10 h-px bg-stone-700 mx-auto mb-5" />
-          <p className="text-stone-400 font-light text-sm tracking-wider">
+          <p className="text-stone-400 font-light text-sm ">
             {a.tagline}
           </p>
         </div>
@@ -231,7 +231,7 @@ export default function InscriptionPage() {
           </div>
 
           <div className="mb-8">
-            <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500 mb-2">{s.newAccount}</p>
+            <p className="text-xs font-semibold text-orange-700 dark:text-orange-500 mb-2">{s.newAccount}</p>
             <h2 className="text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">{s.title}</h2>
             <div className="w-8 h-px bg-orange-700 dark:bg-orange-500 mt-4" />
           </div>
@@ -248,17 +248,17 @@ export default function InscriptionPage() {
                 <div className="flex gap-0 border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden">
                   {(['CLIENT', 'VENDEUR'] as const).map((r) => (
                     <button key={r} onClick={() => setRole(r)}
-                      className={`flex-1 py-3.5 text-xs uppercase tracking-[0.2em] transition-colors duration-200 ${
-                        role === r
-                          ? 'bg-orange-700 text-white'
-                          : 'bg-white dark:bg-stone-950 text-stone-400 dark:text-stone-600 hover:text-stone-800 dark:hover:text-stone-200'
-                      }`}>
+                      className={`flex-1 py-3.5 text-xs transition-colors duration-200 ${
+ role === r
+ ? 'bg-orange-700 text-white'
+ : 'bg-white dark:bg-stone-950 text-stone-400 dark:text-stone-600 hover:text-stone-800 dark:hover:text-stone-200'
+ }`}>
                       {r === 'CLIENT' ? s.client : s.seller}
                     </button>
                   ))}
                 </div>
                 {role === 'VENDEUR' && (
-                  <p className="mt-3 text-xs text-stone-400 dark:text-stone-500 tracking-wide border-s-2 border-orange-300 dark:border-orange-800 ps-3">
+                  <p className="mt-3 text-xs text-stone-400 dark:text-stone-500 border-s-2 border-orange-300 dark:border-orange-800 ps-3">
                     {s.sellerBlocked}
                   </p>
                 )}
@@ -266,7 +266,7 @@ export default function InscriptionPage() {
 
               {/* Bouton Google */}
               <button onClick={handleGoogle} disabled={loadingGoogle || loading}
-                className="w-full flex items-center justify-center gap-3 border border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600 hover:bg-stone-100 dark:hover:bg-stone-900 text-stone-700 dark:text-stone-200 text-xs uppercase tracking-[0.15em] py-3.5 rounded-xl transition-colors duration-300 disabled:opacity-50">
+                className="w-full flex items-center justify-center gap-3 border border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600 hover:bg-stone-100 dark:hover:bg-stone-900 text-stone-700 dark:text-stone-200 text-xs py-3.5 rounded-xl transition-colors duration-300 disabled:opacity-50">
                 {loadingGoogle
                   ? <span className="w-4 h-4 border-2 border-stone-200 border-t-stone-500 rounded-full animate-spin" />
                   : <GoogleIcon />
@@ -277,7 +277,7 @@ export default function InscriptionPage() {
               {/* Séparateur */}
               <div className="flex items-center gap-4">
                 <div className="flex-1 h-px bg-stone-200 dark:bg-stone-800" />
-                <span className="text-xs text-stone-400 dark:text-stone-600 uppercase tracking-[0.2em]">{a.or}</span>
+                <span className="text-xs text-stone-400 dark:text-stone-600 ">{a.or}</span>
                 <div className="flex-1 h-px bg-stone-200 dark:bg-stone-800" />
               </div>
 
@@ -320,11 +320,11 @@ export default function InscriptionPage() {
                 <div className="flex items-center gap-4 mb-3">
                   {(['email', 'telephone'] as const).map((type) => (
                     <button key={type} onClick={() => { setIdentifiantType(type); setIdStatus('idle') }}
-                      className={`text-xs uppercase tracking-[0.2em] pb-1 transition-colors duration-200 ${
-                        identifiantType === type
-                          ? 'text-orange-700 dark:text-orange-500 border-b-2 border-orange-700 dark:border-orange-500'
-                          : 'text-stone-400 dark:text-stone-600 hover:text-stone-700 dark:hover:text-stone-400'
-                      }`}>
+                      className={`text-xs pb-1 transition-colors duration-200 ${
+ identifiantType === type
+ ? 'text-orange-700 dark:text-orange-500 border-b-2 border-orange-700 dark:border-orange-500'
+ : 'text-stone-400 dark:text-stone-600 hover:text-stone-700 dark:hover:text-stone-400'
+ }`}>
                       {type === 'email' ? s.email : s.phone}
                     </button>
                   ))}
@@ -368,7 +368,7 @@ export default function InscriptionPage() {
                     onChange={handleChange('motDePasse')} placeholder={s.passwordPlaceholder}
                     className={`${baseInput} pe-8`} />
                   <button type="button" onClick={() => setShowPwd(v => !v)}
-                    className="absolute end-0 top-1/2 -translate-y-1/2 text-xs text-stone-400 dark:text-stone-600 hover:text-orange-700 dark:hover:text-orange-500 transition-colors uppercase tracking-widest">
+                    className="absolute end-0 top-1/2 -translate-y-1/2 text-xs text-stone-400 dark:text-stone-600 hover:text-orange-700 dark:hover:text-orange-500 transition-colors ">
                     {showPwd ? s.hide : s.show}
                   </button>
                 </div>
@@ -396,18 +396,18 @@ export default function InscriptionPage() {
               </div>
 
               {error && (
-                <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 text-xs px-4 py-3 rounded-xl tracking-wide">{error}</div>
+                <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 text-xs px-4 py-3 rounded-xl ">{error}</div>
               )}
 
               <button onClick={handleEtape1} disabled={loading || !canSubmitEtape1}
-                className="w-full bg-orange-700 hover:bg-orange-800 text-white text-xs uppercase tracking-[0.3em] py-4 rounded-xl transition-colors duration-300 disabled:opacity-40 mt-2 flex items-center justify-center gap-2">
+                className="w-full bg-orange-700 hover:bg-orange-800 text-white text-xs py-4 rounded-xl transition-colors duration-300 disabled:opacity-40 mt-2 flex items-center justify-center gap-2">
                 {loading
                   ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {a.sending}</>
                   : a.receiveCode
                 }
               </button>
 
-              <p className="text-center text-xs text-stone-400 dark:text-stone-500 tracking-wide">
+              <p className="text-center text-xs text-stone-400 dark:text-stone-500 ">
                 {s.alreadyAccount}{' '}
                 <Link href="/connexion" className="text-orange-700 dark:text-orange-500 hover:text-orange-800 underline underline-offset-4 transition-colors font-medium">{a.login}</Link>
               </p>
@@ -436,17 +436,17 @@ export default function InscriptionPage() {
                 </div>
               </div>
               {error && (
-                <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 text-xs px-4 py-3 rounded-xl tracking-wide">{error}</div>
+                <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 text-xs px-4 py-3 rounded-xl ">{error}</div>
               )}
               <button onClick={handleEtape2} disabled={loading || code.length !== 6}
-                className="w-full bg-orange-700 hover:bg-orange-800 text-white text-xs uppercase tracking-[0.3em] py-4 rounded-xl transition-colors duration-300 disabled:opacity-40 flex items-center justify-center gap-2">
+                className="w-full bg-orange-700 hover:bg-orange-800 text-white text-xs py-4 rounded-xl transition-colors duration-300 disabled:opacity-40 flex items-center justify-center gap-2">
                 {loading
                   ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {a.verifying}</>
                   : s.confirmAccount
                 }
               </button>
               <button onClick={() => { setEtape(1); setCode(''); setError(null) }}
-                className="w-full text-xs text-stone-400 dark:text-stone-600 hover:text-orange-700 dark:hover:text-orange-500 uppercase tracking-[0.2em] transition-colors py-2">
+                className="w-full text-xs text-stone-400 dark:text-stone-600 hover:text-orange-700 dark:hover:text-orange-500 transition-colors py-2">
                 {a.editMyInfo}
               </button>
             </div>
@@ -458,7 +458,7 @@ export default function InscriptionPage() {
         <div className="lg:hidden mt-12 flex flex-col items-center gap-3 pb-8">
           <div className="w-16 h-px bg-stone-200 dark:bg-stone-800" />
           <CabaLogo className="w-12 h-12 text-orange-700 dark:text-orange-500 opacity-60" />
-          <p className="text-xs text-stone-300 dark:text-stone-700 uppercase tracking-[0.3em]">{t.common.appName}</p>
+          <p className="text-xs text-stone-300 dark:text-stone-700 ">{t.common.appName}</p>
         </div>
       </div>
     </div>

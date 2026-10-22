@@ -94,7 +94,7 @@ const admin = {
       autre: { label: 'Autre document', description: 'Précisez dans la description' },
     } as Record<string, { label: string; description: string }>,
     error: 'Erreur',
-    title: 'Gestion des Vendeurs',
+    title: 'Gestion des vendeurs',
     searchPlaceholder: 'Boutique, nom, email, téléphone…',
     allStatuses: 'Tous les statuts',
     noResultFor: (q: string): string => `Aucun résultat pour "${q}"`,

@@ -110,16 +110,16 @@ export default async function VendeurLayout({
     <div className="flex items-center justify-center min-h-[60vh] px-4 py-8">
       <div
         className={`
-          w-full max-w-lg rounded-2xl border p-8 text-center
-          ${cfg.cardBg} ${cfg.cardBorder}
-        `}
+ w-full max-w-lg rounded-2xl border p-8 text-center
+ ${cfg.cardBg} ${cfg.cardBorder}
+ `}
       >
         {/* ── Icône ── */}
         <div
           className={`
-            w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5
-            ${cfg.iconBg}
-          `}
+ w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5
+ ${cfg.iconBg}
+ `}
         >
           <Icon className={`w-8 h-8 ${cfg.iconColor}`} />
         </div>
@@ -127,10 +127,10 @@ export default async function VendeurLayout({
         {/* ── Badge statut ── */}
         <span
           className={`
-            inline-flex items-center gap-1.5 text-xs font-semibold
-            px-3 py-1 rounded-full border mb-4
-            ${cfg.badgeCls}
-          `}
+ inline-flex items-center gap-1.5 text-xs font-semibold
+ px-3 py-1 rounded-full border mb-4
+ ${cfg.badgeCls}
+ `}
         >
           {txt.badge}
         </span>
@@ -148,11 +148,11 @@ export default async function VendeurLayout({
         {/* ── Note de l'admin (si présente) ── */}
         {vendeur?.adminNote && (
           <div className="
-            bg-white/70 dark:bg-stone-900/50
-            border border-stone-200 dark:border-stone-700
-            rounded-xl p-4 mb-4 text-start
-          ">
-            <p className="text-xs font-semibold text-stone-400 dark:text-stone-500 mb-1 uppercase tracking-wider">
+ bg-white/70 dark:bg-stone-900/50
+ border border-stone-200 dark:border-stone-700
+ rounded-xl p-4 mb-4 text-start
+ ">
+            <p className="text-xs font-semibold text-stone-400 dark:text-stone-500 mb-1 ">
               {s.adminMessage}
             </p>
             <p className="text-sm text-stone-700 dark:text-stone-300 leading-relaxed">
@@ -178,13 +178,13 @@ export default async function VendeurLayout({
           <Link
             href="/"
             className="
-              flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold
-              bg-white dark:bg-stone-800
-              border border-stone-200 dark:border-stone-700
-              text-stone-700 dark:text-stone-200
-              hover:bg-stone-50 dark:hover:bg-stone-700
-              transition-all active:scale-95
-            "
+ flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold
+ bg-white dark:bg-stone-800
+ border border-stone-200 dark:border-stone-700
+ text-stone-700 dark:text-stone-200
+ hover:bg-stone-50 dark:hover:bg-stone-700
+ transition-all active:scale-95
+ "
           >
             <ArrowLeft className="w-4 h-4 rtl-flip" />
             {s.backToShop}
@@ -192,10 +192,10 @@ export default async function VendeurLayout({
           <a
             href="mailto:cabastoredz31@gmail.com"
             className="
-              flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold
-              bg-orange-700 hover:bg-orange-800 text-white
-              transition-all active:scale-95
-            "
+ flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold
+ bg-orange-700 hover:bg-orange-800 text-white
+ transition-all active:scale-95
+ "
           >
             <Mail className="w-4 h-4" />
             {s.contactSupport}

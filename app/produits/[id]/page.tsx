@@ -89,7 +89,7 @@ export default async function ProduitDetailPage({
       <div className="mb-8">
         <Link
           href={`/categories/${produit.category.id}`}
-          className="inline-block text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-400 hover:underline mb-2"
+          className="inline-block text-xs font-semibold text-orange-700 dark:text-orange-400 hover:underline mb-2"
         >
           {produit.category.nom}
         </Link>
@@ -120,7 +120,7 @@ export default async function ProduitDetailPage({
       <section className="mt-20 pt-10 border-t border-stone-200 dark:border-stone-800">
         <div className="flex items-end justify-between mb-8">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-400 mb-1">{t.product.discover}</p>
+            <p className="text-xs font-semibold text-orange-700 dark:text-orange-400 mb-1">{t.product.discover}</p>
             <h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">{t.product.similar}</h2>
           </div>
           <Link

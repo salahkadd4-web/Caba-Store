@@ -67,7 +67,7 @@ function SidebarContent({
     <>
       {/* Recherche */}
       <div className="mb-6">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-3">
+        <p className="text-xs font-semibold text-stone-400 dark:text-stone-500 mb-3">
           {f.search}
         </p>
         <form onSubmit={onSubmit}>
@@ -100,14 +100,14 @@ function SidebarContent({
       {/* Wilaya du vendeur */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3 gap-2">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+          <p className="text-xs font-semibold text-stone-400 dark:text-stone-500">
             {f.sellerWilaya}
           </p>
           {viewerWilaya && wilayaActive !== viewerWilaya && (
             <button
               type="button"
               onClick={() => onWilaya(viewerWilaya)}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-orange-700 dark:text-orange-400 hover:underline"
+              className="inline-flex items-center gap-1 text-xs font-medium text-orange-700 dark:text-orange-400 hover:underline"
             >
               <MapPin className="w-3 h-3" />
               {f.nearMe}
@@ -130,17 +130,17 @@ function SidebarContent({
 
       {/* Catégories */}
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-3">
+        <p className="text-xs font-semibold text-stone-400 dark:text-stone-500 mb-3">
           {f.categories}
         </p>
         <div className="space-y-0.5">
           <button
             onClick={() => onCategorie('')}
-            className={`w-full text-start text-sm px-3 py-2 rounded-lg transition-colors ${
-              !categorieActive
-                ? 'bg-orange-700 text-white font-medium'
-                : 'text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
-            }`}
+            className={`w-full text-start text-sm px-3 py-2 rounded-xl transition-colors ${
+ !categorieActive
+ ? 'bg-orange-700 text-white font-medium'
+ : 'text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
+ }`}
           >
             {f.allCategories}
           </button>
@@ -148,11 +148,11 @@ function SidebarContent({
             <button
               key={cat.id}
               onClick={() => onCategorie(cat.id)}
-              className={`w-full text-start text-sm px-3 py-2 rounded-lg transition-colors ${
-                categorieActive === cat.id
-                  ? 'bg-orange-700 text-white font-medium'
-                  : 'text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
-              }`}
+              className={`w-full text-start text-sm px-3 py-2 rounded-xl transition-colors ${
+ categorieActive === cat.id
+ ? 'bg-orange-700 text-white font-medium'
+ : 'text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
+ }`}
             >
               {cat.nom}
             </button>
@@ -300,7 +300,7 @@ export default function ProduitsSearch({
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setSidebarOpen(false)} />
-          <div className="absolute bottom-0 start-0 end-0 bg-white dark:bg-stone-900 rounded-t-3xl p-6 max-h-[85vh] overflow-y-auto">
+          <div className="absolute bottom-0 start-0 end-0 bg-white dark:bg-stone-900 rounded-t-2xl p-6 max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h2 className="font-semibold text-stone-900 dark:text-stone-50">{t.catalog.filters.filters}</h2>
               <button onClick={() => setSidebarOpen(false)}>
@@ -339,8 +339,8 @@ export default function ProduitsSearch({
         ) : (
           <div
             className={`grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 transition-opacity duration-200 ${
-              loading ? 'opacity-50 pointer-events-none' : 'opacity-100'
-            }`}
+ loading ? 'opacity-50 pointer-events-none' : 'opacity-100'
+ }`}
           >
             {produits.map((produit) => (
               <ProduitCard key={produit.id} produit={produit} />
@@ -383,7 +383,7 @@ function ProduitCard({ produit }: { produit: ProduitSearch }) {
 
         {hasTiers && (
           <div className="absolute top-2 start-2">
-            <span className="inline-flex items-center gap-1 text-[10px] bg-orange-700 text-white font-semibold px-2 py-0.5 rounded-full shadow">
+            <span className="inline-flex items-center gap-1 text-xs bg-orange-700 text-white font-semibold px-2 py-0.5 rounded-full shadow">
               <Banknote className="w-3 h-3" /> {t.common.degressive}
             </span>
           </div>
@@ -396,7 +396,7 @@ function ProduitCard({ produit }: { produit: ProduitSearch }) {
       </div>
 
       <div className="p-3.5">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-400 mb-1">
+        <p className="text-xs font-semibold text-orange-700 dark:text-orange-400 mb-1">
           {produit.category.nom}
         </p>
         <h3 className="text-sm font-medium text-stone-800 dark:text-stone-100 line-clamp-2 mb-2">
@@ -405,12 +405,12 @@ function ProduitCard({ produit }: { produit: ProduitSearch }) {
 
         <div className="flex items-baseline gap-1.5 flex-wrap mb-1.5">
           {hasTiers && (
-            <span className="text-[10px] text-stone-400 dark:text-stone-500">{t.common.fromPrice}</span>
+            <span className="text-xs text-stone-400 dark:text-stone-500">{t.common.fromPrice}</span>
           )}
           <span
             className={`text-base font-semibold ${
-              estReduit ? 'text-green-700 dark:text-green-400' : 'text-stone-900 dark:text-stone-50'
-            }`}
+ estReduit ? 'text-green-700 dark:text-green-400' : 'text-stone-900 dark:text-stone-50'
+ }`}
           >
             {fmt.money(prixMin)} {fmt.currency}
           </span>
@@ -419,7 +419,7 @@ function ProduitCard({ produit }: { produit: ProduitSearch }) {
               <span className="text-xs text-stone-400 line-through font-normal">
                 {fmt.money(produit.prix)}
               </span>
-              <span className="text-[9px] bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-300 font-semibold px-1.5 py-0.5 rounded-full">
+              <span className="text-xs bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-300 font-semibold px-1.5 py-0.5 rounded-full">
                 −{reduction}%
               </span>
             </>
@@ -439,22 +439,22 @@ function ProduitCard({ produit }: { produit: ProduitSearch }) {
               ) : (
                 <span
                   key={v.id}
-                  className="text-[9px] text-stone-500 dark:text-stone-400 bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 rounded-full"
+                  className="text-xs text-stone-500 dark:text-stone-400 bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 rounded-full"
                 >
                   {v.nom}
                 </span>
               ),
             )}
             {produit.variants.length > 5 && (
-              <span className="text-[9px] text-stone-400">+{produit.variants.length - 5}</span>
+              <span className="text-xs text-stone-400">+{produit.variants.length - 5}</span>
             )}
           </div>
         )}
 
         <p
-          className={`text-[10px] font-medium mt-0.5 ${
-            produit.stock > 0 ? 'text-green-700 dark:text-green-400' : 'text-red-500 dark:text-red-400'
-          }`}
+          className={`text-xs font-medium mt-0.5 ${
+ produit.stock > 0 ? 'text-green-700 dark:text-green-400' : 'text-red-500 dark:text-red-400'
+ }`}
         >
           {produit.stock > 0 ? t.common.inStock : t.common.outOfStock}
         </p>

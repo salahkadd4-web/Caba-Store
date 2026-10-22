@@ -37,12 +37,12 @@ function GuestLink() {
     <div className="mt-6 text-center">
       <div className="flex items-center gap-3 mb-4">
         <div className="flex-1 h-px bg-stone-100 dark:bg-stone-800" />
-        <span className="text-[10px] text-stone-300 dark:text-stone-700 uppercase tracking-[0.25em]">{t.auth.or}</span>
+        <span className="text-xs text-stone-300 dark:text-stone-700 ">{t.auth.or}</span>
         <div className="flex-1 h-px bg-stone-100 dark:bg-stone-800" />
       </div>
       <Link
         href="/"
-        className="inline-flex items-center gap-1.5 text-xs text-stone-400 dark:text-stone-500 hover:text-orange-700 dark:hover:text-orange-500 transition-colors tracking-wide underline underline-offset-4"
+        className="inline-flex items-center gap-1.5 text-xs text-stone-400 dark:text-stone-500 hover:text-orange-700 dark:hover:text-orange-500 transition-colors underline underline-offset-4"
       >
         {t.auth.signin.guest}
       </Link>
@@ -244,7 +244,7 @@ function ConnexionContent() {
         <div className="relative z-10 text-center">
           <CabaLogo className="w-20 h-20 text-orange-500 mx-auto mb-6" />
           <div className="w-10 h-px bg-stone-700 mx-auto mb-5" />
-          <p className="text-stone-400 font-light text-sm tracking-wider">
+          <p className="text-stone-400 font-light text-sm ">
             {a.tagline}
           </p>
         </div>
@@ -260,7 +260,7 @@ function ConnexionContent() {
 
           {/* Header */}
           <div className="mb-10">
-            <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500 mb-2">{s.welcome}</p>
+            <p className="text-xs font-semibold text-orange-700 dark:text-orange-500 mb-2">{s.welcome}</p>
             <h2 className="text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">{s.title}</h2>
             <div className="w-8 h-px bg-orange-700 dark:bg-orange-500 mt-4" />
           </div>
@@ -272,7 +272,7 @@ function ConnexionContent() {
                 <Check className="w-3.5 h-3.5" />
                 {s.clientCreated}
               </p>
-              <p className="text-xs text-green-600 dark:text-green-500 tracking-wide">
+              <p className="text-xs text-green-600 dark:text-green-500 ">
                 {s.clientCreatedDesc}
               </p>
             </div>
@@ -285,10 +285,10 @@ function ConnexionContent() {
                 <Check className="w-3.5 h-3.5" />
                 {s.shopCreated}
               </p>
-              <p className="text-xs text-green-600 dark:text-green-500 tracking-wide">
+              <p className="text-xs text-green-600 dark:text-green-500 ">
                 {s.shopCreatedDesc1}
               </p>
-              <p className="text-xs text-green-600 dark:text-green-500 tracking-wide">
+              <p className="text-xs text-green-600 dark:text-green-500 ">
                 {s.shopCreatedDesc2}
               </p>
             </div>
@@ -296,14 +296,14 @@ function ConnexionContent() {
 
           {/* ── Bannière succès reset mot de passe ── */}
           {reset === 'success' && (
-            <div className="border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 text-xs px-4 py-3 mb-6 rounded-xl tracking-wide">
+            <div className="border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 text-xs px-4 py-3 mb-6 rounded-xl ">
               {s.passwordReset}
             </div>
           )}
 
           {/* ── Erreur ── */}
           {error && (
-            <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 text-xs px-4 py-3 mb-6 rounded-xl tracking-wide">
+            <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 text-xs px-4 py-3 mb-6 rounded-xl ">
               {error}
             </div>
           )}
@@ -311,7 +311,7 @@ function ConnexionContent() {
           {/* ── Dev quick-login ── */}
           {IS_DEV && (
             <div className="border border-dashed border-amber-400 dark:border-amber-600 bg-amber-50 dark:bg-amber-950/40 p-3 mb-6 rounded-xl">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-amber-700 dark:text-amber-400 mb-2 text-center">
+              <p className="text-xs text-amber-700 dark:text-amber-400 mb-2 text-center">
                 {s.devQuickLogin}
               </p>
               <div className="grid grid-cols-3 gap-2">
@@ -321,7 +321,7 @@ function ConnexionContent() {
                     type="button"
                     onClick={() => quickLogin(acc)}
                     disabled={loading || loadingGoogle}
-                    className="text-xs uppercase tracking-wider py-2 border border-amber-300 dark:border-amber-700 bg-white dark:bg-stone-900 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 rounded-lg transition-colors disabled:opacity-50"
+                    className="text-xs py-2 border border-amber-300 dark:border-amber-700 bg-white dark:bg-stone-900 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 rounded-xl transition-colors disabled:opacity-50"
                   >
                     {acc.label}
                   </button>
@@ -334,7 +334,7 @@ function ConnexionContent() {
           <button
             onClick={handleGoogle}
             disabled={loadingGoogle || loading}
-            className="w-full flex items-center justify-center gap-3 border border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600 hover:bg-stone-100 dark:hover:bg-stone-900 text-stone-700 dark:text-stone-200 text-xs uppercase tracking-[0.15em] py-3.5 rounded-xl transition-colors duration-300 disabled:opacity-50 mb-6"
+            className="w-full flex items-center justify-center gap-3 border border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600 hover:bg-stone-100 dark:hover:bg-stone-900 text-stone-700 dark:text-stone-200 text-xs py-3.5 rounded-xl transition-colors duration-300 disabled:opacity-50 mb-6"
           >
             {loadingGoogle
               ? <span className="w-4 h-4 border-2 border-stone-200 border-t-stone-500 rounded-full animate-spin" />
@@ -346,14 +346,14 @@ function ConnexionContent() {
           {/* ── Séparateur ── */}
           <div className="flex items-center gap-4 mb-6">
             <div className="flex-1 h-px bg-stone-200 dark:bg-stone-800" />
-            <span className="text-xs text-stone-400 dark:text-stone-600 uppercase tracking-[0.2em]">{a.or}</span>
+            <span className="text-xs text-stone-400 dark:text-stone-600 ">{a.or}</span>
             <div className="flex-1 h-px bg-stone-200 dark:bg-stone-800" />
           </div>
 
           {/* ── Formulaire email/mdp ── */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-xs uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400 mb-2">
+              <label className="block text-xs text-stone-500 dark:text-stone-400 mb-2">
                 {s.identifier}
               </label>
               <input
@@ -369,12 +369,12 @@ function ConnexionContent() {
             </div>
             <div>
               <div className="flex justify-between items-center mb-2">
-                <label className="block text-xs uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
+                <label className="block text-xs text-stone-500 dark:text-stone-400">
                   {s.password}
                 </label>
                 <Link
                   href="/recuperer-mot-de-passe"
-                  className="text-xs text-stone-400 dark:text-stone-500 hover:text-orange-700 dark:hover:text-orange-500 transition-colors tracking-wide"
+                  className="text-xs text-stone-400 dark:text-stone-500 hover:text-orange-700 dark:hover:text-orange-500 transition-colors "
                 >
                   {s.forgot}
                 </Link>
@@ -392,7 +392,7 @@ function ConnexionContent() {
             <button
               type="submit"
               disabled={loading || loadingGoogle}
-              className="w-full bg-orange-700 hover:bg-orange-800 text-white text-xs uppercase tracking-[0.3em] py-4 rounded-xl transition-colors duration-300 disabled:opacity-50 mt-4 flex items-center justify-center gap-2"
+              className="w-full bg-orange-700 hover:bg-orange-800 text-white text-xs py-4 rounded-xl transition-colors duration-300 disabled:opacity-50 mt-4 flex items-center justify-center gap-2"
             >
               {loading
                 ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {s.loggingIn}</>
@@ -402,7 +402,7 @@ function ConnexionContent() {
           </form>
 
           {/* ── Lien inscription ── */}
-          <p className="text-center text-xs text-stone-400 dark:text-stone-500 mt-8 tracking-wide">
+          <p className="text-center text-xs text-stone-400 dark:text-stone-500 mt-8 ">
             {s.noAccount}{' '}
             <Link
               href="/inscription"
@@ -419,7 +419,7 @@ function ConnexionContent() {
         <div className="lg:hidden mt-12 flex flex-col items-center gap-3 pb-8">
           <div className="w-16 h-px bg-stone-200 dark:bg-stone-800" />
           <CabaLogo className="w-12 h-12 text-orange-700 dark:text-orange-500 opacity-60" />
-          <p className="text-xs text-stone-300 dark:text-stone-700 uppercase tracking-[0.3em]">{t.common.appName}</p>
+          <p className="text-xs text-stone-300 dark:text-stone-700 ">{t.common.appName}</p>
         </div>
       </div>
     </div>

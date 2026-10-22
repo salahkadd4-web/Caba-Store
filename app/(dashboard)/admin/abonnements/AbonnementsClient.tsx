@@ -17,13 +17,13 @@ interface AbonnementRow {
 
 // Libellés : t.billing.levels / t.billing.statusShort
 const NIVEAU_LABELS: Record<string, { color: string }> = {
-  NIVEAU_1: { color: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300' },
+  NIVEAU_1: { color: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300' },
   NIVEAU_2: { color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'         },
   NIVEAU_3: { color: 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300'     },
 }
 const STATUT_LABELS: Record<string, { color: string; icon: React.ElementType }> = {
   GRATUIT:  { color: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',     icon: CheckCircle2 },
-  ACTIF:    { color: 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300',         icon: CheckCircle2 },
+  ACTIF:    { color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',         icon: CheckCircle2 },
   EXPIRE:   { color: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',             icon: XCircle      },
   SUSPENDU: { color: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300', icon: AlertTriangle },
 }
@@ -57,7 +57,7 @@ export default function AbonnementsClient({ initialData }: { initialData: Abonne
   const gratuits        = rows.filter(r => r.statut === 'GRATUIT')
 
   const kpis = [
-    { label: s_.active,       value: actifs.length,          color: 'text-teal-600 dark:text-teal-400',    bg: 'bg-teal-50 dark:bg-teal-950/40',     Icon: CheckCircle2  },
+    { label: s_.active,       value: actifs.length,          color: 'text-emerald-600 dark:text-emerald-400',    bg: 'bg-emerald-50 dark:bg-emerald-950/40',     Icon: CheckCircle2  },
     { label: s_.free,         value: gratuits.length,        color: 'text-green-600 dark:text-green-400',  bg: 'bg-green-50 dark:bg-green-950/40',   Icon: Clock         },
     { label: s_.expired,      value: expires.length,         color: 'text-red-600 dark:text-red-400',      bg: 'bg-red-50 dark:bg-red-950/40',       Icon: XCircle       },
     { label: s_.expiringSoon, value: expirentBientot.length, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-950/40', Icon: AlertTriangle },

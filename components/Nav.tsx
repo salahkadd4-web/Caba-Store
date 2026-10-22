@@ -191,7 +191,7 @@ export default function Nav() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`relative px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    className={`relative px-3 py-2 text-sm font-medium rounded-xl transition-colors ${
                       active
                         ? 'text-orange-700 dark:text-orange-400'
                         : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800'
@@ -218,7 +218,7 @@ export default function Nav() {
               <Link
                 href="/admin"
                 title={t.layout.nav.adminDashboard}
-                className="hidden md:flex items-center gap-1.5 text-sm font-medium text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900 px-3 py-2 rounded-full hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-all"
+                className="hidden md:flex items-center gap-1.5 text-sm font-medium text-stone-700 dark:text-stone-200 bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 px-3 py-2 rounded-full hover:bg-stone-200 dark:hover:bg-stone-700 transition-all"
               >
                 <LayoutDashboard className="w-4 h-4" />
                 <span>{t.layout.nav.dashboard}</span>
@@ -230,7 +230,7 @@ export default function Nav() {
               <Link
                 href="/admin"
                 title={t.layout.nav.adminDashboard}
-                className="md:hidden flex items-center justify-center w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 shrink-0"
+                className="md:hidden flex items-center justify-center w-8 h-8 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 shrink-0"
               >
                 <LayoutDashboard className="w-4 h-4" />
               </Link>
@@ -241,7 +241,7 @@ export default function Nav() {
               <Link
                 href="/vendeur"
                 title={t.layout.nav.sellerDashboard}
-                className="hidden md:flex items-center gap-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 px-3 py-2 rounded-full hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-all"
+                className="hidden md:flex items-center gap-1.5 text-sm font-medium text-stone-700 dark:text-stone-200 bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 px-3 py-2 rounded-full hover:bg-stone-200 dark:hover:bg-stone-700 transition-all"
               >
                 <Store className="w-4 h-4" />
                 <span>{t.layout.nav.dashboard}</span>
@@ -253,7 +253,7 @@ export default function Nav() {
               <Link
                 href="/vendeur"
                 title={t.layout.nav.sellerDashboard}
-                className="md:hidden flex items-center justify-center w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 shrink-0"
+                className="md:hidden flex items-center justify-center w-8 h-8 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 shrink-0"
               >
                 <Store className="w-4 h-4" />
               </Link>
@@ -279,7 +279,7 @@ export default function Nav() {
               >
                 <ShoppingCart className="w-4 h-4 text-stone-700 dark:text-stone-200" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-0.5 -end-0.5 min-w-[18px] h-[18px] bg-orange-700 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 shadow-md">
+                  <span className="absolute -top-0.5 -end-0.5 min-w-5 h-5 bg-orange-700 text-white text-xs font-bold rounded-full flex items-center justify-center px-1 shadow-md">
                     {cartCount > 99 ? '99+' : cartCount}
                   </span>
                 )}
@@ -331,13 +331,13 @@ export default function Nav() {
                       })}
                       {isVendeur && (
                         <Link href="/vendeur" onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950 transition-colors">
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-stone-700 dark:text-stone-200 hover:bg-orange-50 dark:hover:bg-stone-800 hover:text-orange-700 dark:hover:text-orange-400 transition-colors">
                           <Store className="w-4 h-4" /><span>{t.layout.nav.sellerDashboard}</span>
                         </Link>
                       )}
                       {isAdmin && (
                         <Link href="/admin" onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950 transition-colors">
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-stone-700 dark:text-stone-200 hover:bg-orange-50 dark:hover:bg-stone-800 hover:text-orange-700 dark:hover:text-orange-400 transition-colors">
                           <LayoutDashboard className="w-4 h-4" /><span>{t.layout.nav.adminDashboard}</span>
                         </Link>
                       )}
@@ -384,7 +384,7 @@ export default function Nav() {
               const active = isActive(item.href)
               return (
                 <Link key={item.href} href={item.href} onClick={() => setMenuOpen(false)}
-                  className={`block px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                  className={`block px-3 py-2.5 text-sm font-medium rounded-xl transition-colors ${
                     active
                       ? 'text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/30'
                       : 'text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
@@ -398,7 +398,7 @@ export default function Nav() {
               const Icon = item.icon
               return (
                 <Link key={item.href} href={item.href} onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg">
+                  className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl">
                   <Icon className="w-4 h-4" />{item.label}
                 </Link>
               )
@@ -407,7 +407,7 @@ export default function Nav() {
             <div className="pt-3 border-t border-stone-200 dark:border-stone-800">
               {session ? (
                 <button onClick={handleSignOut}
-                  className="w-full text-start px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors">
+                  className="w-full text-start px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-colors">
                   {t.layout.nav.logout}
                 </button>
               ) : (

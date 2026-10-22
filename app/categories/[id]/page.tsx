@@ -105,7 +105,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
             <p className="text-stone-500 dark:text-stone-400 mt-1">{categorie.description}</p>
           )}
           <div className="flex items-center gap-3 mt-1 flex-wrap">
-            <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500">
+            <p className="text-xs font-semibold text-orange-700 dark:text-orange-500">
               {t.catalog.categories.productsCount(produits.length)}
             </p>
             {produits.length > 0 && (

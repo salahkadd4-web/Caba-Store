@@ -17,7 +17,7 @@ const home: typeof fr = {
   bestSellers: 'Best Sellers',
   newArrivalsEyebrow: 'New in',
   newArrivals: 'Latest Arrivals',
-  seeAll: 'See All',
+  seeAll: 'See all',
   seeAllShort: 'See all',
   bestSellersSoon: 'Our best sellers are coming soon.',
   noCategories: 'No categories available.',

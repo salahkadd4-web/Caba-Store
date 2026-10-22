@@ -63,8 +63,8 @@ export default function BoutonInitProfilAdmin() {
   }
 
   return (
-    <div className="border border-purple-200 dark:border-purple-800 rounded-xl p-4 bg-purple-50 dark:bg-purple-950/30 space-y-3 max-w-lg">
-      <h3 className="text-sm font-semibold text-purple-700 dark:text-purple-300 flex items-center gap-2">
+    <div className="border border-orange-200 dark:border-orange-800 rounded-xl p-4 bg-orange-50 dark:bg-orange-950/30 space-y-3 max-w-lg">
+      <h3 className="text-sm font-semibold text-orange-800 dark:text-orange-300 flex items-center gap-2">
         <Shield className="w-4 h-4" /> {a.title}
       </h3>
 
@@ -72,14 +72,14 @@ export default function BoutonInitProfilAdmin() {
       <button
         onClick={verifier}
         disabled={loading}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-purple-400 text-purple-700 dark:text-purple-300 text-sm hover:bg-purple-100 dark:hover:bg-purple-900 disabled:opacity-50 transition w-fit"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-orange-400 text-orange-800 dark:text-orange-300 text-sm hover:bg-orange-100 dark:hover:bg-orange-900 disabled:opacity-50 transition w-fit"
       >
         <CheckCircle2 className="w-4 h-4" />
         {loading ? a.checking : a.refresh}
       </button>
 
       {/* Explication */}
-      <div className="flex items-start gap-2 text-xs text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 rounded-lg p-3">
+      <div className="flex items-start gap-2 text-xs text-orange-800 dark:text-orange-300 bg-orange-100 dark:bg-orange-900/40 rounded-xl p-3">
         <Info className="w-4 h-4 shrink-0 mt-0.5" />
         <p>
           {a.explainBefore} <strong>{a.explainStrong}</strong>{a.explainAfter}
@@ -89,7 +89,7 @@ export default function BoutonInitProfilAdmin() {
       {/* État du profil existant */}
       {!loading && info && (
         info.existe ? (
-          <div className="text-xs rounded-lg bg-white dark:bg-gray-900 border border-orange-200 dark:border-orange-800 p-3 space-y-2">
+          <div className="text-xs rounded-xl bg-white dark:bg-gray-900 border border-orange-200 dark:border-orange-800 p-3 space-y-2">
             <p className="text-orange-600 dark:text-orange-400 font-medium">
               {a.stillExists}
             </p>
@@ -103,7 +103,7 @@ export default function BoutonInitProfilAdmin() {
             <button
               onClick={supprimer}
               disabled={loading}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm disabled:opacity-50 transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm disabled:opacity-50 transition"
             >
               <Trash2 className="w-4 h-4" />
               {a.deleteProfile}

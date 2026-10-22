@@ -31,7 +31,7 @@ const billing = {
 
   // Page vendeur
   sellerFallback: 'Vendeur',
-  title: 'Mon Abonnement',
+  title: 'Mon abonnement',
   subtitle: 'Gérez votre abonnement vendeur',
   expiredOn: (date: string): string => `Expiré le ${date}`,
   expiresOn: (date: string, days: number): string =>

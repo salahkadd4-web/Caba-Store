@@ -165,7 +165,7 @@ export default function AdminProduitsPage() {
           {categories.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
         </select>
         <button onClick={() => { setAdminOnly(v => !v); setFilterVendeur('') }}
-          className={`px-3.5 py-2 rounded-xl text-sm font-medium transition border whitespace-nowrap ${adminOnly ? 'bg-purple-600 text-white border-purple-600' : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-300 dark:border-stone-700 hover:border-stone-400'}`}>
+          className={`px-3.5 py-2 rounded-xl text-sm font-medium transition border whitespace-nowrap ${adminOnly ? 'bg-orange-700 text-white border-orange-700' : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 border-stone-300 dark:border-stone-700 hover:border-stone-400'}`}>
           {p_.adminOnly}
         </button>
       </div>
@@ -203,7 +203,7 @@ export default function AdminProduitsPage() {
                 <td className={tableTd}>
                   {produit.vendeur
                     ? <span className="text-xs bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-900">{produit.vendeur.nomBoutique || '—'}</span>
-                    : <span className="text-xs bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-900">{p_.admin}</span>}
+                    : <span className="text-xs bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-400 px-2 py-0.5 rounded-full border border-orange-200 dark:border-orange-900">{p_.admin}</span>}
                 </td>
                 <td className={tableTd}>
                   <p className="font-semibold text-orange-600 dark:text-orange-400">{fmt.money(produit.prix)} {fmt.currency}</p>
@@ -236,11 +236,11 @@ export default function AdminProduitsPage() {
                 </td>
                 <td className={tableTd}>
                   <div className="flex gap-1.5">
-                    <button onClick={() => openEdit(produit)} className="bg-stone-100 dark:bg-stone-800 hover:bg-orange-50 dark:hover:bg-orange-950/40 text-stone-600 hover:text-orange-700 dark:hover:text-orange-400 p-2 rounded-lg transition">
+                    <button onClick={() => openEdit(produit)} className="bg-stone-100 dark:bg-stone-800 hover:bg-orange-50 dark:hover:bg-orange-950/40 text-stone-600 hover:text-orange-700 dark:hover:text-orange-400 p-2 rounded-xl transition">
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
                     <button onClick={() => setToggleId(produit.id)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${produit.actif ? 'bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400 hover:bg-orange-100' : 'bg-green-50 dark:bg-green-950 text-green-600 dark:text-green-400 hover:bg-green-100'}`}>
+                      className={`px-3 py-1.5 rounded-xl text-xs font-medium transition ${produit.actif ? 'bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400 hover:bg-orange-100' : 'bg-green-50 dark:bg-green-950 text-green-600 dark:text-green-400 hover:bg-green-100'}`}>
                       {produit.actif ? p_.deactivate : p_.activate}
                     </button>
                   </div>
@@ -289,7 +289,7 @@ export default function AdminProduitsPage() {
             <div className="flex gap-1 mb-5 bg-stone-100 dark:bg-stone-800 p-1 rounded-xl">
               {(['infos', 'prix', 'variantes'] as const).map(tab => (
                 <button key={tab} onClick={() => setActiveTab(tab)}
-                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${activeTab === tab ? 'bg-white dark:bg-stone-700 text-stone-800 dark:text-stone-100 shadow-sm' : 'text-stone-500 dark:text-stone-400 hover:text-stone-700'}`}>
+                  className={`flex-1 py-2 rounded-xl text-sm font-medium transition ${activeTab === tab ? 'bg-white dark:bg-stone-700 text-stone-800 dark:text-stone-100 shadow-sm' : 'text-stone-500 dark:text-stone-400 hover:text-stone-700'}`}>
                   {tab === 'infos' ? <span className="flex items-center justify-center gap-1.5"><ClipboardList className="w-3.5 h-3.5" />{p_.tabInfoLong}</span>
                    : tab === 'prix' ? <span className="flex items-center justify-center gap-1.5"><TrendingDown className="w-3.5 h-3.5" />{p_.tabPrice}</span>
                    : <span className="flex items-center justify-center gap-1.5"><Palette className="w-3.5 h-3.5" />{p_.tabVariants}</span>}
@@ -340,7 +340,7 @@ export default function AdminProduitsPage() {
                     <div className="flex items-center justify-between mb-2">
                       <label className="text-xs font-medium text-stone-600 dark:text-stone-300">{p_.degressiveShort}</label>
                       <button type="button" onClick={() => setPrixTiers(t => [...t, emptyTier()])}
-                        className="text-xs bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 px-2.5 py-1 rounded-lg hover:bg-purple-100 transition">{p_.addTierPlus}</button>
+                        className="text-xs bg-orange-50 dark:bg-orange-950 text-orange-800 dark:text-orange-300 px-2.5 py-1 rounded-xl hover:bg-orange-100 transition">{p_.addTierPlus}</button>
                     </div>
                     {prixTiers.length === 0 ? (
                       <p className="text-sm text-stone-400 text-center py-4 border-2 border-dashed border-stone-200 dark:border-stone-700 rounded-xl">{p_.clickAddTier}</p>
@@ -376,7 +376,7 @@ export default function AdminProduitsPage() {
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-medium text-stone-600 dark:text-stone-300 flex items-center gap-1.5"><Palette className="w-3.5 h-3.5" />{p_.colorsOrScentsShort}</p>
                     <button type="button" onClick={() => setVariants(v => [...v, emptyVariant()])}
-                      className="text-xs bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 px-2.5 py-1 rounded-lg hover:bg-purple-100 transition flex items-center gap-1">
+                      className="text-xs bg-orange-50 dark:bg-orange-950 text-orange-800 dark:text-orange-300 px-2.5 py-1 rounded-xl hover:bg-orange-100 transition flex items-center gap-1">
                       <Plus className="w-3 h-3" />{p_.add}
                     </button>
                   </div>
@@ -387,7 +387,7 @@ export default function AdminProduitsPage() {
                       {variants.map((v, i) => (
                         <div key={i} className="border border-stone-200 dark:border-stone-700 rounded-xl p-3 space-y-2.5">
                           <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg border border-stone-200 dark:border-stone-600 shrink-0" style={{ backgroundColor: v.couleur || '#e5e7eb' }} />
+                            <div className="w-8 h-8 rounded-xl border border-stone-200 dark:border-stone-600 shrink-0" style={{ backgroundColor: v.couleur || '#e5e7eb' }} />
                             <input type="text" value={v.nom} onChange={e => setVariants(vs => vs.map((x,j) => j===i ? {...x, nom: e.target.value} : x))} placeholder={p_.variantNamePlaceholderShort} className={`flex-1 ${inputSm}`} />
                             <button type="button" onClick={() => setVariants(vs => vs.filter((_,j) => j !== i))} className="text-red-400 hover:text-red-600 p-1"><X className="w-4 h-4" /></button>
                           </div>
@@ -409,14 +409,14 @@ export default function AdminProduitsPage() {
                             <div>
                               <div className="flex items-center justify-between mb-1.5">
                                 <label className="text-xs text-stone-400 flex items-center gap-1"><Ruler className="w-3 h-3" />{p_.optionsPlural(form.typeOption)}</label>
-                                <button type="button" onClick={() => setVariants(vs => vs.map((x,j) => j===i ? {...x, options: [...x.options, emptyOption()]} : x))} className="text-[10px] bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded hover:bg-purple-100 transition flex items-center gap-0.5">
+                                <button type="button" onClick={() => setVariants(vs => vs.map((x,j) => j===i ? {...x, options: [...x.options, emptyOption()]} : x))} className="text-xs bg-orange-50 dark:bg-orange-950 text-orange-800 dark:text-orange-300 px-1.5 py-0.5 rounded hover:bg-orange-100 transition flex items-center gap-0.5">
                                   <Plus className="w-2.5 h-2.5" />{p_.add}
                                 </button>
                               </div>
                               {v.options.length === 0 ? <p className="text-xs text-stone-400 italic">{p_.noOption}</p> : (
                                 <div className="flex flex-wrap gap-2">
                                   {v.options.map((opt, oi) => (
-                                    <div key={oi} className="flex items-center gap-1 bg-stone-50 dark:bg-stone-800 rounded-lg px-2 py-1 border border-stone-200 dark:border-stone-700">
+                                    <div key={oi} className="flex items-center gap-1 bg-stone-50 dark:bg-stone-800 rounded-xl px-2 py-1 border border-stone-200 dark:border-stone-700">
                                       <input type="text" value={opt.valeur} onChange={e => setVariants(vs => vs.map((x,j) => j===i ? {...x, options: x.options.map((o,k) => k===oi ? {...o, valeur: e.target.value} : o)} : x))} placeholder={p_.optionPlaceholder} className="w-14 text-xs bg-transparent focus:outline-none text-stone-800 dark:text-stone-100 font-medium" />
                                       <span className="text-stone-300 dark:text-stone-600 text-xs">|</span>
                                       <input type="number" value={opt.stock} onChange={e => setVariants(vs => vs.map((x,j) => j===i ? {...x, options: x.options.map((o,k) => k===oi ? {...o, stock: e.target.value} : o)} : x))} placeholder={p_.stockPlaceholder} className="w-12 text-xs bg-transparent focus:outline-none text-stone-500" />
@@ -453,7 +453,7 @@ export default function AdminProduitsPage() {
           <div className={modalOverlay}>
             <div className={`${modalBox} max-w-sm p-6 text-center`}>
               <div className="flex justify-center mb-4">
-                {produit.actif ? <EyeOff className="w-12 h-12 text-orange-500" /> : cantActivate ? <AlertTriangle className="w-12 h-12 text-yellow-500" /> : <Eye className="w-12 h-12 text-green-500" />}
+                {produit.actif ? <EyeOff className="w-12 h-12 text-orange-500" /> : cantActivate ? <AlertTriangle className="w-12 h-12 text-amber-500" /> : <Eye className="w-12 h-12 text-green-500" />}
               </div>
               <h2 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-2">
                 {produit.actif ? p_.deactivateQ : cantActivate ? p_.outOfStockTitle : p_.activateQ}

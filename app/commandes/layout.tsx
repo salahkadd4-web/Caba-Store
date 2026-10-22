@@ -50,7 +50,7 @@ function VendeurBlocked({ vendeur, t }: { vendeur: { statut: string; nomBoutique
         <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed mb-4">{txt.description}</p>
         {vendeur.adminNote && (
           <div className="bg-white/70 dark:bg-stone-900/50 border border-stone-200 dark:border-stone-700 rounded-xl p-4 mb-4 text-start">
-            <p className="text-xs font-semibold text-stone-400 dark:text-stone-500 mb-1 uppercase tracking-wider">{s.adminMessage}</p>
+            <p className="text-xs font-semibold text-stone-400 dark:text-stone-500 mb-1 ">{s.adminMessage}</p>
             <p className="text-sm text-stone-700 dark:text-stone-300 leading-relaxed">{vendeur.adminNote}</p>
           </div>
         )}

@@ -75,13 +75,13 @@ export default function BottomNav() {
             key={item.href}
             href={item.href}
             className={`flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-colors ${
-              isActive
-                ? 'text-orange-700 dark:text-orange-500'
-                : 'text-stone-400 dark:text-stone-500'
-            }`}
+ isActive
+ ? 'text-orange-700 dark:text-orange-500'
+ : 'text-stone-400 dark:text-stone-500'
+ }`}
           >
             {item.icon}
-            <span className="text-[10px] uppercase tracking-widest">{item.label}</span>
+            <span className="text-xs ">{item.label}</span>
           </Link>
         )
       })}

@@ -43,7 +43,7 @@ export async function VendeurGuard({ children }: { children: React.ReactNode }) 
                 {s.pendingDesc}
               </p>
               {vendeur.adminNote && (
-                <p className="text-xs bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300 rounded-xl p-3 mb-4">
+                <p className="text-xs bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 rounded-xl p-3 mb-4">
                   {vendeur.adminNote}
                 </p>
               )}

@@ -57,7 +57,7 @@ function VendeurTopBar({
             <button
               onClick={onMenuOpen}
               aria-label="Ouvrir le menu"
-              className="lg:hidden p-2 -ms-1 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition active:scale-95"
+              className="lg:hidden p-2 -ms-1 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition active:scale-95"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="3" y1="6" x2="21" y2="6"/>
@@ -73,7 +73,7 @@ function VendeurTopBar({
             className="flex items-center gap-1 group select-none"
             title="Retour à la boutique"
           >
-            <span className="text-sm font-light tracking-[0.25em] uppercase text-black dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+            <span className="text-sm font-light text-black dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
               Caba
             </span>
             <Image
@@ -84,7 +84,7 @@ function VendeurTopBar({
               className="h-6 w-auto dark:invert"
               priority
             />
-            <span className="text-sm font-light tracking-[0.25em] uppercase text-black dark:text-white -ms-0.5 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+            <span className="text-sm font-light text-black dark:text-white -ms-0.5 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
               Store
             </span>
           </Link>
@@ -101,7 +101,7 @@ function VendeurTopBar({
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
               <polyline points="9 22 9 12 15 12 15 22"/>
             </svg>
-            <span className="hidden sm:inline tracking-widest uppercase font-medium">Boutique</span>
+            <span className="hidden sm:inline font-medium">Boutique</span>
           </Link>
 
           <button
@@ -113,7 +113,7 @@ function VendeurTopBar({
               <polyline points="16 17 21 12 16 7"/>
               <line x1="21" y1="12" x2="9" y2="12"/>
             </svg>
-            <span className="hidden sm:inline tracking-widest uppercase font-medium">Déconnexion</span>
+            <span className="hidden sm:inline font-medium">Déconnexion</span>
           </button>
         </div>
       </div>
@@ -129,17 +129,17 @@ function StatusPage({ statut, adminNote }: { statut: string; adminNote: string |
     <div className="flex-1 flex items-center justify-center p-4 min-h-[calc(100vh-64px)]">
       <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-2xl shadow-lg overflow-hidden">
         {/* Bande colorée en haut */}
-        <div className={`h-1.5 w-full ${isAttente ? 'bg-yellow-400' : 'bg-red-500'}`} />
+        <div className={`h-1.5 w-full ${isAttente ? 'bg-amber-400' : 'bg-red-500'}`} />
 
         <div className="p-8 text-center">
           {/* Icône */}
           <div className={`
-            w-20 h-20 mx-auto mb-5 rounded-full flex items-center justify-center text-4xl
-            ${isAttente
-              ? 'bg-yellow-50 dark:bg-yellow-950'
-              : 'bg-red-50 dark:bg-red-950'
-            }
-          `}>
+ w-20 h-20 mx-auto mb-5 rounded-full flex items-center justify-center text-4xl
+ ${isAttente
+ ? 'bg-amber-50 dark:bg-amber-950'
+ : 'bg-red-50 dark:bg-red-950'
+ }
+ `}>
             {isAttente ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-5 h-5" />}
           </div>
 
@@ -159,12 +159,12 @@ function StatusPage({ statut, adminNote }: { statut: string; adminNote: string |
           {/* Note admin */}
           {adminNote && (
             <div className={`
-              text-xs rounded-xl p-4 mb-5 text-start
-              ${isAttente
-                ? 'bg-yellow-50 dark:bg-yellow-950 text-yellow-800 dark:text-yellow-200 border border-yellow-100 dark:border-yellow-900'
-                : 'bg-red-50 dark:bg-red-950 text-red-800 dark:text-red-200 border border-red-100 dark:border-red-900'
-              }
-            `}>
+ text-xs rounded-xl p-4 mb-5 text-start
+ ${isAttente
+ ? 'bg-amber-50 dark:bg-amber-950 text-amber-800 dark:text-amber-200 border border-amber-100 dark:border-amber-900'
+ : 'bg-red-50 dark:bg-red-950 text-red-800 dark:text-red-200 border border-red-100 dark:border-red-900'
+ }
+ `}>
               <p className="font-semibold mb-1">
                 {isAttente ? 'Message de l\'équipe :' : 'Motif de suspension :'}
               </p>
@@ -217,13 +217,13 @@ function ApprouveLayout({
 
       {/* Sidebar */}
       <aside className={`
-        fixed top-0 start-0 h-full z-40 w-64
-        bg-white dark:bg-gray-900
-        border-e border-gray-200 dark:border-gray-800
-        shadow-xl transition-transform duration-300
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0
-      `}>
+ fixed top-0 start-0 h-full z-40 w-64
+ bg-white dark:bg-gray-900
+ border-e border-gray-200 dark:border-gray-800
+ shadow-xl transition-transform duration-300
+ ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+ lg:translate-x-0
+ `}>
         {/* En-tête sidebar */}
         <div className="p-5 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between safe-top">
           <div>
@@ -234,7 +234,7 @@ function ApprouveLayout({
           </div>
           <button
             onClick={onMenuClose}
-            className="lg:hidden text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+            className="lg:hidden text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition"
           ><X className="w-4 h-4" /></button>
         </div>
 
@@ -248,13 +248,13 @@ function ApprouveLayout({
                 href={item.href}
                 onClick={onMenuClose}
                 className={`
-                  flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all
-                  active:scale-[0.98]
-                  ${isActive
-                    ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }
-                `}
+ flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all
+ active:scale-[0.98]
+ ${isActive
+ ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 shadow-sm'
+ : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+ }
+ `}
               >
                 <span className="shrink-0">{(() => { const Icon = item.icon; return <Icon className="w-5 h-5" /> })()}</span>
                 <span>{item.label}</span>

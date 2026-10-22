@@ -57,19 +57,19 @@ interface AbonnementDetail {
 
 // Libellés : t.admin.sellers.status / subStatus, t.billing.levels
 const statutConfig: Record<string, { color: string; icon: React.ElementType }> = {
-  EN_ATTENTE:      { color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300',   icon: Loader2      },
+  EN_ATTENTE:      { color: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',   icon: Loader2      },
   APPROUVE:        { color: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',       icon: CheckCircle2 },
   SUSPENDU:        { color: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',               icon: Ban          },
   PIECES_REQUISES: { color: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',   icon: ClipboardList },
 }
 const NIVEAU_LABELS: Record<string, { price: number; color: string }> = {
-  NIVEAU_1: { price: 5000, color: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300' },
+  NIVEAU_1: { price: 5000, color: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300' },
   NIVEAU_2: { price: 4000, color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'         },
   NIVEAU_3: { price: 3000, color: 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300'     },
 }
 const STATUT_ABO_LABELS: Record<string, { color: string }> = {
   GRATUIT:  { color: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'     },
-  ACTIF:    { color: 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300'         },
+  ACTIF:    { color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'         },
   EXPIRE:   { color: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'             },
   SUSPENDU: { color: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300' },
 }
@@ -127,7 +127,7 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
 
   const showToast = (msg: string) => { setToastMsg(msg); setTimeout(() => setToastMsg(null), 3000) }
   const docStatutColor: Record<string, string> = {
-    EN_ATTENTE: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300',
+    EN_ATTENTE: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
     ACCEPTE:    'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
     REFUSE:     'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
   }
@@ -320,7 +320,7 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
                     {tr(s_.status, selected.statut)}
                   </span>
                 </div>
-                <button onClick={() => { setSelected(null); clearSelectionQuery() }} className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 dark:hover:bg-stone-800 transition"><X className="w-4 h-4" /></button>
+                <button onClick={() => { setSelected(null); clearSelectionQuery() }} className="p-1.5 rounded-xl text-stone-400 hover:text-stone-600 hover:bg-stone-100 dark:hover:bg-stone-800 transition"><X className="w-4 h-4" /></button>
               </div>
               <div className="flex border-t border-stone-200 dark:border-stone-800">
                 {(['infos', 'abonnement'] as const).map(tab => (
@@ -358,7 +358,7 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
                     <p className="text-xl font-bold">{fmt.price(selected.chiffreAffaire ?? 0)}</p>
                   </div>
                   {selected.adminNote && (
-                    <div className="bg-yellow-50 dark:bg-yellow-950 rounded-xl p-3 text-sm text-yellow-700 dark:text-yellow-300">
+                    <div className="bg-amber-50 dark:bg-amber-950 rounded-xl p-3 text-sm text-amber-700 dark:text-amber-300">
                       <span className="font-semibold">{s_.internalNote}</span>{selected.adminNote}
                     </div>
                   )}
@@ -383,8 +383,8 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
                                 </a>
                                 {doc.statut === 'EN_ATTENTE' && (
                                   <div className="flex gap-2 ms-auto">
-                                    <button onClick={() => setDocAction({ docId: doc.id, action: 'accepter', note: '' })} className="text-xs bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 px-3 py-1 rounded-lg hover:bg-green-100 transition flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" />{s_.accept}</button>
-                                    <button onClick={() => setDocAction({ docId: doc.id, action: 'refuser', note: '' })} className="text-xs bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 px-3 py-1 rounded-lg hover:bg-red-100 transition flex items-center gap-1"><XCircle className="w-3.5 h-3.5" />{s_.refuse}</button>
+                                    <button onClick={() => setDocAction({ docId: doc.id, action: 'accepter', note: '' })} className="text-xs bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 px-3 py-1 rounded-xl hover:bg-green-100 transition flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" />{s_.accept}</button>
+                                    <button onClick={() => setDocAction({ docId: doc.id, action: 'refuser', note: '' })} className="text-xs bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 px-3 py-1 rounded-xl hover:bg-red-100 transition flex items-center gap-1"><XCircle className="w-3.5 h-3.5" />{s_.refuse}</button>
                                   </div>
                                 )}
                               </div>
@@ -437,7 +437,7 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
                           { label: s_.subStatusLabel, value: <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUT_ABO_LABELS[abonnement.statut]?.color ?? ''}`}>{tr(s_.subStatus, abonnement.statut)}</span> },
                           { label: s_.currentLevel,   value: <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${NIVEAU_LABELS[abonnement.niveau]?.color ?? ''}`}>{levelWithPrice(abonnement.niveau)}</span> },
                           { label: s_.expiresOn,      value: <span className="font-semibold text-stone-800 dark:text-stone-100">{d(abonnement.dateFin)}</span> },
-                          { label: s_.daysLeft,       value: <span className={`font-bold ${abonnement.statut === 'EXPIRE' ? 'text-red-500' : abonnement.joursRestants <= 7 ? 'text-orange-500' : 'text-teal-600 dark:text-teal-400'}`}>{abonnement.statut === 'EXPIRE' ? s_.expired : s_.daysCount(abonnement.joursRestants)}</span> },
+                          { label: s_.daysLeft,       value: <span className={`font-bold ${abonnement.statut === 'EXPIRE' ? 'text-red-500' : abonnement.joursRestants <= 7 ? 'text-orange-500' : 'text-emerald-600 dark:text-emerald-400'}`}>{abonnement.statut === 'EXPIRE' ? s_.expired : s_.daysCount(abonnement.joursRestants)}</span> },
                         ].map(({ label, value }) => (
                           <div key={label} className="flex justify-between items-center">
                             <span className="text-stone-500">{label}</span>
@@ -453,7 +453,7 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
                         <div className="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-4">
                           <p className="text-xs text-stone-500 mb-1">{s_.salesFees}</p>
                           <p className="text-lg font-semibold text-stone-900 dark:text-white">{fmt.price(abonnement.billing.salesFee)}</p>
-                          <p className="text-[11px] text-stone-400 mt-1">{s_.feeOn(fmt.price(abonnement.billing.grossSales))}</p>
+                          <p className="text-xs text-stone-400 mt-1">{s_.feeOn(fmt.price(abonnement.billing.grossSales))}</p>
                         </div>
                         <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 p-4">
                           <p className="text-xs text-emerald-700 dark:text-emerald-300 mb-1">{s_.totalDue}</p>
@@ -517,7 +517,7 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
                           <label className="text-xs text-stone-500 mb-1 block">{s_.internalNoteShort}</label>
                           <input value={aboForm.note} onChange={e => setAboForm(f => ({...f, note: e.target.value}))} placeholder={s_.notePlaceholder} className={inputField} />
                         </div>
-                        {aboMsg && <p className="text-sm text-center font-medium text-teal-600 dark:text-teal-400">{aboMsg}</p>}
+                        {aboMsg && <p className="text-sm text-center font-medium text-emerald-600 dark:text-emerald-400">{aboMsg}</p>}
                         <button onClick={handleConfirmerPaiement} disabled={savingAbo}
                           className="w-full bg-orange-700 hover:bg-orange-800 disabled:opacity-50 text-white font-medium py-2.5 rounded-xl text-sm transition active:scale-95">
                           {savingAbo ? t.common.saving : s_.confirmAndRenew}
@@ -537,7 +537,7 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
                                     </div>
                                     <div className="grid gap-2 sm:grid-cols-2">
                                       <div>
-                                        <p className="text-[11px] text-stone-400 uppercase tracking-wide">{s_.period}</p>
+                                        <p className="text-xs text-stone-400 ">{s_.period}</p>
                                         <p className="text-stone-700 dark:text-stone-200">
                                           {invoice.periodStart && invoice.periodEnd
                                             ? `${d(invoice.periodStart)} - ${d(invoice.periodEnd)}`
@@ -545,15 +545,15 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
                                         </p>
                                       </div>
                                       <div>
-                                        <p className="text-[11px] text-stone-400 uppercase tracking-wide">{s_.total}</p>
+                                        <p className="text-xs text-stone-400 ">{s_.total}</p>
                                         <p className="text-stone-700 dark:text-stone-200 font-medium">{fmt.price(invoice.totalDue)}</p>
                                       </div>
                                       <div>
-                                        <p className="text-[11px] text-stone-400 uppercase tracking-wide">{s_.subscription}</p>
+                                        <p className="text-xs text-stone-400 ">{s_.subscription}</p>
                                         <p className="text-stone-700 dark:text-stone-200">{fmt.price(invoice.subscriptionAmount)}</p>
                                       </div>
                                       <div>
-                                        <p className="text-[11px] text-stone-400 uppercase tracking-wide">{s_.salesFees}</p>
+                                        <p className="text-xs text-stone-400 ">{s_.salesFees}</p>
                                         <p className="text-stone-700 dark:text-stone-200">{fmt.price(invoice.salesFee)}</p>
                                       </div>
                                     </div>
@@ -631,7 +631,7 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
           <div className={`${modalBox} max-w-lg max-h-[90vh] overflow-y-auto`}>
             <div className="sticky top-0 bg-[#FAF7F2] dark:bg-stone-900 flex items-center justify-between p-5 border-b border-stone-200 dark:border-stone-800">
               <h3 className="text-base font-bold text-stone-800 dark:text-stone-100 flex items-center gap-2"><ClipboardList className="w-4 h-4 text-orange-600" />{s_.requestDocsTitle}</h3>
-              <button onClick={() => setShowDocModal(false)} className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 dark:hover:bg-stone-800"><X className="w-4 h-4" /></button>
+              <button onClick={() => setShowDocModal(false)} className="p-1.5 rounded-xl text-stone-400 hover:text-stone-600 hover:bg-stone-100 dark:hover:bg-stone-800"><X className="w-4 h-4" /></button>
             </div>
             <div className="p-5 space-y-4">
               <p className="text-xs text-stone-500">{s_.requestDocsHint}</p>

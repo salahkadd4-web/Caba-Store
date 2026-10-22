@@ -66,10 +66,10 @@ export default function ImageUpload({ value, onChange, label }: ImageUploadProps
                 fill
                 sizes="(max-width: 768px) 100vw, 50vw"
                 unoptimized={preview.startsWith('blob:')}
-                className="object-cover rounded-lg"
+                className="object-cover rounded-xl"
               />
               {uploading && (
-                <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center">
                   <p className="text-white text-sm">{u.uploading}</p>
                 </div>
               )}

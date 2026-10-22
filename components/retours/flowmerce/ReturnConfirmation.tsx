@@ -54,7 +54,7 @@ export default function ReturnConfirmation({ form, answers, error }: ReturnConfi
 
       {form.sections.map(section => (
         <div key={section.id} className="rounded-xl border border-stone-100 dark:border-stone-800 p-4">
-          <h3 className="text-xs font-bold uppercase tracking-wide text-stone-400 mb-3">{section.title}</h3>
+          <h3 className="text-xs font-bold text-stone-400 mb-3">{section.title}</h3>
           <dl className="space-y-2">
             {section.fields.map(field => (
               <div key={field.id} className="flex items-baseline justify-between gap-4">

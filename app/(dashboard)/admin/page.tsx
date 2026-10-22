@@ -32,9 +32,9 @@ export default async function AdminPage() {
 
   const kpis = [
     { href: '/admin/produits',  label: h.products,   value: totalProduits,   Icon: Package,      accent: 'text-orange-600 dark:text-orange-400',   bg: 'bg-orange-50 dark:bg-orange-950/40' },
-    { href: '/admin/clients',   label: h.clients,    value: totalClients,    Icon: Users,        accent: 'text-purple-600 dark:text-purple-400',   bg: 'bg-purple-50 dark:bg-purple-950/40' },
+    { href: '/admin/clients',   label: h.clients,    value: totalClients,    Icon: Users,        accent: 'text-orange-700 dark:text-orange-400',   bg: 'bg-orange-50 dark:bg-orange-950/40' },
     { href: '/commandes',       label: h.orders,     value: totalCommandes,  Icon: ShoppingCart, accent: 'text-blue-600   dark:text-blue-400',     bg: 'bg-blue-50   dark:bg-blue-950/40'   },
-    { href: '/admin/vendeurs',  label: h.activeSellers, value: vendeursActifs, Icon: Store,       accent: 'text-teal-600  dark:text-teal-400',     bg: 'bg-teal-50   dark:bg-teal-950/40'  },
+    { href: '/admin/vendeurs',  label: h.activeSellers, value: vendeursActifs, Icon: Store,       accent: 'text-emerald-600  dark:text-emerald-400',     bg: 'bg-emerald-50   dark:bg-emerald-950/40'  },
   ]
 
   return (

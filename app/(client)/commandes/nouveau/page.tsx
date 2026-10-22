@@ -111,21 +111,21 @@ function ExpeditionSelector({
       {METHODES_EXPEDITION.map(opt => (
         <button key={opt.label} type="button" onClick={() => onChange(vendeurKey, opt.label)}
           className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border-2 text-sm transition-all ${
-            selected === opt.label
-              ? 'border-orange-700 bg-orange-50 dark:bg-orange-950/60'
-              : 'border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600'
-          }`}>
+ selected === opt.label
+ ? 'border-orange-700 bg-orange-50 dark:bg-orange-950/60'
+ : 'border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600'
+ }`}>
           <div className="flex items-center gap-2.5 text-start">
             <div className={`w-3.5 h-3.5 rounded-full border-2 shrink-0 flex items-center justify-center ${
-              selected === opt.label ? 'border-orange-700' : 'border-stone-300 dark:border-stone-600'
-            }`}>
+ selected === opt.label ? 'border-orange-700' : 'border-stone-300 dark:border-stone-600'
+ }`}>
               {selected === opt.label && <div className="w-2 h-2 rounded-full bg-orange-700" />}
             </div>
             <div>
               <p className={`font-medium text-xs ${selected === opt.label ? 'text-orange-700 dark:text-orange-400' : 'text-stone-700 dark:text-stone-300'}`}>
                 {tr(t.orders.shipping, opt.label)}
               </p>
-              <p className="text-[10px] text-stone-400">{tr(t.orders.shippingDelay, opt.label)}</p>
+              <p className="text-xs text-stone-400">{tr(t.orders.shippingDelay, opt.label)}</p>
             </div>
           </div>
           <span className={`font-bold text-sm shrink-0 ${selected === opt.label ? 'text-orange-700 dark:text-orange-400' : 'text-stone-500 dark:text-stone-400'}`}>
@@ -358,7 +358,7 @@ export default function NouvelleCommandePage() {
                 className="grid grid-cols-1 sm:grid-cols-2 gap-3"
               />
               {lieuDepuisProfil && (
-                <p className="text-[10px] text-stone-400 dark:text-stone-500 mt-1.5">{c.fromProfile}</p>
+                <p className="text-xs text-stone-400 dark:text-stone-500 mt-1.5">{c.fromProfile}</p>
               )}
             </div>
 
@@ -385,28 +385,28 @@ export default function NouvelleCommandePage() {
                       onClick={() => !isDisabled && setModePaiement(m.label)}
                       disabled={isDisabled}
                       className={`relative flex flex-col items-start gap-1.5 px-3 py-3 rounded-xl border-2 text-start transition-all duration-200 ${
-                        isDisabled
-                          ? 'border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/40 opacity-50 cursor-not-allowed'
-                          : isActive
-                            ? 'border-orange-700 bg-orange-50 dark:bg-orange-950/60 shadow-sm shadow-orange-100 dark:shadow-orange-900'
-                            : 'border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600 bg-white dark:bg-stone-900'
-                      }`}>
+ isDisabled
+ ? 'border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/40 opacity-50 cursor-not-allowed'
+ : isActive
+ ? 'border-orange-700 bg-orange-50 dark:bg-orange-950/60 shadow-sm shadow-orange-100 dark:shadow-orange-900'
+ : 'border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600 bg-white dark:bg-stone-900'
+ }`}>
                       <div className="flex items-center justify-between w-full">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                          isDisabled ? 'bg-stone-100 dark:bg-stone-800' : isActive ? 'bg-orange-100 dark:bg-orange-900' : 'bg-stone-100 dark:bg-stone-800'
-                        }`}>
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+ isDisabled ? 'bg-stone-100 dark:bg-stone-800' : isActive ? 'bg-orange-100 dark:bg-orange-900' : 'bg-stone-100 dark:bg-stone-800'
+ }`}>
                           <Icon className={`w-4 h-4 ${
-                            isDisabled ? 'text-stone-400 dark:text-stone-600' : isActive ? 'text-orange-700 dark:text-orange-400' : 'text-stone-500 dark:text-stone-400'
-                          }`} />
+ isDisabled ? 'text-stone-400 dark:text-stone-600' : isActive ? 'text-orange-700 dark:text-orange-400' : 'text-stone-500 dark:text-stone-400'
+ }`} />
                         </div>
                         {isDisabled ? <Lock className="w-3 h-3 text-stone-400 dark:text-stone-600 shrink-0" />
                           : isActive ? <Check className="w-3.5 h-3.5 text-orange-700 shrink-0" /> : null}
                       </div>
                       <div>
                         <p className={`text-xs font-semibold leading-tight ${
-                          isDisabled ? 'text-stone-400 dark:text-stone-600' : isActive ? 'text-orange-700 dark:text-orange-400' : 'text-stone-700 dark:text-stone-300'
-                        }`}>{tr(t.orders.payment, m.label)}</p>
-                        {isDisabled && <p className="text-[10px] text-stone-400 dark:text-stone-600 mt-0.5 leading-tight">{c.soonAvailable}</p>}
+ isDisabled ? 'text-stone-400 dark:text-stone-600' : isActive ? 'text-orange-700 dark:text-orange-400' : 'text-stone-700 dark:text-stone-300'
+ }`}>{tr(t.orders.payment, m.label)}</p>
+                        {isDisabled && <p className="text-xs text-stone-400 dark:text-stone-600 mt-0.5 leading-tight">{c.soonAvailable}</p>}
                       </div>
                     </button>
                   )
@@ -419,7 +419,7 @@ export default function NouvelleCommandePage() {
               <label className={labelCls}>
                 <Truck className="w-4 h-4 inline me-1 text-orange-700" /> {c.shippingBySeller}
                 {vendeurCalcs.length > 1 && (
-                  <span className="ms-2 text-[10px] font-normal text-stone-400">
+                  <span className="ms-2 text-xs font-normal text-stone-400">
                     {c.sellersSeparate(vendeurCalcs.length)}
                   </span>
                 )}
@@ -433,7 +433,7 @@ export default function NouvelleCommandePage() {
                       {/* ── Header vendeur : VendeurButton ── */}
                       <div className="px-3 pt-3 pb-2.5 border-b border-stone-100 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-800/30">
                         {vendeurCalcs.length > 1 && (
-                          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+                          <p className="text-xs font-bold text-stone-400 mb-2 flex items-center gap-1">
                             <Store className="w-3 h-3" /> {c.orderNofM(idx + 1, vendeurCalcs.length)}
                           </p>
                         )}
@@ -490,7 +490,7 @@ export default function NouvelleCommandePage() {
                 const key = vc.vendeurId ?? '__admin__'
                 return (
                   <div key={key}>
-                    <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest flex items-center gap-1 mb-2">
+                    <p className="text-xs font-bold text-stone-400 dark:text-stone-500 flex items-center gap-1 mb-2">
                       <Store className="w-3 h-3" />
                       {vc.vendeurInfo?.nomBoutique ?? t.common.appName}
                     </p>
@@ -504,7 +504,7 @@ export default function NouvelleCommandePage() {
                         const img        = item.variant?.images?.[0] ?? item.product.images?.[0]
                         return (
                           <div key={item.id} className="flex gap-2.5 items-start">
-                            <div className="w-9 h-9 bg-stone-100 dark:bg-stone-800 rounded-lg overflow-hidden shrink-0">
+                            <div className="w-9 h-9 bg-stone-100 dark:bg-stone-800 rounded-xl overflow-hidden shrink-0">
                               {img ? <Image src={img} alt={item.product.nom} width={36} height={36} className="w-full h-full object-cover" />
                                    : <div className="w-full h-full flex items-center justify-center"><Package className="w-4 h-4 text-stone-400" /></div>}
                             </div>
@@ -516,11 +516,11 @@ export default function NouvelleCommandePage() {
                                     <span className="w-2.5 h-2.5 rounded-full border border-stone-300 shrink-0 inline-block"
                                       style={{ backgroundColor: item.variant.couleur }} />
                                   )}
-                                  {item.variant && <span className="text-[10px] text-stone-400">{item.variant.nom}</span>}
+                                  {item.variant && <span className="text-xs text-stone-400">{item.variant.nom}</span>}
                                   {item.variantOption && (
                                     <>
                                       <ChevronRight className="w-2.5 h-2.5 text-stone-300 shrink-0 rtl-flip" />
-                                      <span className="text-[10px] text-stone-400 flex items-center gap-0.5">
+                                      <span className="text-xs text-stone-400 flex items-center gap-0.5">
                                         <Ruler className="w-2.5 h-2.5" />{typeOpt} {item.variantOption.valeur}
                                       </span>
                                     </>
@@ -532,8 +532,8 @@ export default function NouvelleCommandePage() {
                                 {estReduit ? (
                                   <>
                                     <span className="text-xs font-semibold text-green-700 dark:text-green-400">{fmt.money(prixUnit)} {DA}{c.perUnit}</span>
-                                    <span className="text-[10px] text-stone-400 line-through">{fmt.money(prixBase)}</span>
-                                    <span className="text-[10px] bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 px-1 py-0.5 rounded-full font-bold flex items-center gap-0.5">
+                                    <span className="text-xs text-stone-400 line-through">{fmt.money(prixBase)}</span>
+                                    <span className="text-xs bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 px-1 py-0.5 rounded-full font-bold flex items-center gap-0.5">
                                       <TrendingDown className="w-2.5 h-2.5" />−{Math.round((1 - prixUnit / prixBase) * 100)}%
                                     </span>
                                   </>
@@ -590,7 +590,7 @@ export default function NouvelleCommandePage() {
           className="fixed inset-0 z-60 flex items-end sm:items-center justify-center bg-black/50 px-4"
           onClick={e => { if (e.target === e.currentTarget) setShowModal(false) }}
         >
-          <div className="bg-white dark:bg-stone-900 rounded-t-3xl sm:rounded-2xl shadow-2xl border border-stone-100 dark:border-stone-800 w-full max-w-md max-h-[calc(100dvh-5rem)] sm:max-h-[90vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
+          <div className="bg-white dark:bg-stone-900 rounded-t-2xl sm:rounded-2xl shadow-2xl border border-stone-100 dark:border-stone-800 w-full max-w-md max-h-[calc(100dvh-5rem)] sm:max-h-[90vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
             <div className="flex justify-center pt-3 pb-1 sm:hidden">
               <div className="w-10 h-1 rounded-full bg-stone-200 dark:bg-stone-700" />
             </div>

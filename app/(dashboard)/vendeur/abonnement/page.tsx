@@ -10,7 +10,7 @@ import { tr } from '@/lib/i18n'
 const TARIFS = SELLER_SUBSCRIPTION_PRICING
 
 const NIVEAU_COLOR: Record<string, string> = {
-  NIVEAU_1: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
+  NIVEAU_1: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300',
   NIVEAU_2: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
   NIVEAU_3: 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300',
 }
@@ -45,7 +45,7 @@ export default async function VendeurAbonnementPage() {
 
   const statutConfig = {
     GRATUIT:  { label: b.status.GRATUIT, color: 'text-emerald-600 dark:text-emerald-400', icon: CheckCircle2, bg: 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800' },
-    ACTIF:    { label: b.status.ACTIF, color: 'text-teal-600 dark:text-teal-400',       icon: CheckCircle2, bg: 'bg-teal-50 dark:bg-teal-950/40 border-teal-200 dark:border-teal-800' },
+    ACTIF:    { label: b.status.ACTIF, color: 'text-emerald-600 dark:text-emerald-400',       icon: CheckCircle2, bg: 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800' },
     EXPIRE:   { label: b.status.EXPIRE, color: 'text-red-600 dark:text-red-400',        icon: XCircle,      bg: 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800' },
     SUSPENDU: { label: b.status.SUSPENDU, color: 'text-orange-600 dark:text-orange-400',  icon: AlertTriangle, bg: 'bg-orange-50 dark:bg-orange-950/40 border-orange-200 dark:border-orange-800' },
   }
@@ -98,7 +98,7 @@ export default async function VendeurAbonnementPage() {
           {abo.statut !== 'EXPIRE' && (
             <div className="w-full bg-stone-200 dark:bg-stone-700 rounded-full h-2 mb-4">
               <div
-                className={`h-2 rounded-full transition-all ${joursRestants <= 7 ? 'bg-orange-500' : 'bg-teal-500'}`}
+                className={`h-2 rounded-full transition-all ${joursRestants <= 7 ? 'bg-orange-500' : 'bg-emerald-500'}`}
                 style={{ width: `${progressPct}%` }}
               />
             </div>
@@ -110,7 +110,7 @@ export default async function VendeurAbonnementPage() {
               <p className="font-semibold text-stone-900 dark:text-stone-100">
                 {levelOf(abo.niveau).label}
               </p>
-              <span className={`mt-1 inline-block text-[10px] px-1.5 py-0.5 rounded-full font-medium ${NIVEAU_COLOR[abo.niveau] ?? ''}`}>
+              <span className={`mt-1 inline-block text-xs px-1.5 py-0.5 rounded-full font-medium ${NIVEAU_COLOR[abo.niveau] ?? ''}`}>
                 {levelOf(abo.niveau).desc}
               </span>
             </div>
@@ -153,14 +153,14 @@ export default async function VendeurAbonnementPage() {
             return (
               <div key={key}
                 className={`rounded-2xl border p-4 flex justify-between items-center transition ${
-                  isActuel
-                    ? 'border-emerald-400 dark:border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40'
-                    : 'border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 hover:border-stone-300 dark:hover:border-stone-600'
-                }`}>
+ isActuel
+ ? 'border-emerald-400 dark:border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40'
+ : 'border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 hover:border-stone-300 dark:hover:border-stone-600'
+ }`}>
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <p className="font-semibold text-stone-900 dark:text-stone-100">{levelOf(key).label}</p>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${NIVEAU_COLOR[key] ?? ''}`}>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${NIVEAU_COLOR[key] ?? ''}`}>
                       {levelOf(key).desc}
                     </span>
                   </div>
@@ -186,21 +186,21 @@ export default async function VendeurAbonnementPage() {
 
       <div className="grid gap-3 md:grid-cols-3">
         <div className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4">
-          <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400 text-xs uppercase tracking-[0.18em] mb-2">
+          <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400 text-xs mb-2">
             <CreditCard className="w-3.5 h-3.5" /> {b.subscription}
           </div>
           <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{fmt.price(billing.subscriptionAmount)}</p>
           <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">{b.subscriptionDesc}</p>
         </div>
         <div className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4">
-          <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400 text-xs uppercase tracking-[0.18em] mb-2">
+          <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400 text-xs mb-2">
             <Percent className="w-3.5 h-3.5" /> {b.salesFees}
           </div>
           <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{fmt.price(billing.salesFee)}</p>
           <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">{b.salesFeesDesc(Math.round(SELLER_SALE_FEE_RATE * 100), fmt.price(billing.grossSales))}</p>
         </div>
         <div className="rounded-2xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 p-4">
-          <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 text-xs uppercase tracking-[0.18em] mb-2">
+          <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 text-xs mb-2">
             <Receipt className="w-3.5 h-3.5" /> {b.totalDue}
           </div>
           <p className="text-2xl font-bold text-emerald-800 dark:text-emerald-200">{fmt.price(billing.totalDue)}</p>

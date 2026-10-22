@@ -3,7 +3,7 @@ const dashboard = {
   nav: {
     overview: 'Tableau de bord',
     products: 'Produits',
-    myProducts: 'Mes Produits',
+    myProducts: 'Mes produits',
     categories: 'Catégories',
     clients: 'Clients',
     sellers: 'Vendeurs',

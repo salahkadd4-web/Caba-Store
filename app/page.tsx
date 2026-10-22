@@ -85,7 +85,7 @@ export default async function HomePage() {
             <CabaLogo className="w-7 h-7 text-orange-700 dark:text-orange-400" />
             <span className="text-base font-bold tracking-tight text-stone-900 dark:text-stone-50">{t.common.appName}</span>
           </div>
-          <span className="inline-flex items-center gap-1.5 bg-orange-50 dark:bg-orange-950/50 text-orange-700 dark:text-orange-400 text-[11px] font-semibold px-2.5 py-1 rounded-full border border-orange-200 dark:border-orange-800">
+          <span className="inline-flex items-center gap-1.5 bg-orange-50 dark:bg-orange-950/50 text-orange-700 dark:text-orange-400 text-xs font-semibold px-2.5 py-1 rounded-full border border-orange-200 dark:border-orange-800">
             <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
             {h.delivery48}
           </span>
@@ -98,7 +98,7 @@ export default async function HomePage() {
           <div className="absolute end-4 -bottom-4 w-20 h-20 rounded-full bg-white/10" />
           <div className="relative px-5 py-5 flex items-center gap-4">
             <div className="flex-1">
-              <p className="text-orange-200 text-[10px] font-bold uppercase tracking-[0.2em] mb-1">{h.welcome}</p>
+              <p className="text-orange-200 text-xs font-bold mb-1">{h.welcome}</p>
               <h1 className="text-white text-[22px] font-bold leading-snug tracking-tight mb-3">
                 {h.mobileTitle1}<br />{h.mobileTitle2}
               </h1>
@@ -124,7 +124,7 @@ export default async function HomePage() {
                 className="flex items-center gap-1.5 shrink-0 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-full px-3 py-1.5 shadow-sm"
               >
                 <Icon className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400 shrink-0" />
-                <span className="text-[11px] font-semibold text-stone-600 dark:text-stone-300 whitespace-nowrap">
+                <span className="text-xs font-semibold text-stone-600 dark:text-stone-300 whitespace-nowrap">
                   {label}
                 </span>
               </div>
@@ -173,7 +173,7 @@ export default async function HomePage() {
               <div className="w-12 h-12 rounded-2xl bg-orange-700/20 flex items-center justify-center mb-4">
                 <Icon className="w-6 h-6 text-orange-400" />
               </div>
-              <h3 className="text-stone-100 text-base font-semibold mb-2 tracking-wide">{title}</h3>
+              <h3 className="text-stone-100 text-base font-semibold mb-2 ">{title}</h3>
               <p className="text-stone-400 text-sm font-light max-w-xs">{desc}</p>
             </div>
           ))}
@@ -203,7 +203,7 @@ export default async function HomePage() {
           <div className="text-center mt-10 md:mt-16">
             <Link
               href="/produits"
-              className="border border-stone-800 dark:border-stone-400 text-stone-800 dark:text-stone-200 hover:bg-stone-900 hover:text-white dark:hover:bg-stone-100 dark:hover:text-stone-900 text-xs uppercase tracking-[0.3em] px-12 py-4 transition-all duration-300 inline-block rounded-xl"
+              className="border border-stone-800 dark:border-stone-400 text-stone-800 dark:text-stone-200 hover:bg-stone-900 hover:text-white dark:hover:bg-stone-100 dark:hover:text-stone-900 text-xs px-12 py-4 transition-all duration-300 inline-block rounded-xl"
             >
               {h.seeAll}
             </Link>
@@ -253,7 +253,7 @@ async function BestSellersSection() {
           key={produit.id}
           produit={produit as unknown as ProductCardData}
           badges={
-            <span className="text-[10px] bg-orange-600 text-white font-bold px-2 py-0.5 rounded-full shadow flex items-center gap-1">
+            <span className="text-xs bg-orange-600 text-white font-bold px-2 py-0.5 rounded-full shadow flex items-center gap-1">
               <Flame className="w-3 h-3" /> #{idx + 1}
             </span>
           }
@@ -335,7 +335,7 @@ async function CategoriesSection() {
                 href={`/categories/${cat.id}`}
                 className="text-xs font-semibold text-orange-700 dark:text-orange-500 hover:text-orange-800"
               >
-                <span className="hidden sm:inline uppercase tracking-wider border border-orange-200 dark:border-orange-800 hover:border-orange-400 px-3 py-1.5 rounded-full transition-colors">{t.home.seeAllShort}</span>
+                <span className="hidden sm:inline border border-orange-200 dark:border-orange-800 hover:border-orange-400 px-3 py-1.5 rounded-full transition-colors">{t.home.seeAllShort}</span>
                 <span className="sm:hidden text-lg leading-none inline-block rtl-flip">›</span>
               </Link>
             </div>
@@ -351,7 +351,7 @@ async function CategoriesSection() {
                     compact
                     badges={
                       rang ? (
-                        <span key="rank" className="w-6 h-6 flex items-center justify-center text-[11px] font-bold bg-stone-900/80 text-white rounded-full backdrop-blur-sm shadow">
+                        <span key="rank" className="w-6 h-6 flex items-center justify-center text-xs font-bold bg-stone-900/80 text-white rounded-full backdrop-blur-sm shadow">
                           {rang}
                         </span>
                       ) : undefined
@@ -414,7 +414,7 @@ function SectionHeader({
       {logo && (
         <CabaLogo className="hidden md:block w-16 h-16 text-orange-700 dark:text-orange-500 mx-auto mb-4 opacity-80" />
       )}
-      <p className="text-xs font-semibold uppercase tracking-[0.4em] text-orange-700 dark:text-orange-500 mb-3 md:mb-4 flex items-center justify-center gap-2">
+      <p className="text-xs font-semibold text-orange-700 dark:text-orange-500 mb-3 md:mb-4 flex items-center justify-center gap-2">
         {eyebrow}
       </p>
       <h2 className="text-2xl md:text-4xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">

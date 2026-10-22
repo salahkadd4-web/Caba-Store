@@ -51,12 +51,12 @@ export default function QteInput({
   const isSm = size === 'sm'
 
   const btnCls = isSm
-    ? 'w-6 h-6 rounded-md flex items-center justify-center text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-950/40 transition disabled:opacity-30 shrink-0'
-    : 'w-8 h-8 rounded-lg bg-stone-100 dark:bg-stone-800 flex items-center justify-center hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-300 transition disabled:opacity-30 shrink-0'
+    ? 'w-6 h-6 rounded-xl flex items-center justify-center text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-950/40 transition disabled:opacity-30 shrink-0'
+    : 'w-8 h-8 rounded-xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-300 transition disabled:opacity-30 shrink-0'
 
   const inputCls = isSm
-    ? 'w-10 text-center font-bold text-sm tabular-nums bg-white dark:bg-stone-900 text-stone-800 dark:text-stone-200 outline-none border border-stone-200 dark:border-stone-700 rounded-lg py-0.5 focus:ring-2 focus:ring-orange-700/20 focus:border-orange-700 dark:focus:border-orange-400 disabled:opacity-50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none transition'
-    : 'w-14 text-center font-bold text-sm tabular-nums bg-white dark:bg-stone-900 text-stone-800 dark:text-stone-200 outline-none border border-stone-200 dark:border-stone-700 rounded-lg py-1.5 focus:ring-2 focus:ring-orange-700/20 focus:border-orange-700 dark:focus:border-orange-400 disabled:opacity-50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none transition'
+    ? 'w-10 text-center font-bold text-sm tabular-nums bg-white dark:bg-stone-900 text-stone-800 dark:text-stone-200 outline-none border border-stone-200 dark:border-stone-700 rounded-xl py-0.5 focus:ring-2 focus:ring-orange-700/20 focus:border-orange-700 dark:focus:border-orange-400 disabled:opacity-50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none transition'
+    : 'w-14 text-center font-bold text-sm tabular-nums bg-white dark:bg-stone-900 text-stone-800 dark:text-stone-200 outline-none border border-stone-200 dark:border-stone-700 rounded-xl py-1.5 focus:ring-2 focus:ring-orange-700/20 focus:border-orange-700 dark:focus:border-orange-400 disabled:opacity-50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none transition'
 
   return (
     <div className="flex items-center gap-1">

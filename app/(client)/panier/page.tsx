@@ -163,7 +163,7 @@ function ProductEditor({
         </div>
 
         <div className="flex-1">
-          <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-2">
+          <p className="text-xs font-bold text-stone-400 dark:text-stone-500 mb-2">
             {isColor ? c.color : c.variant}
           </p>
           <div className="flex flex-wrap gap-2">
@@ -181,19 +181,19 @@ function ProductEditor({
                   onClick={() => { if (outOfStock) return; setActiveVId(v.id); setImgPreview(v.images?.[0] ?? product.images?.[0] ?? null) }}
                   disabled={outOfStock}
                   className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border-2 text-xs font-semibold transition-all ${
-                    isActive
-                      ? 'border-orange-700 dark:border-orange-400 bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-300 shadow-sm'
-                      : outOfStock
-                        ? 'border-stone-200 dark:border-stone-700 opacity-30 cursor-not-allowed'
-                        : 'border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-orange-300 dark:hover:border-orange-600'
-                  }`}>
+ isActive
+ ? 'border-orange-700 dark:border-orange-400 bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-300 shadow-sm'
+ : outOfStock
+ ? 'border-stone-200 dark:border-stone-700 opacity-30 cursor-not-allowed'
+ : 'border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-orange-300 dark:hover:border-orange-600'
+ }`}>
                   {v.couleur && (
                     <span className="w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-500 shrink-0 shadow-sm"
                       style={{ backgroundColor: v.couleur }} />
                   )}
                   {v.nom}
                   {qteV > 0 && (
-                    <span className="ms-1 bg-orange-700 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shrink-0">
+                    <span className="ms-1 bg-orange-700 text-white text-xs font-bold min-w-5 h-5 px-1 rounded-full flex items-center justify-center shrink-0">
                       {qteV}
                     </span>
                   )}
@@ -209,7 +209,7 @@ function ProductEditor({
         <div>
           {hasOptions ? (
             <>
-              <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-2 flex items-center gap-1">
+              <p className="text-xs font-bold text-stone-400 dark:text-stone-500 mb-2 flex items-center gap-1">
                 <Ruler className="w-3 h-3" /> {typeOpt}
                 <span className="font-normal normal-case text-stone-400 ms-1">{c.clickToAdd}</span>
               </p>
@@ -224,18 +224,18 @@ function ProductEditor({
                   return (
                     <div key={opt.id}
                       className={`relative flex items-center rounded-xl border-2 overflow-hidden text-sm transition-all ${
-                        outStock
-                          ? 'border-stone-200 dark:border-stone-700 opacity-30 cursor-not-allowed'
-                          : qt > 0
-                            ? 'border-orange-700 dark:border-orange-400 bg-orange-50 dark:bg-orange-950/30 shadow-sm'
-                            : 'border-stone-200 dark:border-stone-700 hover:border-orange-400 dark:hover:border-orange-500'
-                      }`}>
+ outStock
+ ? 'border-stone-200 dark:border-stone-700 opacity-30 cursor-not-allowed'
+ : qt > 0
+ ? 'border-orange-700 dark:border-orange-400 bg-orange-50 dark:bg-orange-950/30 shadow-sm'
+ : 'border-stone-200 dark:border-stone-700 hover:border-orange-400 dark:hover:border-orange-500'
+ }`}>
                       <button type="button"
                         onClick={() => !outStock && qt === 0 && handleChange(activeVariant.id, opt.id, 1)}
                         disabled={outStock || (qt > 0)}
                         className={`min-w-10 px-3 h-9 flex items-center justify-center font-semibold transition-all ${
-                          outStock ? 'cursor-not-allowed line-through text-stone-400' : qt > 0 ? 'cursor-default text-orange-700 dark:text-orange-300' : 'cursor-pointer text-stone-700 dark:text-stone-200'
-                        }`}>
+ outStock ? 'cursor-not-allowed line-through text-stone-400' : qt > 0 ? 'cursor-default text-orange-700 dark:text-orange-300' : 'cursor-pointer text-stone-700 dark:text-stone-200'
+ }`}>
                         {opt.valeur}
                       </button>
                       {qt > 0 && (
@@ -250,7 +250,7 @@ function ProductEditor({
                         </div>
                       )}
                       {maxReach && qt > 0 && (
-                        <span className="absolute -top-1.5 -end-1.5 bg-orange-700 text-white text-[9px] font-bold px-1 rounded-full shadow leading-tight">MAX</span>
+                        <span className="absolute -top-1.5 -end-1.5 bg-orange-700 text-white text-xs font-bold px-1 rounded-full shadow leading-tight">MAX</span>
                       )}
                     </div>
                   )
@@ -278,7 +278,7 @@ function ProductEditor({
       {/* Récap lignes */}
       {items.length > 0 && (
         <div className="bg-stone-50 dark:bg-stone-800/50 rounded-xl overflow-hidden">
-          <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest px-3 pt-2.5 pb-1.5">
+          <p className="text-xs font-bold text-stone-400 dark:text-stone-500 px-3 pt-2.5 pb-1.5">
             {c.inYourCart}
           </p>
           <div className="divide-y divide-stone-100 dark:divide-stone-800">
@@ -373,12 +373,12 @@ function ProductCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-1">
             <div className="min-w-0">
-              <p className="text-[11px] text-orange-700 dark:text-orange-400 font-semibold uppercase tracking-wider mb-0.5 truncate">{product.category.nom}</p>
+              <p className="text-xs text-orange-700 dark:text-orange-400 font-semibold mb-0.5 truncate">{product.category.nom}</p>
               <h3 className="font-semibold text-stone-800 dark:text-stone-100 text-sm leading-snug line-clamp-2">{product.nom}</h3>
             </div>
             <button type="button" onClick={() => onDeleteGroup(items)}
               title={c.removeProduct}
-              className="text-stone-300 dark:text-stone-600 hover:text-red-500 dark:hover:text-red-400 transition p-1 shrink-0 rounded-lg hover:bg-red-50 dark:hover:bg-red-950">
+              className="text-stone-300 dark:text-stone-600 hover:text-red-500 dark:hover:text-red-400 transition p-1 shrink-0 rounded-xl hover:bg-red-50 dark:hover:bg-red-950">
               <Trash2 className="w-4 h-4" />
             </button>
           </div>
@@ -387,7 +387,7 @@ function ProductCard({
           <div className="flex flex-wrap gap-1 mt-2">
             {items.map(item => (
               <span key={item.id}
-                className="inline-flex items-center gap-1 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 text-[11px] px-2 py-0.5 rounded-full">
+                className="inline-flex items-center gap-1 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 text-xs px-2 py-0.5 rounded-full">
                 {item.variant?.couleur && (
                   <span className="w-2.5 h-2.5 rounded-full border border-stone-300 dark:border-stone-600 shrink-0"
                     style={{ backgroundColor: item.variant.couleur }} />
@@ -407,7 +407,7 @@ function ProductCard({
             {isReduit && (
               <>
                 <span className="text-xs text-stone-400 line-through">{fmt.money(prixBase)} {DA}</span>
-                <span className="text-[10px] bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-300 font-semibold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                <span className="text-xs bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-300 font-semibold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                   <TrendingDown className="w-2.5 h-2.5" />−{Math.round((1 - prixUnit / prixBase) * 100)}%
                 </span>
               </>
@@ -416,7 +416,7 @@ function ProductCard({
 
           {/* Incitation palier suivant */}
           {prochainPalier && (
-            <p className="text-[11px] text-orange-700 dark:text-orange-400 flex items-center gap-1 mt-1">
+            <p className="text-xs text-orange-700 dark:text-orange-400 flex items-center gap-1 mt-1">
               <TrendingDown className="w-3 h-3 shrink-0" />
               {c.nextTier(prochainPalier.minQte - totalQte, `${fmt.money(prochainPalier.prix)} ${DA}`)}
             </p>
@@ -437,22 +437,22 @@ function ProductCard({
       {/* ── FOOTER ── */}
       <div className="border-t border-stone-100 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-800/40 px-4 py-2.5 flex items-center justify-between gap-3">
         <div>
-          <p className="text-[10px] text-stone-400 uppercase tracking-wide">
+          <p className="text-xs text-stone-400 ">
             {c.subtotalLine(totalQte)}{isReduit && economie > 0 && c.savingsShort(`${fmt.money(economie)} ${DA}`)}
           </p>
           <div className="flex items-baseline gap-1.5">
             <p className="font-semibold text-stone-800 dark:text-stone-100">{fmt.money(sousTotal)} {DA}</p>
-            {isReduit && <p className="text-[10px] text-stone-400 line-through">{fmt.money(prixBase * totalQte)} {DA}</p>}
+            {isReduit && <p className="text-xs text-stone-400 line-through">{fmt.money(prixBase * totalQte)} {DA}</p>}
           </div>
         </div>
 
         <button type="button"
           onClick={() => setOpen(o => !o)}
           className={`flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl border-2 transition-all active:scale-95 ${
-            open
-              ? 'border-orange-700 dark:border-orange-400 bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-300'
-              : 'border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400 hover:border-orange-400 dark:hover:border-orange-500 hover:text-orange-700 dark:hover:text-orange-400'
-          }`}>
+ open
+ ? 'border-orange-700 dark:border-orange-400 bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-300'
+ : 'border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400 hover:border-orange-400 dark:hover:border-orange-500 hover:text-orange-700 dark:hover:text-orange-400'
+ }`}>
           {open
             ? <><ChevronUp className="w-3.5 h-3.5" /> {c.close}</>
             : <><Pencil className="w-3.5 h-3.5" /> {c.editSelection} <ChevronDown className="w-3.5 h-3.5" /></>
@@ -562,7 +562,7 @@ export default function PanierPage() {
 
   if (!panier || panier.items.length === 0) return (
     <div className="max-w-5xl mx-auto px-4 py-24 flex flex-col items-center text-center gap-4">
-      <div className="w-24 h-24 bg-stone-100 dark:bg-stone-800 rounded-3xl flex items-center justify-center">
+      <div className="w-24 h-24 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-center">
         <ShoppingCart className="w-12 h-12 text-stone-300 dark:text-stone-600" />
       </div>
       <div>
@@ -586,7 +586,7 @@ export default function PanierPage() {
       {/* En-tête */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-400 mb-0.5">
+          <p className="text-xs font-semibold text-orange-700 dark:text-orange-400 mb-0.5">
             {c.eyebrow}
           </p>
           <h1 className="text-2xl font-semibold tracking-tight text-stone-900 dark:text-stone-50 flex items-center gap-2">
@@ -612,11 +612,11 @@ export default function PanierPage() {
 
               {/* ── Header vendeur : VendeurButton + compteur ── */}
               <div className="bg-stone-50 dark:bg-stone-800/60 border border-b-0 border-stone-200 dark:border-stone-700 rounded-t-2xl px-4 py-3">
-                <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
+                <p className="text-xs font-bold text-stone-400 dark:text-stone-500 mb-2.5 flex items-center gap-1.5">
                   <Store className="w-3 h-3" />
                   {c.productsCount(vg.products.length)}
                   {vg.vendeurId === null && (
-                    <span className="ms-1 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400 px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide">
+                    <span className="ms-1 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400 px-1.5 py-0.5 rounded-full text-xs font-bold ">
                       {c.official}
                     </span>
                   )}
@@ -655,7 +655,7 @@ export default function PanierPage() {
               {vendeurGroups.map(vg => (
                 <div key={vg.vendeurId ?? '__admin__'}>
                   {/* Mini-header vendeur dans le résumé */}
-                  <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest flex items-center gap-1 mb-1.5">
+                  <p className="text-xs font-bold text-stone-400 dark:text-stone-500 flex items-center gap-1 mb-1.5">
                     <Store className="w-3 h-3" />
                     {vg.vendeurInfo?.nomBoutique ?? t.common.appName}
                   </p>
@@ -671,7 +671,7 @@ export default function PanierPage() {
                           </span>
                         </div>
                         {group.items.map(item => (
-                          <div key={item.id} className="flex justify-between text-[11px] text-stone-400 ps-2">
+                          <div key={item.id} className="flex justify-between text-xs text-stone-400 ps-2">
                             <span className="flex items-center gap-1 flex-wrap">
                               {item.variant?.couleur && (
                                 <span className="w-2.5 h-2.5 rounded-full border border-stone-300 inline-block shrink-0"
@@ -715,7 +715,7 @@ export default function PanierPage() {
           {/* Bannière économies */}
           {totalEconomies > 0 && (
             <div className="bg-green-50 dark:bg-green-950/50 border border-green-100 dark:border-green-900 rounded-xl px-4 py-3 flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-xl flex items-center justify-center shrink-0">
                 <TrendingDown className="w-4 h-4 text-green-700 dark:text-green-400" />
               </div>
               <div>
@@ -728,11 +728,11 @@ export default function PanierPage() {
           {/* Livraison calculée par vendeur — rappel */}
           {vendeurGroups.length > 1 && (
             <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/50 rounded-xl px-4 py-3">
-              <p className="text-[11px] text-amber-700 dark:text-amber-400 font-semibold mb-1 flex items-center gap-1">
+              <p className="text-xs text-amber-700 dark:text-amber-400 font-semibold mb-1 flex items-center gap-1">
                 <Store className="w-3 h-3" />
                 {c.sellersInCart(vendeurGroups.length)}
               </p>
-              <p className="text-[11px] text-amber-600 dark:text-amber-500">
+              <p className="text-xs text-amber-600 dark:text-amber-500">
                 {c.sellersInCartDesc}
               </p>
             </div>

@@ -1,11 +1,13 @@
 /**
  * Tokens de design partagés pour toutes les pages dashboard.
  * Palette : stone + orange (cohérente avec le côté client).
+ * Arrondis : 12 px (rounded-xl) pour les contrôles, 16 px (rounded-2xl) pour les cartes,
+ * rounded-full pour les pastilles uniquement.
  */
 
 // ─── Surfaces ──────────────────────────────────────────────────────────────────
 export const card   = 'bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl'
-export const cardSm = 'bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl'
+export const cardSm = 'bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl'
 
 // ─── Texte ─────────────────────────────────────────────────────────────────────
 export const heading = 'text-xl md:text-2xl font-bold text-stone-800 dark:text-stone-100'
@@ -30,11 +32,11 @@ export const btnPrimary =
   'px-4 py-2.5 rounded-xl text-sm transition-all disabled:opacity-50'
 
 export const btnPrimaryPurple =
-  'bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-semibold ' +
+  'bg-orange-700 hover:bg-orange-800 active:scale-95 text-white font-semibold ' +
   'px-4 py-2.5 rounded-xl text-sm transition-all disabled:opacity-50'
 
 export const btnPrimaryEmerald =
-  'bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-semibold ' +
+  'bg-orange-700 hover:bg-orange-800 active:scale-95 text-white font-semibold ' +
   'px-4 py-2.5 rounded-xl text-sm transition-all disabled:opacity-50'
 
 export const btnSecondary =
@@ -70,14 +72,14 @@ export const modalBox     = `bg-[#FAF7F2] dark:bg-stone-900 rounded-2xl shadow-2
 export const kpiCard =
   `${cardSm} p-4 flex flex-col gap-1 transition-all hover:border-stone-300 dark:hover:border-stone-600`
 export const kpiCardDark =
-  'bg-stone-900 dark:bg-stone-800 border border-stone-800 rounded-xl p-4 flex flex-col gap-1'
+  'bg-stone-900 dark:bg-stone-800 border border-stone-800 rounded-2xl p-4 flex flex-col gap-1'
 
 // ─── Badges statut commande ────────────────────────────────────────────────────
 export const statutOrderColor: Record<string, string> = {
-  EN_ATTENTE:     'bg-yellow-100 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300',
-  CONFIRMEE:      'bg-blue-100   dark:bg-blue-950   text-blue-700   dark:text-blue-300',
-  EN_PREPARATION: 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300',
-  EXPEDIEE:       'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300',
+  EN_ATTENTE:     'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300',
+  CONFIRMEE:      'bg-stone-100  dark:bg-stone-800  text-stone-700  dark:text-stone-200',
+  EN_PREPARATION: 'bg-orange-100 dark:bg-orange-950 text-orange-800 dark:text-orange-300',
+  EXPEDIEE:       'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300',
   LIVREE:         'bg-green-100  dark:bg-green-950  text-green-700  dark:text-green-300',
   ANNULEE:        'bg-red-100    dark:bg-red-950    text-red-700    dark:text-red-300',
 }

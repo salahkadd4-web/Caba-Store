@@ -56,9 +56,9 @@ type CommandeGroupe = {
 
 // Le libellé de chaque statut vient du dictionnaire (t.orders.status).
 const statutConfig: Record<string, { color: string; bg: string; icon: React.ElementType }> = {
-  EN_ATTENTE:     { color: 'text-yellow-700 dark:text-yellow-400', bg: 'bg-yellow-100 dark:bg-yellow-950',          icon: Loader2      },
+  EN_ATTENTE:     { color: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-100 dark:bg-amber-950',          icon: Loader2      },
   CONFIRMEE:      { color: 'text-orange-700 dark:text-orange-400', bg: 'bg-orange-100 dark:bg-orange-950/50',        icon: CheckCircle2 },
-  EN_PREPARATION: { color: 'text-purple-700 dark:text-purple-400', bg: 'bg-purple-100 dark:bg-purple-950',           icon: Wrench       },
+  EN_PREPARATION: { color: 'text-orange-800 dark:text-orange-400', bg: 'bg-orange-100 dark:bg-orange-950',           icon: Wrench       },
   EXPEDIEE:       { color: 'text-blue-700 dark:text-blue-400',     bg: 'bg-blue-100 dark:bg-blue-950',               icon: Truck        },
   LIVREE:         { color: 'text-green-700 dark:text-green-400',   bg: 'bg-green-100 dark:bg-green-950',             icon: PackageCheck },
   ANNULEE:        { color: 'text-red-700 dark:text-red-400',       bg: 'bg-red-100 dark:bg-red-950',                 icon: XCircle      },
@@ -122,8 +122,8 @@ function StatutBadge({ statut, size = 'sm' }: { statut: string; size?: 'xs' | 's
   const Icon = cfg.icon
   return (
     <span className={`inline-flex items-center gap-1 font-bold rounded-full ${cfg.bg} ${cfg.color} ${
-      size === 'xs' ? 'text-[10px] px-2 py-0.5' : 'text-xs px-2.5 py-1'
-    }`}>
+ size === 'xs' ? 'text-xs px-2 py-0.5' : 'text-xs px-2.5 py-1'
+ }`}>
       <Icon className={size === 'xs' ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
       {tr(t.orders.status, statut)}
     </span>
@@ -146,22 +146,22 @@ function ProgressStepper({ statut }: { statut: string }) {
           <div key={s} className="flex items-center flex-1">
             <div className="flex flex-col items-center flex-1">
               <div className={`w-7 h-7 rounded-full flex items-center justify-center ${
-                done
-                  ? active
-                    ? 'bg-orange-700 text-white ring-2 ring-orange-200 dark:ring-orange-900'
-                    : 'bg-orange-200 dark:bg-orange-900 text-orange-700 dark:text-orange-400'
-                  : 'bg-stone-100 dark:bg-stone-800 text-stone-400'
-              }`}>
+ done
+ ? active
+ ? 'bg-orange-700 text-white ring-2 ring-orange-200 dark:ring-orange-900'
+ : 'bg-orange-200 dark:bg-orange-900 text-orange-700 dark:text-orange-400'
+ : 'bg-stone-100 dark:bg-stone-800 text-stone-400'
+ }`}>
                 <Icon className="w-3.5 h-3.5" />
               </div>
-              <p className={`text-[9px] mt-1 text-center hidden sm:block leading-tight ${
-                done ? (active ? 'text-orange-700 dark:text-orange-400 font-semibold' : 'text-orange-400 dark:text-orange-700') : 'text-stone-300 dark:text-stone-600'
-              }`}>{tr(t.orders.status, s)}</p>
+              <p className={`text-xs mt-1 text-center hidden sm:block leading-tight ${
+ done ? (active ? 'text-orange-700 dark:text-orange-400 font-semibold' : 'text-orange-400 dark:text-orange-700') : 'text-stone-300 dark:text-stone-600'
+ }`}>{tr(t.orders.status, s)}</p>
             </div>
             {i < STATUT_ORDER.length - 1 && (
               <div className={`h-0.5 flex-1 mx-0.5 rounded-full ${
-                i < currentIndex && statut !== 'ANNULEE' ? 'bg-orange-400 dark:bg-orange-700' : 'bg-stone-100 dark:bg-stone-800'
-              }`} />
+ i < currentIndex && statut !== 'ANNULEE' ? 'bg-orange-400 dark:bg-orange-700' : 'bg-stone-100 dark:bg-stone-800'
+ }`} />
             )}
           </div>
         )
@@ -187,21 +187,21 @@ function MiniProgress({ statut }: { statut: string }) {
           <div key={s} className="flex items-center flex-1">
             <div className="flex flex-col items-center flex-1">
               <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                done
-                  ? active
-                    ? 'bg-orange-700 text-white ring-2 ring-orange-200 dark:ring-orange-900'
-                    : 'bg-orange-200 dark:bg-orange-900 text-orange-700 dark:text-orange-400'
-                  : 'bg-stone-100 dark:bg-stone-800 text-stone-400'
-              }`}>
+ done
+ ? active
+ ? 'bg-orange-700 text-white ring-2 ring-orange-200 dark:ring-orange-900'
+ : 'bg-orange-200 dark:bg-orange-900 text-orange-700 dark:text-orange-400'
+ : 'bg-stone-100 dark:bg-stone-800 text-stone-400'
+ }`}>
                 <Icon className="w-2.5 h-2.5" />
               </div>
             </div>
             {i < STATUT_ORDER.length - 1 && (
               <div className={`h-0.5 flex-1 mx-0.5 rounded-full ${
-                i < currentIndex && statut !== 'ANNULEE'
-                  ? 'bg-orange-400 dark:bg-orange-700'
-                  : 'bg-stone-100 dark:bg-stone-800'
-              }`} />
+ i < currentIndex && statut !== 'ANNULEE'
+ ? 'bg-orange-400 dark:bg-orange-700'
+ : 'bg-stone-100 dark:bg-stone-800'
+ }`} />
             )}
           </div>
         )
@@ -221,12 +221,12 @@ function VendeurSection({ cmd, showHeader }: { cmd: Order; showHeader: boolean }
       {showHeader && (
         <div className="flex items-center justify-between mb-2.5">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-stone-100 dark:bg-stone-800 rounded-lg flex items-center justify-center">
+            <div className="w-7 h-7 bg-stone-100 dark:bg-stone-800 rounded-xl flex items-center justify-center">
               <Store className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400" />
             </div>
             <div>
               <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">{nom}</p>
-              <p className="text-[10px] text-stone-400">#{cmd.id.slice(-6).toUpperCase()}</p>
+              <p className="text-xs text-stone-400">#{cmd.id.slice(-6).toUpperCase()}</p>
             </div>
           </div>
           <StatutBadge statut={cmd.statut} size="xs" />
@@ -245,7 +245,7 @@ function VendeurSection({ cmd, showHeader }: { cmd: Order; showHeader: boolean }
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-stone-700 dark:text-stone-300 line-clamp-2">{item.product.nom}</p>
-              <p className="text-[10px] text-stone-400">×{item.quantite} — {fmt.money(item.prix)} {o.perUnit}</p>
+              <p className="text-xs text-stone-400">×{item.quantite} — {fmt.money(item.prix)} {o.perUnit}</p>
             </div>
             <p className="text-xs font-semibold text-stone-700 dark:text-stone-300 shrink-0 tabular-nums">
               {fmt.money(item.prix * item.quantite)} {fmt.currency}
@@ -254,7 +254,7 @@ function VendeurSection({ cmd, showHeader }: { cmd: Order; showHeader: boolean }
         ))}
       </div>
 
-      <div className="flex items-center justify-between mt-2.5 pt-2.5 border-t border-stone-100 dark:border-stone-800 text-[10px] text-stone-400">
+      <div className="flex items-center justify-between mt-2.5 pt-2.5 border-t border-stone-100 dark:border-stone-800 text-xs text-stone-400">
         <span className="flex items-center gap-1"><Truck className="w-3 h-3" /> {tr(t.orders.shipping, cmd.methodeExpedition)}</span>
         <span>{o.deliveryFee(`${fmt.money(cmd.fraisLivraison ?? 700)} ${fmt.currency}`)}</span>
         <span className="font-semibold text-stone-600 dark:text-stone-300 tabular-nums">{fmt.money(cmd.total)} {fmt.currency}</span>
@@ -298,7 +298,7 @@ function BureauPanel({ groupe }: { groupe: CommandeGroupe }) {
       {/* Titre */}
       <div className="flex items-center gap-2 mb-3">
         <Building2 className={`w-4 h-4 ${titleCls}`} />
-        <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">
+        <p className="text-xs font-bold text-stone-500 dark:text-stone-400">
           {o.deliveryOffice}
         </p>
       </div>
@@ -313,13 +313,13 @@ function BureauPanel({ groupe }: { groupe: CommandeGroupe }) {
           return (
             <div key={cmd.id} className="flex items-center gap-2 text-xs">
               <div className={`w-2 h-2 rounded-full shrink-0 ${
-                isAtBureau ? 'bg-blue-500' : 'bg-stone-300 dark:bg-stone-600'
-              }`} />
+ isAtBureau ? 'bg-blue-500' : 'bg-stone-300 dark:bg-stone-600'
+ }`} />
               <span className="text-stone-600 dark:text-stone-300 font-medium truncate" style={{ maxWidth: 130 }}>
                 {nom}
               </span>
               <div className="flex-1 border-t border-dashed border-stone-200 dark:border-stone-700 mx-1" />
-              <span className={`text-[10px] font-semibold whitespace-nowrap flex items-center gap-0.5 ${cfg.color}`}>
+              <span className={`text-xs font-semibold whitespace-nowrap flex items-center gap-0.5 ${cfg.color}`}>
                 <Icon className="w-2.5 h-2.5" />
                 {isAtBureau ? o.parcelReceived : tr(t.orders.status, cmd.statut)}
               </span>
@@ -337,7 +337,7 @@ function BureauPanel({ groupe }: { groupe: CommandeGroupe }) {
           </span>
         </div>
         {!allAtBureau && (
-          <p className="text-[10px] text-stone-400 mt-1 ms-5">
+          <p className="text-xs text-stone-400 mt-1 ms-5">
             {o.waitingParcels(actives.length - atBureau.length)}
           </p>
         )}
@@ -406,11 +406,11 @@ function GroupeCard({ groupe }: { groupe: CommandeGroupe }) {
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="bg-stone-50 dark:bg-stone-800/60 rounded-xl p-3">
               <p className="text-stone-400 mb-1 flex items-center gap-1"><MapPin className="w-3 h-3" /> {o.address}</p>
-              <p className="font-medium text-stone-700 dark:text-stone-300 text-[11px] leading-snug">{adresseComplete}</p>
+              <p className="font-medium text-stone-700 dark:text-stone-300 text-xs leading-snug">{adresseComplete}</p>
             </div>
             <div className="bg-stone-50 dark:bg-stone-800/60 rounded-xl p-3">
               <p className="text-stone-400 mb-1 flex items-center gap-1"><CreditCard className="w-3 h-3" /> {o.payment}</p>
-              <p className="font-medium text-stone-700 dark:text-stone-300 text-[11px]">{tr(t.orders.payment, groupe.modePaiement)}</p>
+              <p className="font-medium text-stone-700 dark:text-stone-300 text-xs">{tr(t.orders.payment, groupe.modePaiement)}</p>
             </div>
           </div>
 
@@ -418,13 +418,13 @@ function GroupeCard({ groupe }: { groupe: CommandeGroupe }) {
           {!isMulti && (
             <>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-2 flex items-center gap-1">
+                <p className="text-xs font-bold text-stone-400 dark:text-stone-500 mb-2 flex items-center gap-1">
                   <Zap className="w-3 h-3" /> {o.tracking}
                 </p>
                 <ProgressStepper statut={singleOrder.statut} />
               </div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-3 flex items-center gap-1">
+                <p className="text-xs font-bold text-stone-400 dark:text-stone-500 mb-3 flex items-center gap-1">
                   <Package className="w-3 h-3" /> {o.items}
                 </p>
                 <VendeurSection cmd={singleOrder} showHeader={false} />
@@ -436,7 +436,7 @@ function GroupeCard({ groupe }: { groupe: CommandeGroupe }) {
           {isMulti && (
             <>
               <div className="space-y-4">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 flex items-center gap-1">
+                <p className="text-xs font-bold text-stone-400 dark:text-stone-500 flex items-center gap-1">
                   <Store className="w-3 h-3" /> {o.ordersBySeller}
                 </p>
                 {groupe.commandes.map((cmd, idx) => (
@@ -457,13 +457,13 @@ function GroupeCard({ groupe }: { groupe: CommandeGroupe }) {
             <div>
               {estLivre && (
                 retourDemande ? (
-                  <span className="flex items-center gap-1 text-[11px] font-semibold px-3 py-1.5 rounded-xl border border-stone-200 dark:border-stone-700 text-stone-400 cursor-default">
+                  <span className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-xl border border-stone-200 dark:border-stone-700 text-stone-400 cursor-default">
                     <Check className="w-3 h-3" /> {o.returnAlreadyRequested}
                   </span>
                 ) : (
                   <Link
                     href="/mes-retours"
-                    className="flex items-center gap-1 text-[11px] font-semibold px-3 py-1.5 rounded-xl border border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition"
+                    className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-xl border border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition"
                   >
                     {o.requestReturn}
                   </Link>
@@ -471,7 +471,7 @@ function GroupeCard({ groupe }: { groupe: CommandeGroupe }) {
               )}
             </div>
             <div className="text-end">
-              <p className="text-[10px] text-stone-400 mb-0.5">{isMulti ? o.grandTotal : o.total}</p>
+              <p className="text-xs text-stone-400 mb-0.5">{isMulti ? o.grandTotal : o.total}</p>
               <p className="font-bold text-lg text-orange-700 dark:text-orange-400 tabular-nums">
                 {fmt.money(groupe.total)} {fmt.currency}
               </p>
@@ -533,7 +533,7 @@ function CommandesContent() {
 
       <div className="flex items-end justify-between mb-8 flex-wrap gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-400 mb-1">{o.clientArea}</p>
+          <p className="text-xs font-semibold text-orange-700 dark:text-orange-400 mb-1">{o.clientArea}</p>
           <h1 className="text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">{o.title}</h1>
         </div>
         <Link
@@ -546,7 +546,7 @@ function CommandesContent() {
 
       {groupes.length === 0 ? (
         <div className="flex flex-col items-center text-center py-24 gap-4">
-          <div className="w-20 h-20 bg-stone-100 dark:bg-stone-800 rounded-3xl flex items-center justify-center">
+          <div className="w-20 h-20 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-center">
             <Package className="w-10 h-10 text-stone-300 dark:text-stone-600" />
           </div>
           <div>

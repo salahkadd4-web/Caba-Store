@@ -93,7 +93,7 @@ export default async function Footer() {
 function FooterColumn({ title, links }: { title: string; links: { href: string; label: string }[] }) {
   return (
     <div>
-      <h4 className="text-xs font-semibold uppercase tracking-wider text-stone-200 mb-4">{title}</h4>
+      <h4 className="text-xs font-semibold text-stone-200 mb-4">{title}</h4>
       <ul className="space-y-2.5">
         {links.map(l => (
           <li key={l.href}>
@@ -113,7 +113,7 @@ function FooterColumn({ title, links }: { title: string; links: { href: string; 
 function FooterContact({ f }: { f: Dictionary['layout']['footer'] }) {
   return (
     <div>
-      <h4 className="text-xs font-semibold uppercase tracking-wider text-stone-200 mb-4">{f.contact}</h4>
+      <h4 className="text-xs font-semibold text-stone-200 mb-4">{f.contact}</h4>
       <ul className="space-y-2.5 text-sm text-stone-400">
         <li className="flex items-center gap-2">
           <Mail className="w-4 h-4 text-orange-400 shrink-0" />

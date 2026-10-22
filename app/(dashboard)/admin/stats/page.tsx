@@ -197,7 +197,7 @@ function StatTable<T extends StatRow>({ title, icon, rows, getValue, getLabel, g
           <p className="p-5 text-xs text-stone-400 text-center">{emptyLabel}</p>
         ) : rows.map((r, i) => (
           <div key={r.id} className="px-5 py-3 flex items-center gap-3">
-            <span className={`text-lg font-bold shrink-0 w-6 ${i === 0 ? 'text-yellow-400' : i === 1 ? 'text-stone-400' : i === 2 ? 'text-amber-600' : 'text-stone-300 dark:text-stone-600'}`}>
+            <span className={`text-lg font-bold shrink-0 w-6 ${i === 0 ? 'text-amber-400' : i === 1 ? 'text-stone-400' : i === 2 ? 'text-amber-600' : 'text-stone-300 dark:text-stone-600'}`}>
               {i + 1}
             </span>
             {r.images?.[0] && (
@@ -255,17 +255,17 @@ export default async function AdminStatsPage() {
 
       {/* Priorités admin */}
       <div>
-        <h2 className={sectionHeading}><ShieldCheck className="w-4 h-4 text-purple-600" /> {s_.priorities}</h2>
+        <h2 className={sectionHeading}><ShieldCheck className="w-4 h-4 text-orange-700" /> {s_.priorities}</h2>
         <BoutonInitProfilAdmin />
       </div>
 
       {/* Abonnements */}
       <div>
-        <h2 className={sectionHeading}><CreditCard className="w-4 h-4 text-teal-600" /> {s_.subscriptions}</h2>
+        <h2 className={sectionHeading}><CreditCard className="w-4 h-4 text-emerald-600" /> {s_.subscriptions}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {stats.statsAbonnements.map(a => {
             const cfg = {
-              NIVEAU_1: { border: 'border-purple-300 dark:border-purple-700', badge: 'bg-purple-600 text-white' },
+              NIVEAU_1: { border: 'border-orange-300 dark:border-orange-800', badge: 'bg-orange-700 text-white' },
               NIVEAU_2: { border: 'border-blue-300 dark:border-blue-700',     badge: 'bg-blue-500 text-white'   },
               NIVEAU_3: { border: 'border-stone-300 dark:border-stone-600',   badge: 'bg-stone-500 text-white'  },
             }[a.niveau]!
@@ -286,12 +286,12 @@ export default async function AdminStatsPage() {
                     <span>{s_.activeRate}</span><span className="font-medium">{tauxActif}%</span>
                   </div>
                   <div className="w-full bg-stone-100 dark:bg-stone-800 rounded-full h-1.5">
-                    <div className="h-1.5 rounded-full bg-teal-500 transition-all" style={{ width: `${tauxActif}%` }} />
+                    <div className="h-1.5 rounded-full bg-emerald-500 transition-all" style={{ width: `${tauxActif}%` }} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   {[
-                    { label: s_.active,    value: a.actif,   cls: 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300'     },
+                    { label: s_.active,    value: a.actif,   cls: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'     },
                     { label: s_.free,      value: a.gratuit, cls: 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300'  },
                     { label: s_.expired,   value: a.expire,  cls: 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300'         },
                     { label: s_.suspended, value: a.suspendu,cls: 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300'},

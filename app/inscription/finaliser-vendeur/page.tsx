@@ -96,9 +96,9 @@ function FinaliserVendeurContent() {
     /^(05|06|07)\d{8}$/.test(telephone.replace(/\s/g, ''))
 
   // ── Styles ────────────────────────────────────────────────────────────────
-  const labelCls  = 'block text-xs uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400 mb-2'
+  const labelCls  = 'block text-xs   text-stone-500 dark:text-stone-400 mb-2'
   const baseInput = 'w-full border-b border-stone-300 dark:border-stone-600 focus:border-orange-700 dark:focus:border-orange-500 outline-none py-2.5 text-sm text-stone-800 dark:text-stone-100 bg-transparent transition-colors duration-300 placeholder-stone-300 dark:placeholder-stone-700'
-  const btnPrimary = 'w-full bg-orange-700 hover:bg-orange-800 text-white text-xs uppercase tracking-[0.3em] py-4 rounded-xl transition-colors duration-300 disabled:opacity-40 flex items-center justify-center gap-2'
+  const btnPrimary = 'w-full bg-orange-700 hover:bg-orange-800 text-white text-xs   py-4 rounded-xl transition-colors duration-300 disabled:opacity-40 flex items-center justify-center gap-2'
 
   const Stepper = () => (
     <div className="flex items-center gap-3 mb-10">
@@ -108,17 +108,17 @@ function FinaliserVendeurContent() {
       ] as const).map(({ n, label }) => (
         <div key={n} className="flex items-center gap-3">
           <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium transition-colors duration-300 ${
-            etape === n
-              ? 'bg-orange-700 text-white'
-              : n < etape
-              ? 'border-2 border-orange-700 text-orange-700'
-              : 'border border-stone-300 dark:border-stone-700 text-stone-400 dark:text-stone-600'
-          }`}>
+ etape === n
+ ? 'bg-orange-700 text-white'
+ : n < etape
+ ? 'border-2 border-orange-700 text-orange-700'
+ : 'border border-stone-300 dark:border-stone-700 text-stone-400 dark:text-stone-600'
+ }`}>
             {n < etape ? <Check className="w-3.5 h-3.5" /> : n}
           </div>
-          <span className={`text-xs uppercase tracking-[0.2em] hidden sm:block transition-colors duration-300 ${
-            etape === n ? 'text-orange-700 dark:text-orange-500 font-medium' : 'text-stone-400 dark:text-stone-600'
-          }`}>
+          <span className={`text-xs hidden sm:block transition-colors duration-300 ${
+ etape === n ? 'text-orange-700 dark:text-orange-500 font-medium' : 'text-stone-400 dark:text-stone-600'
+ }`}>
             {label}
           </span>
           {n < 2 && <div className={`w-8 h-px ${etape > 1 ? 'bg-orange-300 dark:bg-orange-800' : 'bg-stone-200 dark:bg-stone-800'}`} />}
@@ -146,7 +146,7 @@ function FinaliserVendeurContent() {
         <div className="relative z-10 text-center text-white space-y-6 max-w-xs">
           <CabaLogo className="w-16 h-16 text-orange-500 mx-auto" />
           <div className="w-10 h-px bg-stone-700 mx-auto" />
-          <p className="text-stone-400 font-light text-sm tracking-wider">
+          <p className="text-stone-400 font-light text-sm ">
             {v.sideTitle}
           </p>
           <div className="space-y-4 text-start mt-8">
@@ -157,7 +157,7 @@ function FinaliserVendeurContent() {
             ].map(({ icon: Icon, text }) => (
               <div key={text} className="flex items-center gap-3 text-stone-400">
                 <Icon className="w-4 h-4 shrink-0 text-orange-500/60" />
-                <span className="text-xs tracking-wide">{text}</span>
+                <span className="text-xs ">{text}</span>
               </div>
             ))}
           </div>
@@ -173,7 +173,7 @@ function FinaliserVendeurContent() {
           </div>
 
           <div className="mb-8">
-            <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500 mb-2">
+            <p className="text-xs font-semibold text-orange-700 dark:text-orange-500 mb-2">
               {skipPhone ? v.lastStep : v.almostDone}
             </p>
             <h2 className="text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">
@@ -189,7 +189,7 @@ function FinaliserVendeurContent() {
                 <Image src={session.user.image} alt="" width={32} height={32}
                   className="w-8 h-8 rounded-full object-cover" />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-950 flex items-center justify-center text-xs text-orange-700 dark:text-orange-400 uppercase font-semibold">
+                <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-950 flex items-center justify-center text-xs text-orange-700 dark:text-orange-400 font-semibold">
                   {session.user.name?.[0] ?? '?'}
                 </div>
               )}
@@ -198,9 +198,9 @@ function FinaliserVendeurContent() {
                 <p className="text-xs text-stone-400 dark:text-stone-500 truncate">{session.user.email}</p>
               </div>
               {skipPhone && session.user.telephone && (
-                <div className="ms-auto flex items-center gap-1 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 px-2 py-1 rounded-lg shrink-0">
+                <div className="ms-auto flex items-center gap-1 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 px-2 py-1 rounded-xl shrink-0">
                   <Check className="w-3 h-3 text-green-600 dark:text-green-400" />
-                  <span className="text-[10px] text-green-700 dark:text-green-400 font-medium">
+                  <span className="text-xs text-green-700 dark:text-green-400 font-medium">
                     {session.user.telephone}
                   </span>
                 </div>
@@ -214,14 +214,14 @@ function FinaliserVendeurContent() {
               <div className="w-14 h-14 bg-orange-700 rounded-2xl flex items-center justify-center mx-auto">
                 <Check className="w-7 h-7 text-white" />
               </div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500">
+              <p className="text-xs font-semibold text-orange-700 dark:text-orange-500">
                 {v.shopCreated}
               </p>
               <p className="text-sm font-light text-stone-800 dark:text-stone-100">{success}</p>
-              <p className="text-xs text-stone-500 dark:text-stone-400 border border-stone-200 dark:border-stone-700 rounded-xl px-4 py-3 tracking-wide">
+              <p className="text-xs text-stone-500 dark:text-stone-400 border border-stone-200 dark:border-stone-700 rounded-xl px-4 py-3 ">
                 {v.activationNote}
               </p>
-              <p className="text-xs text-stone-400 dark:text-stone-600 tracking-wide mt-4">
+              <p className="text-xs text-stone-400 dark:text-stone-600 mt-4">
                 {v.redirecting}
               </p>
             </div>
@@ -234,7 +234,7 @@ function FinaliserVendeurContent() {
                     <label className={labelCls}>{a.shopName}</label>
                     <input type="text" value={nomBoutique} onChange={e => setNomBoutique(e.target.value)}
                       placeholder={a.shopPlaceholder} className={baseInput} />
-                    <p className="mt-1.5 text-xs text-stone-400 dark:text-stone-600 tracking-wide">
+                    <p className="mt-1.5 text-xs text-stone-400 dark:text-stone-600 ">
                       {v.shopPublicHint}
                     </p>
                   </div>
@@ -249,7 +249,7 @@ function FinaliserVendeurContent() {
                   />
 
                   {error && (
-                    <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 text-xs px-4 py-3 rounded-xl tracking-wide">{error}</div>
+                    <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 text-xs px-4 py-3 rounded-xl ">{error}</div>
                   )}
 
                   <button onClick={handleEtape1Skip} disabled={loading || nomBoutique.trim().length < 2 || !lieuComplet}
@@ -286,13 +286,13 @@ function FinaliserVendeurContent() {
                       <label className={labelCls}>{a.phoneNumber}</label>
                       <input type="tel" value={telephone} onChange={e => setTelephone(e.target.value)}
                         placeholder="05 XX XX XX XX" className={baseInput} />
-                      <p className="mt-1.5 text-xs text-stone-400 dark:text-stone-600 tracking-wide">
+                      <p className="mt-1.5 text-xs text-stone-400 dark:text-stone-600 ">
                         {a.smsCodeHint}
                       </p>
                     </div>
 
                     {error && (
-                      <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 text-xs px-4 py-3 rounded-xl tracking-wide">{error}</div>
+                      <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 text-xs px-4 py-3 rounded-xl ">{error}</div>
                     )}
 
                     <button onClick={handleEtape1Normal} disabled={loading || !canSubmitNormal}
@@ -303,7 +303,7 @@ function FinaliserVendeurContent() {
                       }
                     </button>
 
-                    <p className="text-center text-xs text-stone-400 dark:text-stone-500 tracking-wide">
+                    <p className="text-center text-xs text-stone-400 dark:text-stone-500 ">
                       {v.clientQuestion}{' '}
                       <Link href="/" className="text-orange-700 dark:text-orange-500 underline underline-offset-4 font-medium">
                         {v.continueWithoutShop}
@@ -316,17 +316,17 @@ function FinaliserVendeurContent() {
                 {etape === 2 && (
                   <div className="space-y-7">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400 mb-1">{a.codeSentToPhone}</p>
+                      <p className="text-xs text-stone-500 dark:text-stone-400 mb-1">{a.codeSentToPhone}</p>
                       <p dir="ltr" className="text-sm text-stone-900 dark:text-stone-100 font-medium text-start">{telephone}</p>
                       {testMode && (
-                        <p className="mt-2 text-xs text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 px-3 py-2 rounded-lg tracking-wide">
+                        <p className="mt-2 text-xs text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 px-3 py-2 rounded-xl ">
                           {a.testMode} <span className="font-mono font-bold">000000</span>
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-xs uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400 mb-4">
+                      <label className="block text-xs text-stone-500 dark:text-stone-400 mb-4">
                         {a.confirmationCode}
                       </label>
                       <input type="text" inputMode="numeric" value={code}
@@ -336,14 +336,14 @@ function FinaliserVendeurContent() {
                       <div className="flex gap-1.5 mt-2 justify-center">
                         {Array.from({ length: 6 }).map((_, i) => (
                           <div key={i} className={`h-0.5 flex-1 transition-colors duration-200 ${
-                            i < code.length ? 'bg-orange-700 dark:bg-orange-500' : 'bg-stone-200 dark:bg-stone-800'
-                          }`} />
+ i < code.length ? 'bg-orange-700 dark:bg-orange-500' : 'bg-stone-200 dark:bg-stone-800'
+ }`} />
                         ))}
                       </div>
                     </div>
 
                     {error && (
-                      <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 text-xs px-4 py-3 rounded-xl tracking-wide">{error}</div>
+                      <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 text-xs px-4 py-3 rounded-xl ">{error}</div>
                     )}
 
                     <button onClick={handleEtape2Normal} disabled={loading || code.length !== 6}
@@ -355,7 +355,7 @@ function FinaliserVendeurContent() {
                     </button>
 
                     <button onClick={() => { setEtape(1); setCode(''); setError(null) }}
-                      className="w-full text-xs text-stone-400 dark:text-stone-600 hover:text-orange-700 dark:hover:text-orange-500 uppercase tracking-[0.2em] transition-colors py-2">
+                      className="w-full text-xs text-stone-400 dark:text-stone-600 hover:text-orange-700 dark:hover:text-orange-500 transition-colors py-2">
                       {a.editMyInfo}
                     </button>
                   </div>
@@ -370,7 +370,7 @@ function FinaliserVendeurContent() {
         <div className="lg:hidden mt-12 flex flex-col items-center gap-3 pb-8">
           <div className="w-16 h-px bg-stone-200 dark:bg-stone-800" />
           <CabaLogo className="w-12 h-12 text-orange-700 dark:text-orange-500 opacity-60" />
-          <p className="text-xs text-stone-300 dark:text-stone-700 uppercase tracking-[0.3em]">{t.common.appName}</p>
+          <p className="text-xs text-stone-300 dark:text-stone-700 ">{t.common.appName}</p>
         </div>
       </div>
     </div>

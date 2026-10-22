@@ -92,7 +92,7 @@ export default async function CategoriesPage() {
                   </div>
                   <Link
                     href={`/categories/${cat.id}`}
-                    className="text-xs uppercase tracking-[0.15em] text-orange-700 dark:text-orange-500 hover:text-orange-800 dark:hover:text-orange-400 transition-colors"
+                    className="text-xs text-orange-700 dark:text-orange-500 hover:text-orange-800 dark:hover:text-orange-400 transition-colors"
                   >
                     {c.seeAll}
                   </Link>

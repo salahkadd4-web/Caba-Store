@@ -69,7 +69,7 @@ export default async function ProduitsPage({
   return (
     <div className="max-w-6xl mx-auto px-4 pt-8 pb-20 md:pb-12">
       <div className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-400 mb-1">
+        <p className="text-xs font-semibold text-orange-700 dark:text-orange-400 mb-1">
           {t.catalog.products.eyebrow}
         </p>
         <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">

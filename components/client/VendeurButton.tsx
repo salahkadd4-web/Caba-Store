@@ -113,11 +113,11 @@ export default function VendeurButton({ produitId }: { produitId: string }) {
         onClick={() => setOpen(true)}
         className="flex items-center gap-2.5 w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 hover:border-orange-300 dark:hover:border-orange-700 bg-white dark:bg-stone-900 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-all group text-start"
       >
-        <div className="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-950 flex items-center justify-center shrink-0">
+        <div className="w-8 h-8 rounded-xl bg-orange-100 dark:bg-orange-950 flex items-center justify-center shrink-0">
           <Store className="w-4 h-4 text-orange-700 dark:text-orange-400" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">
+          <p className="text-xs font-bold text-stone-400 dark:text-stone-500">
             {vendeur.isAdmin ? s.official : s.soldBy}
           </p>
           <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 truncate leading-tight">
@@ -140,7 +140,7 @@ export default function VendeurButton({ produitId }: { produitId: string }) {
           {/* Sheet */}
           <div
             ref={sheetRef}
-            className="relative z-10 w-full bg-white dark:bg-stone-900 rounded-t-3xl shadow-2xl"
+            className="relative z-10 w-full bg-white dark:bg-stone-900 rounded-t-2xl shadow-2xl"
             style={{ maxHeight: '85dvh', paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}
           >
             {/* Zone draggable — handle + header */}
@@ -162,7 +162,7 @@ export default function VendeurButton({ produitId }: { produitId: string }) {
                   <Store className="w-6 h-6 text-orange-700 dark:text-orange-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-orange-700 dark:text-orange-400">
+                  <p className="text-xs font-bold text-orange-700 dark:text-orange-400">
                     {vendeur.isAdmin ? s.official : s.seller}
                   </p>
                   <p className="text-lg font-semibold text-stone-900 dark:text-stone-100 leading-tight truncate">
@@ -185,7 +185,7 @@ export default function VendeurButton({ produitId }: { produitId: string }) {
                       </span>
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-0.5">{s.contact}</p>
+                      <p className="text-xs font-bold text-stone-400 mb-0.5">{s.contact}</p>
                       <p className="text-sm font-medium text-stone-800 dark:text-stone-200">
                         {vendeur.user.prenom} {vendeur.user.nom}
                       </p>
@@ -200,7 +200,7 @@ export default function VendeurButton({ produitId }: { produitId: string }) {
                       <MapPin className="w-5 h-5 text-stone-500 dark:text-stone-400" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-0.5">{s.wilaya}</p>
+                      <p className="text-xs font-bold text-stone-400 mb-0.5">{s.wilaya}</p>
                       <p className="text-sm font-medium text-stone-800 dark:text-stone-200">{wilayaName(vendeur.user.wilaya, locale)}</p>
                     </div>
                   </div>
@@ -216,7 +216,7 @@ export default function VendeurButton({ produitId }: { produitId: string }) {
                       <Phone className="w-5 h-5 text-stone-500 dark:text-stone-400 group-hover:text-orange-700 dark:group-hover:text-orange-400 transition-colors" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-0.5">{s.phone}</p>
+                      <p className="text-xs font-bold text-stone-400 mb-0.5">{s.phone}</p>
                       <p dir="ltr" className="text-sm font-medium text-stone-800 dark:text-stone-200 group-hover:text-orange-700 dark:group-hover:text-orange-400 transition-colors">
                         {vendeur.user.telephone}
                       </p>
@@ -234,7 +234,7 @@ export default function VendeurButton({ produitId }: { produitId: string }) {
                       <Mail className="w-5 h-5 text-stone-500 dark:text-stone-400 group-hover:text-orange-700 dark:group-hover:text-orange-400 transition-colors" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-0.5">{s.email}</p>
+                      <p className="text-xs font-bold text-stone-400 mb-0.5">{s.email}</p>
                       <p className="text-sm font-medium text-stone-800 dark:text-stone-200 group-hover:text-orange-700 dark:group-hover:text-orange-400 transition-colors truncate">
                         {vendeur.user.email}
                       </p>

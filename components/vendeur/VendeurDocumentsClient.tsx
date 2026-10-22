@@ -92,7 +92,7 @@ export default function VendeurDocumentsClient({ vendeur }: { vendeur: VendeurPr
   const statutColor = (s: string) => {
     if (s === 'ACCEPTE')    return 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
     if (s === 'REFUSE')     return 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
-    if (s === 'EN_ATTENTE') return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300'
+    if (s === 'EN_ATTENTE') return 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
     return 'bg-gray-100 text-gray-600'
   }
 
@@ -115,7 +115,7 @@ export default function VendeurDocumentsClient({ vendeur }: { vendeur: VendeurPr
             {d.subtitle}
           </p>
           {vendeur.adminNote && (
-            <div className="mt-3 text-xs bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300 rounded-xl p-3 text-start">
+            <div className="mt-3 text-xs bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 rounded-xl p-3 text-start">
               <span className="font-semibold">{d.teamNote}</span> {vendeur.adminNote}
             </div>
           )}
@@ -155,7 +155,7 @@ export default function VendeurDocumentsClient({ vendeur }: { vendeur: VendeurPr
               </div>
 
               {doc.adminNote && doc.statut === 'REFUSE' && (
-                <div className="mb-3 text-xs bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 rounded-lg p-2">
+                <div className="mb-3 text-xs bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 rounded-xl p-2">
                   <span className="font-semibold">{d.refusalReason}</span> {doc.adminNote}
                 </div>
               )}

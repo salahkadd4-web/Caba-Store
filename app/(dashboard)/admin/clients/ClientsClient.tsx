@@ -145,10 +145,10 @@ export default function ClientsClient({ initialData }: { initialData: Client[] }
                 <tr key={client.id} className={tableRow}>
                   <td className={tableTd}>
                     <div className="flex items-center gap-3">
-                      <div className="relative w-9 h-9 bg-purple-100 dark:bg-purple-950 rounded-full flex items-center justify-center shrink-0 overflow-hidden">
+                      <div className="relative w-9 h-9 bg-orange-100 dark:bg-orange-950 rounded-full flex items-center justify-center shrink-0 overflow-hidden">
                         {client.avatar
                           ? <Image src={client.avatar} alt="" fill sizes="36px" className="rounded-full object-cover" />
-                          : <span className="text-purple-600 dark:text-purple-400 font-bold text-sm">{client.prenom[0]}{client.nom[0]}</span>
+                          : <span className="text-orange-700 dark:text-orange-400 font-bold text-sm">{client.prenom[0]}{client.nom[0]}</span>
                         }
                       </div>
                       <div>
@@ -160,7 +160,7 @@ export default function ClientsClient({ initialData }: { initialData: Client[] }
                   <td className={tableTd}>
                     <p className="text-stone-700 dark:text-stone-200 text-sm">{client.email || '—'}</p>
                     {client.telephone
-                      ? <a href={`tel:${client.telephone}`} className="text-xs text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1 mt-0.5">
+                      ? <a href={`tel:${client.telephone}`} className="text-xs text-orange-700 dark:text-orange-400 hover:underline flex items-center gap-1 mt-0.5">
                           <Phone className="w-3 h-3" /><span dir="ltr">{client.telephone}</span>
                         </a>
                       : <p className="text-xs text-stone-400">—</p>
@@ -183,10 +183,10 @@ export default function ClientsClient({ initialData }: { initialData: Client[] }
                   </td>
                   <td className={tableTd}>
                     <div className="flex gap-2">
-                      <button onClick={() => openDetail(client)} className="bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1">
+                      <button onClick={() => openDetail(client)} className="bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900 px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center gap-1">
                         <Eye className="w-3.5 h-3.5" /> {c_.details}
                       </button>
-                      <button onClick={() => setDeleteId(client.id)} className="bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 p-1.5 rounded-lg transition">
+                      <button onClick={() => setDeleteId(client.id)} className="bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 p-1.5 rounded-xl transition">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -202,10 +202,10 @@ export default function ClientsClient({ initialData }: { initialData: Client[] }
       <div className="lg:hidden space-y-3">
         {clients.map((client) => (
           <div key={client.id} className={`${cardSm} p-4 flex items-center gap-3`}>
-            <div className="relative w-10 h-10 bg-purple-100 dark:bg-purple-950 rounded-full flex items-center justify-center shrink-0 overflow-hidden">
+            <div className="relative w-10 h-10 bg-orange-100 dark:bg-orange-950 rounded-full flex items-center justify-center shrink-0 overflow-hidden">
               {client.avatar
                 ? <Image src={client.avatar} alt="" fill sizes="40px" className="rounded-full object-cover" />
-                : <span className="text-purple-600 font-bold text-sm">{client.prenom[0]}{client.nom[0]}</span>
+                : <span className="text-orange-700 font-bold text-sm">{client.prenom[0]}{client.nom[0]}</span>
               }
             </div>
             <div className="flex-1 min-w-0">
@@ -229,10 +229,10 @@ export default function ClientsClient({ initialData }: { initialData: Client[] }
           <div className={`${modalBox} max-w-lg max-h-[90vh] overflow-hidden flex flex-col`}>
             <div className="flex items-center justify-between p-6 border-b border-stone-200 dark:border-stone-800 shrink-0">
               <div className="flex items-center gap-4">
-                <div className="relative w-14 h-14 bg-purple-100 dark:bg-purple-950 rounded-full flex items-center justify-center overflow-hidden shrink-0">
+                <div className="relative w-14 h-14 bg-orange-100 dark:bg-orange-950 rounded-full flex items-center justify-center overflow-hidden shrink-0">
                   {selectedClient.avatar
                     ? <Image src={selectedClient.avatar} alt="" fill sizes="56px" className="rounded-full object-cover" />
-                    : <span className="text-purple-600 dark:text-purple-400 font-bold text-xl">{selectedClient.prenom[0]}{selectedClient.nom[0]}</span>
+                    : <span className="text-orange-700 dark:text-orange-400 font-bold text-xl">{selectedClient.prenom[0]}{selectedClient.nom[0]}</span>
                   }
                 </div>
                 <div>
@@ -240,7 +240,7 @@ export default function ClientsClient({ initialData }: { initialData: Client[] }
                   <p className="text-xs font-mono text-stone-400">#{selectedClient.id.slice(-6).toUpperCase()}</p>
                 </div>
               </div>
-              <button onClick={() => setSelectedClient(null)} className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 dark:hover:bg-stone-800 transition">
+              <button onClick={() => setSelectedClient(null)} className="p-1.5 rounded-xl text-stone-400 hover:text-stone-600 hover:bg-stone-100 dark:hover:bg-stone-800 transition">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -248,7 +248,7 @@ export default function ClientsClient({ initialData }: { initialData: Client[] }
             <div className="overflow-y-auto flex-1">
               {loadingDetail ? (
                 <div className="flex items-center justify-center py-12">
-                  <Spinner cls="w-6 h-6 text-purple-600" />
+                  <Spinner cls="w-6 h-6 text-orange-700" />
                 </div>
               ) : (
                 <div className="p-6 space-y-3">
@@ -259,7 +259,7 @@ export default function ClientsClient({ initialData }: { initialData: Client[] }
                   <div className="bg-stone-50 dark:bg-stone-800 rounded-xl p-4">
                     <p className="text-xs text-stone-400 font-medium mb-1 flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> {c_.phone}</p>
                     {selectedClient.telephone
-                      ? <a href={`tel:${selectedClient.telephone}`} className="text-sm text-purple-600 dark:text-purple-400 hover:underline font-medium" dir="ltr">{selectedClient.telephone}</a>
+                      ? <a href={`tel:${selectedClient.telephone}`} className="text-sm text-orange-700 dark:text-orange-400 hover:underline font-medium" dir="ltr">{selectedClient.telephone}</a>
                       : <p className="text-sm text-stone-800 dark:text-stone-100">—</p>
                     }
                   </div>

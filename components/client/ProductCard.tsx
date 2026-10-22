@@ -70,14 +70,14 @@ function VariantSwatches({
         ) : (
           <span
             key={v.id}
-            className="text-[9px] text-stone-500 dark:text-stone-400 bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 rounded-full"
+            className="text-xs text-stone-500 dark:text-stone-400 bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 rounded-full"
           >
             {v.nom}
           </span>
         ),
       )}
       {variants.length > max && (
-        <span className="text-[9px] text-stone-400">+{variants.length - max}</span>
+        <span className="text-xs text-stone-400">+{variants.length - max}</span>
       )}
     </div>
   )
@@ -135,7 +135,7 @@ export default function ProductCard({
               <Fragment key={`badge-${i}`}>{child}</Fragment>
             ))}
             {hasTiers && (
-              <span key="degressif" className="inline-flex items-center gap-1 text-[10px] bg-orange-700 text-white font-bold px-1.5 py-0.5 rounded-full shadow">
+              <span key="degressif" className="inline-flex items-center gap-1 text-xs bg-orange-700 text-white font-bold px-1.5 py-0.5 rounded-full shadow">
                 <Banknote className="w-3 h-3" />
                 {t.common.degressiveBadge}
               </span>
@@ -155,7 +155,7 @@ export default function ProductCard({
       {/* ── Infos ── */}
       <div className={compact ? 'p-3' : 'p-4'}>
         <p
-          className={`${compact ? 'text-[10px]' : 'text-xs'} font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500 mb-1`}
+          className={`${compact ? 'text-xs' : 'text-xs'} font-semibold text-orange-700 dark:text-orange-500 mb-1`}
         >
           {produit.category.nom}
         </p>
@@ -168,16 +168,16 @@ export default function ProductCard({
         {/* Prix */}
         <div className="flex items-baseline gap-1.5 flex-wrap">
           {hasTiers && (
-            <span className="text-[10px] text-stone-400 dark:text-stone-500">
+            <span className="text-xs text-stone-400 dark:text-stone-500">
               {t.common.fromPrice}
             </span>
           )}
           <span
             className={`${compact ? 'text-sm' : 'text-base'} font-bold ${
-              estReduit
-                ? 'text-green-700 dark:text-green-400'
-                : 'text-orange-700 dark:text-orange-500'
-            }`}
+ estReduit
+ ? 'text-green-700 dark:text-green-400'
+ : 'text-orange-700 dark:text-orange-500'
+ }`}
           >
             {fmt.money(prixMin)} {fmt.currency}
           </span>
@@ -186,7 +186,7 @@ export default function ProductCard({
               <span className="text-xs text-stone-400 line-through font-normal">
                 {fmt.money(produit.prix)}
               </span>
-              <span className="text-[9px] bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 font-bold px-1 py-0.5 rounded-full">
+              <span className="text-xs bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 font-bold px-1 py-0.5 rounded-full">
                 −{reduction}%
               </span>
             </>

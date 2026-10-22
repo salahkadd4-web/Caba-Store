@@ -1,7 +1,7 @@
 /** Gestion des produits (dashboards vendeur et admin). */
 const pm = {
   // Liste
-  sellerTitle: 'Mes Produits',
+  sellerTitle: 'Mes produits',
   adminTitle: 'Produits',
   count: (n: number): string => `${n} produit${n > 1 ? 's' : ''}`,
   add: 'Ajouter',

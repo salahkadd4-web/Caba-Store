@@ -225,7 +225,7 @@ export default function ProduitDetailClient({
         {/* Paliers dégressifs */}
         {hasTiers && (
           <div className="bg-orange-50 dark:bg-orange-950/40 border border-orange-100 dark:border-orange-900 rounded-xl p-3 mb-4">
-            <p className="text-[10px] font-bold text-orange-700 dark:text-orange-500 uppercase tracking-widest mb-2 flex items-center gap-1">
+            <p className="text-xs font-bold text-orange-700 dark:text-orange-500 mb-2 flex items-center gap-1">
               <TrendingDown className="w-3 h-3" /> {p.degressivePrices}
             </p>
             <div className="flex gap-2 overflow-x-auto pb-1">
@@ -233,7 +233,7 @@ export default function ProduitDetailClient({
                 const isActive = totalQte >= tier.minQte && (tier.maxQte === null || totalQte <= tier.maxQte)
                 const isPast   = tier.maxQte !== null && totalQte > tier.maxQte
                 return (
-                  <div key={i} className={`flex flex-col items-center px-3 py-1.5 rounded-lg text-xs shrink-0 transition-all ${isActive ? 'bg-orange-700 text-white shadow-md scale-105' : isPast ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 opacity-60' : 'bg-white dark:bg-stone-800 text-stone-500 dark:text-stone-400 border border-stone-200 dark:border-stone-700'}`}>
+                  <div key={i} className={`flex flex-col items-center px-3 py-1.5 rounded-xl text-xs shrink-0 transition-all ${isActive ? 'bg-orange-700 text-white shadow-md scale-105' : isPast ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 opacity-60' : 'bg-white dark:bg-stone-800 text-stone-500 dark:text-stone-400 border border-stone-200 dark:border-stone-700'}`}>
                     <span className="font-bold">{fmt.money(tier.prix)} {DA}</span>
                     <span className="opacity-75">{tier.maxQte ? `${tier.minQte}-${tier.maxQte} ${p.unit}` : `>=${tier.minQte} ${p.unit}`}</span>
                     {isActive && <Check className="w-3 h-3 mt-0.5" />}
@@ -286,7 +286,7 @@ export default function ProduitDetailClient({
                     >
                       {variant.couleur && <span className="w-4 h-4 rounded-full border border-stone-300 dark:border-stone-500 shrink-0 shadow-sm" style={{ backgroundColor: variant.couleur }} />}
                       <span className="text-stone-800 dark:text-stone-200">{variant.nom}</span>
-                      {qteLigne > 0 && <span className="ms-1 bg-orange-700 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shrink-0">{qteLigne}</span>}
+                      {qteLigne > 0 && <span className="ms-1 bg-orange-700 text-white text-xs font-bold min-w-5 h-5 px-1 rounded-full flex items-center justify-center shrink-0">{qteLigne}</span>}
                       {outOfStock && <span className="absolute -top-1.5 -end-1.5 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center shadow"><X className="w-2.5 h-2.5" /></span>}
                     </button>
                   )
@@ -325,12 +325,12 @@ export default function ProduitDetailClient({
                                 <QteInput size="sm" value={qt} stockMax={option.stock} onChange={v => setLigneQte(key, v)} onZero={() => removeLigne(key)} />
                               </div>
                             )}
-                            {maxReached && <span className="absolute -top-1.5 -end-1.5 bg-orange-500 text-white text-[9px] font-bold px-1 py-0.5 rounded-full shadow leading-none">MAX</span>}
+                            {maxReached && <span className="absolute -top-1.5 -end-1.5 bg-orange-500 text-white text-xs font-bold px-1 py-0.5 rounded-full shadow leading-none">MAX</span>}
                           </div>
                         )
                       })}
                     </div>
-                    <p className="text-[11px] text-stone-400 mt-2 flex items-center gap-1">
+                    <p className="text-xs text-stone-400 mt-2 flex items-center gap-1">
                       <Info className="w-3 h-3 shrink-0" />
                       {p.tapHint}
                     </p>
@@ -378,8 +378,8 @@ export default function ProduitDetailClient({
                 className="w-full flex items-center justify-between px-4 py-2.5 bg-stone-50 dark:bg-stone-900 border-b border-stone-100 dark:border-stone-800"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-stone-600 dark:text-stone-400 uppercase tracking-widest">{p.mySelection}</span>
-                  <span className="bg-orange-700 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">{totalQte}</span>
+                  <span className="text-xs font-bold text-stone-600 dark:text-stone-400 ">{p.mySelection}</span>
+                  <span className="bg-orange-700 text-white text-xs font-bold min-w-5 h-5 px-1 rounded-full flex items-center justify-center">{totalQte}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`text-sm font-bold ${prixReduit ? 'text-green-600 dark:text-green-400' : 'text-orange-700 dark:text-orange-500'}`}>
@@ -393,7 +393,7 @@ export default function ProduitDetailClient({
                 <div className="max-h-52 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800 bg-white dark:bg-stone-950">
                   {lignes.map(ligne => (
                     <div key={ligne.key} className="flex items-center gap-3 px-4 py-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-stone-100 dark:bg-stone-800 overflow-hidden shrink-0 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-xl bg-stone-100 dark:bg-stone-800 overflow-hidden shrink-0 flex items-center justify-center">
                         {ligne.image ? <Image src={ligne.image} alt="" width={32} height={32} className="w-full h-full object-cover" /> : <Package className="w-3.5 h-3.5 text-stone-400" />}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -509,7 +509,7 @@ export default function ProduitDetailClient({
         {/* Paliers */}
         {hasTiers && (
           <div className="bg-orange-50 dark:bg-orange-950/40 border border-orange-100 dark:border-orange-900 rounded-xl p-3">
-            <p className="text-[10px] font-bold text-orange-700 dark:text-orange-500 uppercase tracking-widest mb-2 flex items-center gap-1">
+            <p className="text-xs font-bold text-orange-700 dark:text-orange-500 mb-2 flex items-center gap-1">
               <TrendingDown className="w-3 h-3" /> {p.degressivePrices}
             </p>
             <div className="flex flex-wrap gap-1.5">
@@ -517,7 +517,7 @@ export default function ProduitDetailClient({
                 const isActive = totalQte >= tier.minQte && (tier.maxQte === null || totalQte <= tier.maxQte)
                 const isPast   = tier.maxQte !== null && totalQte > tier.maxQte
                 return (
-                  <div key={i} className={`flex flex-col items-center px-3 py-1.5 rounded-lg text-xs transition-all duration-300 ${isActive ? 'bg-orange-700 text-white shadow-md shadow-orange-700/20 scale-105' : isPast ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 opacity-60' : 'bg-white dark:bg-stone-800 text-stone-500 dark:text-stone-400 border border-stone-200 dark:border-stone-700'}`}>
+                  <div key={i} className={`flex flex-col items-center px-3 py-1.5 rounded-xl text-xs transition-all duration-300 ${isActive ? 'bg-orange-700 text-white shadow-md shadow-orange-700/20 scale-105' : isPast ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 opacity-60' : 'bg-white dark:bg-stone-800 text-stone-500 dark:text-stone-400 border border-stone-200 dark:border-stone-700'}`}>
                     <span className="font-bold">{fmt.money(tier.prix)} {DA}</span>
                     <span className="opacity-75">{tier.maxQte ? `${tier.minQte}-${tier.maxQte} ${p.unit}` : `>=${tier.minQte} ${p.unit}`}</span>
                     {isActive && <Check className="w-3 h-3 mt-0.5" />}
@@ -575,7 +575,7 @@ export default function ProduitDetailClient({
                     >
                       {variant.couleur && <span className="w-5 h-5 rounded-full border border-stone-300 dark:border-stone-500 shrink-0 shadow-sm" style={{ backgroundColor: variant.couleur }} />}
                       <span className="text-stone-800 dark:text-stone-200">{variant.nom}</span>
-                      {qteLigne > 0 && <span className="ms-1 bg-orange-700 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shrink-0 shadow">{qteLigne}</span>}
+                      {qteLigne > 0 && <span className="ms-1 bg-orange-700 text-white text-xs font-bold min-w-5 h-5 px-1 rounded-full flex items-center justify-center shrink-0 shadow">{qteLigne}</span>}
                       {outOfStock && <span className="absolute -top-1.5 -end-1.5 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center shadow"><X className="w-2.5 h-2.5" /></span>}
                     </button>
                   )
@@ -614,12 +614,12 @@ export default function ProduitDetailClient({
                                 <QteInput size="sm" value={qt} stockMax={option.stock} onChange={v => setLigneQte(key, v)} onZero={() => removeLigne(key)} />
                               </div>
                             )}
-                            {maxReached && <span className="absolute -top-1.5 -end-1.5 bg-orange-500 text-white text-[9px] font-bold px-1 py-0.5 rounded-full shadow leading-none">MAX</span>}
+                            {maxReached && <span className="absolute -top-1.5 -end-1.5 bg-orange-500 text-white text-xs font-bold px-1 py-0.5 rounded-full shadow leading-none">MAX</span>}
                           </div>
                         )
                       })}
                     </div>
-                    <p className="text-[11px] text-stone-400 mt-2 flex items-center gap-1">
+                    <p className="text-xs text-stone-400 mt-2 flex items-center gap-1">
                       <Info className="w-3 h-3 shrink-0" />
                       {p.clickHint}
                     </p>
@@ -649,7 +649,7 @@ export default function ProduitDetailClient({
             {lignes.length > 0 && (
               <div className="border border-stone-200 dark:border-stone-700 rounded-2xl overflow-hidden">
                 <div className="bg-stone-50 dark:bg-stone-800/60 px-4 py-2.5 flex items-center justify-between">
-                  <p className="text-xs font-bold text-stone-600 dark:text-stone-400 uppercase tracking-widest">{p.mySelection}</p>
+                  <p className="text-xs font-bold text-stone-600 dark:text-stone-400 ">{p.mySelection}</p>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-stone-500 dark:text-stone-400">{p.itemsCount(totalQte)}</span>
                     {totalQte > 0 && <span className={`text-sm font-bold ${prixReduit ? 'text-green-600 dark:text-green-400' : 'text-orange-700 dark:text-orange-500'}`}>= {fmt.money(totalPrix)} {DA}</span>}
@@ -658,7 +658,7 @@ export default function ProduitDetailClient({
                 <div className="divide-y divide-stone-100 dark:divide-stone-800">
                   {lignes.map(ligne => (
                     <div key={ligne.key} className="flex items-center gap-3 px-4 py-2.5 group">
-                      <div className="w-9 h-9 rounded-lg bg-stone-100 dark:bg-stone-800 overflow-hidden shrink-0 flex items-center justify-center">
+                      <div className="w-9 h-9 rounded-xl bg-stone-100 dark:bg-stone-800 overflow-hidden shrink-0 flex items-center justify-center">
                         {ligne.image ? <Image src={ligne.image} alt="" width={36} height={36} className="w-full h-full object-cover" /> : <Package className="w-4 h-4 text-stone-400" />}
                       </div>
                       <div className="flex-1 min-w-0">

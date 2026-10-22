@@ -131,7 +131,7 @@ export default function FavorisPage() {
                   )}
                 </div>
                 <div className="p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-orange-700 dark:text-orange-500 mb-1">
+                  <p className="text-xs font-semibold text-orange-700 dark:text-orange-500 mb-1">
                     {favori.product.category.nom}
                   </p>
                   <h3 className="text-sm font-semibold text-stone-800 dark:text-stone-100 mb-2 line-clamp-2">

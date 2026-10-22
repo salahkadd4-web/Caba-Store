@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, IBM_Plex_Sans_Arabic } from 'next/font/google'
+import { Rubik } from 'next/font/google'
 import "./globals.css";
 import { headers } from "next/headers";
 import { auth } from "@/auth";
@@ -17,14 +17,11 @@ import FooterWrapper from "@/components/client/FooterWrapper";
 import MainWrapper from "@/components/client/MainWrapper";
 import { getI18n } from "@/lib/i18n/server";
 
-const geistSans = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
-
-// Police arabe : non préchargée, téléchargée uniquement quand la page est en arabe.
-const plexArabic = IBM_Plex_Sans_Arabic({
-  subsets: ['arabic'],
-  weight: ['300', '400', '500', '600', '700'],
-  variable: '--font-arabic',
-  preload: false,
+// Une seule famille pour FR / EN / AR : Rubik couvre le latin et l'arabe (police variable).
+const rubik = Rubik({
+  subsets: ['latin', 'latin-ext', 'arabic'],
+  variable: '--font-rubik',
+  display: 'swap',
 })
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -62,7 +59,7 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className={`${geistSans.variable} ${plexArabic.variable} font-sans text-stone-900 dark:text-stone-100 transition-colors duration-300`}>
+      <body className={`${rubik.variable} font-sans text-stone-900 dark:text-stone-100 transition-colors duration-300`}>
         <I18nProvider locale={locale}>
           <ThemeProvider>
             <SessionProvider session={session}>

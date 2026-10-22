@@ -112,7 +112,7 @@ export default function RefusLivraisonModal({
           )}
 
           {error && (
-            <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950 rounded-lg px-3 py-2">
+            <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950 rounded-xl px-3 py-2">
               {error}
             </p>
           )}

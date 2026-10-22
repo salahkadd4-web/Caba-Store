@@ -25,7 +25,7 @@ const catalog = {
   favorites: {
     loadError: 'Impossible de charger vos favoris. Veuillez réessayer.',
     retry: 'Réessayer',
-    title: 'Mes Favoris',
+    title: 'Mes favoris',
     count: (n: number): string => `${n} produit${n > 1 ? 's' : ''} en favori`,
     empty: "Vous n'avez pas encore de favoris.",
     browse: 'Parcourir les produits',

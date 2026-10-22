@@ -50,7 +50,7 @@ export default function DynamicField({ field, value, error, onChange, onUpload }
       <FieldInput field={field} value={value} error={error} onChange={onChange} onUpload={onUpload} />
 
       {field.helpText && (
-        <p className="text-[11px] text-stone-400 mt-1.5 leading-relaxed">{field.helpText}</p>
+        <p className="text-xs text-stone-400 mt-1.5 leading-relaxed">{field.helpText}</p>
       )}
       {error && (
         <p className="text-xs text-red-600 dark:text-red-400 mt-1.5 flex items-center gap-1">
@@ -144,7 +144,7 @@ function TextareaField({ field, value, error, onChange }: DynamicFieldProps) {
         className={`${inputCls} resize-none ${error ? errorCls : ''}`}
       />
       {maxLength != null && (
-        <p className="text-[10px] text-stone-400 mt-1 text-end">{text.length}/{maxLength}</p>
+        <p className="text-xs text-stone-400 mt-1 text-end">{text.length}/{maxLength}</p>
       )}
     </div>
   )
@@ -366,7 +366,7 @@ function FileField({
           >
             {multiple ? f.chooseFiles : f.chooseFile}
             {field.validation?.maxFileSize != null && (
-              <span className="block text-[10px] mt-0.5">{f.max(formatBytes(field.validation.maxFileSize, t.returns.validation))}</span>
+              <span className="block text-xs mt-0.5">{f.max(formatBytes(field.validation.maxFileSize, t.returns.validation))}</span>
             )}
           </button>
         )}
@@ -412,13 +412,13 @@ function FilePreview({ url, onRemove }: { url: string; onRemove: () => void }) {
     <div className="flex items-center gap-3 p-2.5 rounded-xl border border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-900">
       {isImage && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={url} alt="" className="w-14 h-14 object-cover rounded-lg shrink-0" />
+        <img src={url} alt="" className="w-14 h-14 object-cover rounded-xl shrink-0" />
       )}
       {isVideo && (
-        <video src={url} controls className="w-14 h-14 object-cover rounded-lg shrink-0" />
+        <video src={url} controls className="w-14 h-14 object-cover rounded-xl shrink-0" />
       )}
       {!isImage && !isVideo && (
-        <div className="w-14 h-14 rounded-lg bg-stone-100 dark:bg-stone-800 flex items-center justify-center shrink-0">
+        <div className="w-14 h-14 rounded-xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center shrink-0">
           <FileText className="w-6 h-6 text-stone-400" />
         </div>
       )}
@@ -426,7 +426,7 @@ function FilePreview({ url, onRemove }: { url: string; onRemove: () => void }) {
       <button
         type="button"
         onClick={onRemove}
-        className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 text-stone-400 hover:text-red-600 transition shrink-0"
+        className="p-1.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/40 text-stone-400 hover:text-red-600 transition shrink-0"
         aria-label={t.returns.form.removeFile}
       >
         <Trash2 className="w-4 h-4" />
@@ -535,7 +535,7 @@ function SignatureField({ field, value, error, onChange, onUpload }: DynamicFiel
           <button
             type="button"
             onClick={clear}
-            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 text-stone-400 hover:text-red-600 transition shrink-0"
+            className="p-1.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/40 text-stone-400 hover:text-red-600 transition shrink-0"
             aria-label={f.clearSignature}
           >
             <X className="w-4 h-4" />
@@ -561,7 +561,7 @@ function SignatureField({ field, value, error, onChange, onUpload }: DynamicFiel
               type="button"
               onClick={confirm}
               disabled={uploading}
-              className="flex items-center gap-1.5 text-xs font-semibold bg-orange-700 hover:bg-orange-800 disabled:opacity-50 text-white px-3 py-1.5 rounded-lg transition"
+              className="flex items-center gap-1.5 text-xs font-semibold bg-orange-700 hover:bg-orange-800 disabled:opacity-50 text-white px-3 py-1.5 rounded-xl transition"
             >
               {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
               {f.validateSignature}

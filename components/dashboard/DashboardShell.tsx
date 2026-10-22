@@ -64,15 +64,15 @@ function Sidebar({
 
   // Couleurs d'accentuation selon le rôle
   const accentActive = isAdmin
-    ? 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300'
+    ? 'bg-orange-50 dark:bg-orange-950/60 text-orange-800 dark:text-orange-300'
     : 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400'
-  const accentDot = isAdmin ? 'bg-purple-500' : 'bg-orange-500'
+  const accentDot = isAdmin ? 'bg-orange-600' : 'bg-orange-500'
   const accentHover = isAdmin
-    ? 'hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-purple-700 dark:hover:text-purple-300'
+    ? 'hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-orange-800 dark:hover:text-orange-300'
     : 'hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-orange-700 dark:hover:text-orange-400'
   const badgeCls = isAdmin
-    ? 'bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-900'
-    : 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900'
+    ? 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-700'
+    : 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-700'
   const badgeLabel = isAdmin ? t.dashboard.roleAdmin : t.dashboard.roleSeller
   const RoleIcon = isAdmin ? Settings : Store
 
@@ -109,7 +109,7 @@ function Sidebar({
           </Link>
           <button
             onClick={onClose}
-            className="lg:hidden p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition"
+            className="lg:hidden p-1.5 rounded-xl text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition"
           >
             <X className="w-4 h-4" />
           </button>
@@ -133,7 +133,7 @@ function Sidebar({
                 </p>
               )}
             </div>
-            <span className={`shrink-0 flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${badgeCls}`}>
+            <span className={`shrink-0 flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${badgeCls}`}>
               <RoleIcon className="w-2.5 h-2.5" />
               {badgeLabel}
             </span>
@@ -204,8 +204,8 @@ function TopBar({
 
   const isAdmin = role === 'ADMIN'
   const pillCls = isAdmin
-    ? 'text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900'
-    : 'text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900'
+    ? 'text-stone-700 dark:text-stone-200 bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700'
+    : 'text-stone-700 dark:text-stone-200 bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700'
 
   const handleSignOut = () => {
     signOut({ callbackUrl: `${APP_URL}/`, redirect: true })
@@ -220,7 +220,7 @@ function TopBar({
           <button
             onClick={onMenuOpen}
             aria-label={t.dashboard.openMenu}
-            className="lg:hidden p-2 -ms-1 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition active:scale-95"
+            className="lg:hidden p-2 -ms-1 rounded-xl text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition active:scale-95"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="3" y1="6" x2="21" y2="6"/>
@@ -252,7 +252,7 @@ function TopBar({
           {/* Avatar + nom — tablette (sur desktop il est dans la sidebar) */}
           <div className="hidden sm:flex lg:hidden items-center gap-2 bg-stone-100 dark:bg-stone-800 rounded-full ps-1 pe-3 py-1">
             <div className="w-6 h-6 rounded-full bg-orange-700 dark:bg-orange-600 flex items-center justify-center shrink-0">
-              <span className="text-white text-[10px] font-bold">
+              <span className="text-white text-xs font-bold">
                 {userName?.charAt(0)?.toUpperCase() || '?'}
               </span>
             </div>
