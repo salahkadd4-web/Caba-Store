@@ -101,8 +101,15 @@ export default function VendeurButton({ produitId }: { produitId: string }) {
   const nomBoutique = vendeur?.nomBoutique
     ?? (`${vendeur?.user.prenom ?? ''} ${vendeur?.user.nom ?? ''}`.trim() || s.shopFallback)
 
+  // Silhouette de la carte pendant le chargement : même gabarit que la carte finale
   if (loading) return (
-    <div className="w-full h-14 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/50 animate-pulse" />
+    <div aria-busy="true" className="flex items-center gap-2.5 w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
+      <div className="w-8 h-8 rounded-xl bg-stone-100 dark:bg-stone-800 animate-pulse shrink-0" />
+      <div className="flex-1 space-y-1.5">
+        <div className="h-3 w-16 rounded-full bg-stone-100 dark:bg-stone-800 animate-pulse" />
+        <div className="h-3.5 w-32 rounded-full bg-stone-100 dark:bg-stone-800 animate-pulse" />
+      </div>
+    </div>
   )
   if (!vendeur) return null
 
@@ -111,13 +118,13 @@ export default function VendeurButton({ produitId }: { produitId: string }) {
       {/* ── Bouton déclencheur ── */}
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2.5 w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 hover:border-orange-300 dark:hover:border-orange-700 bg-white dark:bg-stone-900 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-all group text-start"
+        className="flex items-center gap-2.5 w-full px-4 py-3 rounded-2xl border border-stone-200 dark:border-stone-700 hover:border-orange-300 dark:hover:border-orange-700 bg-white dark:bg-stone-900 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-all group text-start"
       >
         <div className="w-8 h-8 rounded-xl bg-orange-100 dark:bg-orange-950 flex items-center justify-center shrink-0">
           <Store className="w-4 h-4 text-orange-700 dark:text-orange-400" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-bold text-stone-400 dark:text-stone-500">
+          <p className="text-xs text-stone-500 dark:text-stone-400">
             {vendeur.isAdmin ? s.official : s.soldBy}
           </p>
           <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 truncate leading-tight">

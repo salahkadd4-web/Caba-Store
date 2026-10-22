@@ -32,6 +32,7 @@ const product: typeof fr = {
   savings: 'التوفير:',
   addedToCart: 'تمت الإضافة إلى السلة!',
   adding: 'جارٍ الإضافة…',
+  chooseOption: (type: string): string => `اختر: ${type}`,
   selectItems: 'اختر المنتجات',
   addNToCart: (n: number) => `أضف ${n} منتج إلى السلة`,
   added: 'تمت الإضافة!',

@@ -31,6 +31,7 @@ const product = {
   savings: 'Économie :',
   addedToCart: 'Ajouté au panier !',
   adding: 'Ajout en cours…',
+  chooseOption: (type: string): string => `Choisir : ${type.toLowerCase()}`,
   selectItems: 'Sélectionnez des articles',
   addNToCart: (n: number): string => `Ajouter ${n} article${n > 1 ? 's' : ''} au panier`,
   added: 'Ajouté !',

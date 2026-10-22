@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useRef } from 'react'
+import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useIsMobile } from '@/lib/hooks/useIsMobile'
@@ -25,6 +26,9 @@ type Variant = {
 type Produit = {
   id: string; nom: string; prix: number; stock: number; images: string[]
   prixVariables: unknown; typeOption: string | null; variants: Variant[]
+  /** Affichés sous l'image sur mobile (sur desktop, la page les montre au-dessus) */
+  categorie?: { id: string; nom: string }
+  description?: string | null
 }
 type LigneSelection = {
   key: string; variantId: string; optionId?: string
@@ -52,6 +56,16 @@ export default function ProduitDetailClient({
   const hasVariants = produit.variants.length > 0
   const typeOpt     = produit.typeOption || p.sizeDefault
   const hasOptions  = produit.variants.some(v => v.options.length > 0)
+
+  // Bouton principal toujours actif : sans sélection, il amène au choix à faire
+  const choixRef = useRef<HTMLDivElement>(null)
+  const [choixEnAvant, setChoixEnAvant] = useState(false)
+  const choixLabel = hasOptions ? typeOpt : produit.variants.some(v => v.couleur) ? p.color : p.variant
+  const allerAuChoix = () => {
+    choixRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setChoixEnAvant(true)
+    setTimeout(() => setChoixEnAvant(false), 1600)
+  }
 
   const [imageIdx, setImageIdx] = useState(0)
   const [hoveredVariant, setHoveredVariant] = useState<string | null>(null)
@@ -168,9 +182,9 @@ export default function ProduitDetailClient({
       <div className="flex flex-col pb-52">
 
         {/* Galerie compacte 4:3 */}
-        <div className="relative bg-stone-100 dark:bg-stone-800 rounded-2xl overflow-hidden mb-3" style={{ aspectRatio: '4/3' }}>
+        <div className="relative bg-white border border-stone-200 dark:border-stone-800 rounded-2xl overflow-hidden mb-3" style={{ aspectRatio: '1/0.85' }}>
           {images[imageIdx]
-            ? <Image key={`${images[imageIdx]}-${imageIdx}`} src={images[imageIdx]} alt={produit.nom} fill priority sizes="100vw" className="object-cover" />
+            ? <Image key={`${images[imageIdx]}-${imageIdx}`} src={images[imageIdx]} alt={produit.nom} fill priority sizes="100vw" className="object-contain p-4" />
             : <Package className="w-20 h-20 text-stone-300 dark:text-stone-600 absolute inset-0 m-auto" />
           }
           {previewVariant && (
@@ -186,17 +200,27 @@ export default function ProduitDetailClient({
           <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
             {images.map((img, i) => (
               <button key={i} onClick={() => setImageIdx(i)}
-                className={`w-14 h-14 rounded-xl overflow-hidden border-2 shrink-0 transition ${i === imageIdx ? 'border-orange-700 shadow-md' : 'border-stone-200 dark:border-stone-700 opacity-60'}`}>
-                <Image src={img} alt="" width={56} height={56} className="w-full h-full object-cover" />
+                className={`w-14 h-14 rounded-xl overflow-hidden border-2 shrink-0 bg-white transition ${i === imageIdx ? 'border-orange-700' : 'border-stone-200 dark:border-stone-700 opacity-70'}`}>
+                <Image src={img} alt="" width={56} height={56} className="w-full h-full object-contain p-1" />
               </button>
             ))}
           </div>
         )}
 
+        {/* Nom et catégorie, juste sous l'image */}
+        <div className="mb-1.5">
+          {produit.categorie && (
+            <Link href={`/categories/${produit.categorie.id}`} className="text-sm text-stone-500 dark:text-stone-400 hover:text-orange-700">
+              {produit.categorie.nom}
+            </Link>
+          )}
+          <h1 className="text-xl font-semibold leading-snug text-stone-900 dark:text-stone-50">{produit.nom}</h1>
+        </div>
+
         {/* Prix */}
         <div className="mb-4">
           <div className="flex items-baseline gap-3 flex-wrap">
-            <span className={`text-2xl font-bold ${prixReduit && totalQte > 0 ? 'text-green-600 dark:text-green-400' : 'text-orange-700 dark:text-orange-500'}`}>
+            <span className={`text-2xl font-bold tabular-nums ${prixReduit && totalQte > 0 ? 'text-green-700 dark:text-green-400' : 'text-stone-900 dark:text-stone-50'}`}>
               {fmt.money(prixUnit)} {DA}
               {totalQte > 1 && <span className="text-sm font-normal text-stone-400 ms-1">{p.perUnit}</span>}
             </span>
@@ -215,11 +239,6 @@ export default function ProduitDetailClient({
               {p.addMore} <strong>{prochainPalier.minQte - totalQte}</strong> {p.addMoreSuffix} {p.arrow} {fmt.money(prochainPalier.prix)} {DA}{p.perUnit}
             </p>
           )}
-        </div>
-
-        {/* Bouton vendeur */}
-        <div className="mb-4">
-          <VendeurButton produitId={produit.id} />
         </div>
 
         {/* Paliers dégressifs */}
@@ -262,7 +281,7 @@ export default function ProduitDetailClient({
 
         {/* Avec variantes */}
         {hasVariants && (
-          <>
+          <div ref={choixRef} className={`rounded-2xl transition-shadow duration-300 ${choixEnAvant ? 'ring-2 ring-orange-400 ring-offset-4 ring-offset-stone-50 dark:ring-offset-stone-950' : ''}`}>
             {/* Swatches couleur */}
             <div className="mb-4">
               <p className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-2">
@@ -362,7 +381,15 @@ export default function ProduitDetailClient({
                 {errors.map((e, i) => <p key={i} className="text-sm text-red-600 dark:text-red-400">{e}</p>)}
               </div>
             )}
-          </>
+          </div>
+        )}
+
+        {/* Vendeur puis description, après les choix */}
+        <div className="mb-4">
+          <VendeurButton produitId={produit.id} />
+        </div>
+        {produit.description && (
+          <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed mb-4 whitespace-pre-line">{produit.description}</p>
         )}
 
         {/* ── BARRE STICKY MOBILE ── */}
@@ -427,12 +454,12 @@ export default function ProduitDetailClient({
           {/* Bouton principal */}
           <div className="px-4 py-3">
             {hasVariants ? (
-              <button onClick={handleAjouter} disabled={sending || lignes.length === 0}
-                className={`w-full font-semibold py-4 rounded-2xl flex items-center justify-center gap-2.5 transition-all text-base active:scale-[0.98] ${sent ? 'bg-green-500 text-white shadow-lg' : lignes.length === 0 ? 'bg-stone-100 dark:bg-stone-800 text-stone-400 cursor-default' : sending ? 'bg-orange-700 text-white opacity-70' : 'bg-orange-700 hover:bg-orange-800 text-white shadow-lg shadow-orange-700/20'}`}
+              <button onClick={lignes.length === 0 ? allerAuChoix : handleAjouter} disabled={sending}
+                className={`w-full font-semibold py-4 rounded-xl flex items-center justify-center gap-2.5 transition-all text-base active:scale-[0.98] ${sent ? 'bg-green-600 text-white' : sending ? 'bg-orange-700 text-white opacity-70' : 'bg-orange-700 hover:bg-orange-800 text-white'}`}
               >
                 {sent ? <><Check className="w-5 h-5" /> {p.addedToCart}</>
                   : sending ? <><Loader2 className="w-5 h-5 animate-spin" /> {p.adding}</>
-                  : lignes.length === 0 ? <><ShoppingBag className="w-5 h-5" /> {p.selectItems}</>
+                  : lignes.length === 0 ? <><ShoppingBag className="w-5 h-5" /> {p.chooseOption(choixLabel)}</>
                   : <><ShoppingCart className="w-5 h-5" /><span>{p.addNToCart(totalQte)}</span><span className="ms-auto text-sm font-bold opacity-90">{fmt.money(totalPrix)} {DA}</span></>
                 }
               </button>
@@ -487,7 +514,7 @@ export default function ProduitDetailClient({
         {/* Prix */}
         <div>
           <div className="flex items-baseline gap-3 flex-wrap">
-            <span className={`text-3xl font-bold transition-colors duration-300 ${prixReduit && totalQte > 0 ? 'text-green-600 dark:text-green-400' : 'text-orange-700 dark:text-orange-500'}`}>
+            <span className={`text-3xl font-bold tabular-nums transition-colors duration-300 ${prixReduit && totalQte > 0 ? 'text-green-700 dark:text-green-400' : 'text-stone-900 dark:text-stone-50'}`}>
               {fmt.money(prixUnit)} {DA}
               {totalQte > 1 && <span className="text-base font-normal text-stone-400 ms-1">{p.perUnit}</span>}
             </span>
@@ -553,8 +580,8 @@ export default function ProduitDetailClient({
         {/* Avec variantes */}
         {hasVariants && (
           <>
-            {/* Swatches */}
-            <div>
+            {/* Swatches (cible du bouton principal tant que rien n'est choisi) */}
+            <div ref={choixRef} className={`rounded-2xl transition-shadow duration-300 ${choixEnAvant ? 'ring-2 ring-orange-400 ring-offset-4 ring-offset-stone-50 dark:ring-offset-stone-950' : ''}`}>
               <p className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-3">
                 {produit.variants.some(v => v.couleur) ? p.color : p.variant}
                 {activeVariant && <span className="ms-2 font-normal text-stone-400 text-xs">— {activeVariant.nom}</span>}
@@ -695,12 +722,12 @@ export default function ProduitDetailClient({
               </div>
             )}
 
-            <button onClick={handleAjouter} disabled={sending || lignes.length === 0}
-              className={`w-full font-semibold py-4 rounded-xl flex items-center justify-center gap-2.5 transition-all duration-300 text-base active:scale-[0.98] ${sent ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' : lignes.length === 0 ? 'bg-stone-100 dark:bg-stone-800 text-stone-400 cursor-default' : sending ? 'bg-orange-700 text-white opacity-70 cursor-wait' : 'bg-orange-700 hover:bg-orange-800 active:bg-orange-900 text-white shadow-lg shadow-orange-700/20'}`}
+            <button onClick={lignes.length === 0 ? allerAuChoix : handleAjouter} disabled={sending}
+              className={`w-full font-semibold py-4 rounded-xl flex items-center justify-center gap-2.5 transition-all duration-300 text-base active:scale-[0.98] ${sent ? 'bg-green-600 text-white' : sending ? 'bg-orange-700 text-white opacity-70 cursor-wait' : 'bg-orange-700 hover:bg-orange-800 active:bg-orange-900 text-white'}`}
             >
               {sent ? <><Check className="w-5 h-5" /> {p.addedToCart}</>
                 : sending ? <><Loader2 className="w-5 h-5 animate-spin" /> {p.adding}</>
-                : lignes.length === 0 ? <><ShoppingBag className="w-5 h-5" /> {p.selectItems}</>
+                : lignes.length === 0 ? <><ShoppingBag className="w-5 h-5" /> {p.chooseOption(choixLabel)}</>
                 : <><ShoppingCart className="w-5 h-5" /><span>{p.addNToCart(totalQte)}</span><span className="ms-auto text-sm font-bold opacity-90">{fmt.money(totalPrix)} {DA}</span></>
               }
             </button>

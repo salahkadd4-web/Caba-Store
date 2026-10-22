@@ -32,6 +32,7 @@ const product: typeof fr = {
   savings: 'Savings:',
   addedToCart: 'Added to cart!',
   adding: 'Adding…',
+  chooseOption: (type: string): string => `Choose: ${type.toLowerCase()}`,
   selectItems: 'Select items',
   addNToCart: (n: number): string => `Add ${n} item${n === 1 ? '' : 's'} to cart`,
   added: 'Added!',
