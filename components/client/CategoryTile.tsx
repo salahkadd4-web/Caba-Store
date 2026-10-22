@@ -57,7 +57,7 @@ export default function CategoryTile({
         )}
       </div>
       <div className={compact ? 'px-2.5 py-2' : 'px-3.5 py-3'}>
-        <p className={`${compact ? 'text-xs' : 'text-sm md:text-[15px]'} font-medium text-stone-800 dark:text-stone-100 line-clamp-2 leading-snug`}>{nom}</p>
+        <p className={`${compact ? 'text-xs' : 'text-sm md:text-[15px]'} font-medium text-stone-800 dark:text-stone-100 line-clamp-3 leading-snug break-words hyphens-auto`}>{nom}</p>
         {detail && !compact && <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">{detail}</p>}
       </div>
     </Link>

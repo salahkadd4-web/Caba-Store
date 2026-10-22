@@ -255,7 +255,7 @@ async function CategoriesSection() {
   return (
     <div className="flex md:grid md:grid-cols-6 gap-3 md:gap-4 overflow-x-auto md:overflow-visible scrollbar-hide snap-x snap-mandatory -mx-3 px-3 md:mx-0 md:px-0 pb-1">
       {tuiles.map((cat) => (
-        <div key={cat.id} className="w-28 shrink-0 snap-start md:w-auto">
+        <div key={cat.id} className="w-36 shrink-0 snap-start md:w-auto">
           <CategoryTile
             href={`/categories/${cat.id}`}
             nom={cat.nom}
@@ -330,7 +330,7 @@ function TilesSkeleton() {
   return (
     <div className="flex md:grid md:grid-cols-6 gap-3 md:gap-4 overflow-hidden">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="w-28 shrink-0 md:w-auto aspect-[4/5] rounded-2xl bg-stone-100 dark:bg-stone-800 animate-pulse" />
+        <div key={i} className="w-36 shrink-0 md:w-auto aspect-[4/5] rounded-2xl bg-stone-100 dark:bg-stone-800 animate-pulse" />
       ))}
     </div>
   )
