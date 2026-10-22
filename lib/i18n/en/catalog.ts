@@ -55,6 +55,7 @@ const catalog: typeof fr = {
     emptyDesc: 'Try changing your search criteria.',
     seeAll: 'See all products',
   },
+  lowStock: (n: number): string => `Only ${n} left`,
 }
 
 export default catalog

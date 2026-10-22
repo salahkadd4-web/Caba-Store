@@ -31,7 +31,7 @@ const common = {
   outOfStock: 'Rupture de stock',
   fromPrice: 'à partir de',
   degressive: 'Dégressif',
-  degressiveBadge: 'dégressif',
+  degressiveBadge: 'Prix dégressif',
   male: 'Homme',
   female: 'Femme',
   language: 'Langue',

@@ -44,10 +44,10 @@ export default function FavoriIconButton({ produitId }: { produitId: string }) {
       disabled={loading}
       title={isFavori ? t.catalog.favorites.remove : t.catalog.favorites.add}
       aria-label={isFavori ? t.catalog.favorites.remove : t.catalog.favorites.add}
-      className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 shadow-md disabled:opacity-50 ${
+      className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 shadow-sm ring-1 disabled:opacity-50 ${
         isFavori
-          ? 'bg-red-500 hover:bg-red-600 text-white'
-          : 'bg-white hover:bg-red-50 text-stone-400 hover:text-red-500'
+          ? 'bg-red-500 hover:bg-red-600 text-white ring-red-500'
+          : 'bg-white/95 hover:bg-red-50 text-stone-500 hover:text-red-500 ring-stone-200'
       }`}
     >
       {isFavori ? (

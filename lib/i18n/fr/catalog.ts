@@ -52,6 +52,7 @@ const catalog = {
     emptyDesc: 'Essayez de modifier vos critères de recherche.',
     seeAll: 'Voir tous les produits',
   },
+  lowStock: (n: number): string => `Plus que ${n}`,
 }
 
 export default catalog

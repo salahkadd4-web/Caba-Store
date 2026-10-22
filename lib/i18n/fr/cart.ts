@@ -35,6 +35,8 @@ const cart = {
   checkout: 'Passer la commande',
   unavailable: 'Indisponible',
   removeFromCart: 'Retirer du panier',
+  addShort: 'Ajouter',
+  inCartShort: 'Au panier',
 }
 
 export default cart

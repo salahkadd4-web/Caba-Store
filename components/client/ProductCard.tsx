@@ -85,6 +85,9 @@ function VariantSwatches({
 
 // ─── Composant principal ──────────────────────────────────────────────────────
 
+/** Seuil sous lequel la carte signale un stock bas (« Plus que 3 »). */
+const STOCK_BAS = 3
+
 export default function ProductCard({
   produit,
   badges,
@@ -98,16 +101,20 @@ export default function ProductCard({
   const reduction = getPourcentageReduction(produit.prixVariables, produit.prix)
   const estReduit = reduction !== null
 
-  const imageHeight = compact ? 'h-40' : 'h-48'
-  const cardWidth   = compact ? 'w-40 flex-none snap-start' : ''
+  // Le stock du produit ne fait foi que sans variantes (sinon il est porté par chaque variante)
+  const sansVariantes = !!produit.variants && produit.variants.length === 0
+  const rupture  = sansVariantes && produit.stock === 0
+  const stockBas = sansVariantes && produit.stock > 0 && produit.stock <= STOCK_BAS
+
+  const cardWidth = compact ? 'w-40 flex-none snap-start' : ''
 
   return (
     <Link
       href={`/produits/${produit.id}`}
-      className={`product-card group bg-white dark:bg-stone-900 rounded-2xl overflow-hidden border border-stone-200 dark:border-stone-800 hover:border-orange-300 dark:hover:border-orange-700 transition-colors ${cardWidth} ${className}`}
+      className={`product-card group flex flex-col bg-white dark:bg-stone-900 rounded-2xl overflow-hidden border border-stone-200 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-600 transition-colors ${cardWidth} ${className}`}
     >
-      {/* ── Image ── */}
-      <div className={`relative ${imageHeight} bg-stone-100 dark:bg-stone-800 overflow-hidden`}>
+      {/* ── Image : case carrée, produit entier sur fond blanc ── */}
+      <div className="relative aspect-square bg-white border-b border-stone-100 dark:border-stone-800 overflow-hidden">
         {produit.images[0] ? (
           <Image
             src={produit.images[0]}
@@ -118,84 +125,73 @@ export default function ProductCard({
                 ? '160px'
                 : '(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw'
             }
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            className={`object-contain ${compact ? 'p-2.5' : 'p-3 md:p-4'} group-hover:scale-[1.03] transition-transform duration-300`}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Package
-              className={`${compact ? 'w-10 h-10' : 'w-14 h-14'} text-stone-300 dark:text-stone-600`}
-            />
+          <div className="w-full h-full flex items-center justify-center bg-stone-50 dark:bg-stone-800">
+            <Package className={`${compact ? 'w-10 h-10' : 'w-14 h-14'} text-stone-300 dark:text-stone-600`} />
           </div>
         )}
 
-        {/* ── Badges gauche ── */}
+        {/* ── Badges (rang, prix dégressif) ── */}
         {(badges || hasTiers) && (
-          <div className="absolute top-2 start-2 flex flex-col gap-1">
+          <div className="absolute top-2 start-2 flex flex-col items-start gap-1">
             {Children.map(badges, (child, i) => (
               <Fragment key={`badge-${i}`}>{child}</Fragment>
             ))}
             {hasTiers && (
-              <span key="degressif" className="inline-flex items-center gap-1 text-xs bg-orange-700 text-white font-bold px-1.5 py-0.5 rounded-full shadow">
-                <Banknote className="w-3 h-3" />
+              <span key="degressif" className="inline-flex items-center gap-1 text-xs font-semibold bg-orange-50 text-orange-800 px-2 py-0.5 rounded-full border border-orange-100">
+                <Banknote className="w-3.5 h-3.5" />
                 {t.common.degressiveBadge}
               </span>
             )}
           </div>
         )}
 
-        {/* ── Actions droite ── */}
+        {/* ── Favori : seul bouton posé sur l'image ── */}
         {!hideActions && (
-          <div className="absolute top-2 end-2 flex flex-col gap-2">
+          <div className="absolute top-2 end-2">
             <FavoriIconButton produitId={produit.id} />
-            <CartIconButton produitId={produit.id} stock={produit.stock} />
           </div>
         )}
       </div>
 
       {/* ── Infos ── */}
-      <div className={compact ? 'p-3' : 'p-4'}>
-        <p
-          className={`${compact ? 'text-xs' : 'text-xs'} font-semibold text-orange-700 dark:text-orange-500 mb-1`}
-        >
-          {produit.category.nom}
-        </p>
-        <h3
-          className={`${compact ? 'text-xs' : 'text-sm'} font-semibold text-stone-800 dark:text-stone-100 line-clamp-2 mb-1.5 leading-tight`}
-        >
+      <div className={`flex flex-col flex-1 gap-1.5 ${compact ? 'p-3' : 'p-3.5 md:p-4'}`}>
+        <h3 className={`${compact ? 'text-sm' : 'text-sm md:text-[15px]'} font-medium text-stone-800 dark:text-stone-100 line-clamp-2 leading-snug min-h-[2.5em]`}>
           {produit.nom}
         </h3>
 
         {/* Prix */}
-        <div className="flex items-baseline gap-1.5 flex-wrap">
+        <div className="flex items-baseline gap-x-2 gap-y-0.5 flex-wrap">
           {hasTiers && (
-            <span className="text-xs text-stone-400 dark:text-stone-500">
-              {t.common.fromPrice}
-            </span>
+            <span className="w-full text-xs text-stone-500 dark:text-stone-400">{t.common.fromPrice}</span>
           )}
-          <span
-            className={`${compact ? 'text-sm' : 'text-base'} font-bold ${
- estReduit
- ? 'text-green-700 dark:text-green-400'
- : 'text-orange-700 dark:text-orange-500'
- }`}
-          >
-            {fmt.money(prixMin)} {fmt.currency}
+          <span className={`${compact ? 'text-base' : 'text-base md:text-lg'} font-bold tabular-nums text-stone-900 dark:text-stone-50`}>
+            {fmt.price(prixMin)}
           </span>
           {estReduit && (
             <>
-              <span className="text-xs text-stone-400 line-through font-normal">
-                {fmt.money(produit.prix)}
-              </span>
-              <span className="text-xs bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 font-bold px-1 py-0.5 rounded-full">
+              <span className="text-xs text-stone-400 line-through tabular-nums">{fmt.money(produit.prix)}</span>
+              <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-px rounded-full">
                 −{reduction}%
               </span>
             </>
           )}
         </div>
 
-        {/* Swatches */}
-        {produit.variants && (
-          <VariantSwatches variants={produit.variants} max={compact ? 4 : 5} />
+        {produit.variants && <VariantSwatches variants={produit.variants} max={compact ? 4 : 5} />}
+
+        {/* ── Bas de carte : signal de stock utile + ajout au panier ── */}
+        {(!hideActions || rupture || stockBas) && (
+          <div className="mt-auto pt-1.5 flex items-center justify-between gap-2">
+            {rupture ? (
+              <span className="text-xs font-medium text-red-700 dark:text-red-400">{t.common.outOfStock}</span>
+            ) : stockBas ? (
+              <span className="text-xs font-medium text-amber-700 dark:text-amber-400">{t.catalog.lowStock(produit.stock)}</span>
+            ) : <span />}
+            {!hideActions && <CartIconButton produitId={produit.id} stock={produit.stock} variant={compact ? 'square' : 'inline'} />}
+          </div>
         )}
       </div>
     </Link>

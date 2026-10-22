@@ -38,6 +38,8 @@ const cart: typeof fr = {
   checkout: 'Place order',
   unavailable: 'Unavailable',
   removeFromCart: 'Remove from cart',
+  addShort: 'Add',
+  inCartShort: 'In cart',
 }
 
 export default cart

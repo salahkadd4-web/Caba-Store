@@ -13,7 +13,21 @@ function broadcastCartUpdate() {
   ch.close()
 }
 
-export default function CartIconButton({ produitId, stock }: { produitId: string; stock: number }) {
+/**
+ * Ajout / retrait du panier depuis une carte produit.
+ *  - icon   : rond sur l'image (ancien rendu)
+ *  - inline : bouton « Ajouter » dans le bas de la carte
+ *  - square : carré 36 px, pour les cartes compactes
+ */
+export default function CartIconButton({
+  produitId,
+  stock,
+  variant = 'icon',
+}: {
+  produitId: string
+  stock: number
+  variant?: 'icon' | 'inline' | 'square'
+}) {
   const { data: session } = useSession()
   const router = useRouter()
   const { etat, setEtat } = useEtatProduit(produitId)
@@ -56,6 +70,43 @@ export default function CartIconButton({ produitId, stock }: { produitId: string
     } finally {
       setLoading(false)
     }
+  }
+
+  const cartIcon = (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4 shrink-0" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+    </svg>
+  )
+  const checkIcon = (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor" className="w-4 h-4 shrink-0" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+    </svg>
+  )
+
+  // ── Bouton dans le bas de la carte (inline / square) ──
+  if (variant !== 'icon') {
+    if (stock === 0) return null // la carte affiche déjà « Rupture de stock »
+    const square = variant === 'square'
+    return (
+      <button
+        type="button"
+        onClick={handleToggle}
+        disabled={loading}
+        title={inCart ? t.cart.removeFromCart : t.product.addToCart}
+        aria-label={inCart ? t.cart.removeFromCart : t.product.addToCart}
+        aria-pressed={inCart}
+        className={`shrink-0 inline-flex items-center justify-center gap-1.5 h-9 rounded-xl text-sm font-semibold transition-colors disabled:opacity-60 ${
+          square ? 'w-9' : 'px-3'
+        } ${
+          inCart
+            ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/40 dark:hover:text-red-300'
+            : 'bg-orange-50 dark:bg-orange-950/40 text-orange-800 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-950/70'
+        }`}
+      >
+        {inCart ? checkIcon : cartIcon}
+        {!square && <span>{inCart ? t.cart.inCartShort : t.cart.addShort}</span>}
+      </button>
+    )
   }
 
   if (stock === 0) return (

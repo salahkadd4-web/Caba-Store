@@ -53,6 +53,7 @@ const catalog: typeof fr = {
     emptyDesc: 'حاول تعديل معايير البحث.',
     seeAll: 'عرض كل المنتجات',
   },
+  lowStock: (n: number): string => `لم يتبقَّ سوى ${n}`,
 }
 
 export default catalog

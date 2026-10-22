@@ -37,6 +37,8 @@ const cart: typeof fr = {
   checkout: 'إتمام الطلب',
   unavailable: 'غير متوفر',
   removeFromCart: 'إزالة من السلة',
+  addShort: 'أضف',
+  inCartShort: 'في السلة',
 }
 
 export default cart

@@ -33,7 +33,7 @@ const common: typeof fr = {
   outOfStock: 'Out of stock',
   fromPrice: 'from',
   degressive: 'Volume pricing',
-  degressiveBadge: 'volume pricing',
+  degressiveBadge: 'Volume pricing',
   male: 'Male',
   female: 'Female',
   language: 'Language',
