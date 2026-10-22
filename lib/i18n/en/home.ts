@@ -23,6 +23,7 @@ const home: typeof fr = {
   noCategories: 'No categories available.',
   noProducts: 'No products available.',
   productsCount: (n: number): string => `${n} products`,
+  topRank: (n: number): string => `Top ${n}`,
   trust: [
     { title: '48h delivery', desc: 'Anywhere in Algeria' },
     { title: 'Cash on delivery', desc: 'Pay when you receive it' },

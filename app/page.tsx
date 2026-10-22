@@ -1,10 +1,10 @@
 import Link from 'next/link'
-import Image from 'next/image'
 import { Suspense } from 'react'
 import { prisma } from '@/lib/prisma'
 import ProductCard, { type ProductCardData } from '@/components/client/ProductCard'
+import CategoryTile from '@/components/client/CategoryTile'
 import CabaLogo from '@/components/CabaLogo'
-import { Flame, RotateCcw, ShieldCheck, Tag, Truck, Wallet, Headphones } from 'lucide-react'
+import { ArrowRight, ChevronRight, RotateCcw, ShieldCheck, Truck, Wallet, Headphones } from 'lucide-react'
 import { PRODUIT_VISIBLE } from '@/lib/product-visibility'
 import { getI18n } from '@/lib/i18n/server'
 import { rankProducts, VENDEUR_RANK_SELECT } from '@/lib/product-ranking'
@@ -26,7 +26,6 @@ export default async function HomePage() {
   const h = t.home
 
   const trustItems = [Truck, Wallet, RotateCcw].map((Icon, i) => ({ Icon, ...h.trust[i] }))
-  const trustItemsMobile = [Truck, Wallet, RotateCcw, ShieldCheck].map((Icon, i) => ({ Icon, label: h.trustMobile[i] }))
   const reassuranceItems = [ShieldCheck, Truck, Headphones].map((Icon, i) => ({ Icon, ...h.reassurance[i] }))
 
   return (
@@ -79,57 +78,33 @@ export default async function HomePage() {
       ══════════════════════════════════════════════════ */}
       <section className="md:hidden">
 
-        {/* ── App Header Bar ── */}
-        <div className="flex items-center justify-between px-4 pt-4 pb-3 bg-stone-50 dark:bg-stone-950">
-          <div className="flex items-center gap-2">
-            <CabaLogo className="w-7 h-7 text-orange-700 dark:text-orange-400" />
-            <span className="text-base font-bold tracking-tight text-stone-900 dark:text-stone-50">{t.common.appName}</span>
+        {/* ── Bandeau d'accueil (la marque est déjà dans la barre du haut) ── */}
+        <div className="mx-3 mt-3 mb-3 rounded-2xl overflow-hidden" style={{background: 'linear-gradient(135deg, #c2410c 0%, #ea580c 100%)'}}>
+          <div className="px-5 py-5">
+            <p className="text-orange-100 text-sm font-medium mb-1">{h.welcome}</p>
+            <h1 className="text-white text-2xl font-semibold leading-tight mb-4">
+              {h.mobileTitle1} {h.mobileTitle2}
+            </h1>
+            <Link
+              href="/produits"
+              className="inline-flex items-center gap-1.5 bg-white text-orange-800 text-sm font-semibold h-10 px-4 rounded-xl active:scale-95 transition-transform"
+            >
+              {h.buyNow}
+              <ArrowRight className="w-4 h-4 rtl-flip" />
+            </Link>
           </div>
-          <span className="inline-flex items-center gap-1.5 bg-orange-50 dark:bg-orange-950/50 text-orange-700 dark:text-orange-400 text-xs font-semibold px-2.5 py-1 rounded-full border border-orange-200 dark:border-orange-800">
-            <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-            {h.delivery48}
-          </span>
         </div>
 
-        {/* ── Hero Banner compact ── */}
-        <div className="mx-3 mb-3 rounded-2xl overflow-hidden relative" style={{background: 'linear-gradient(135deg, #c2410c 0%, #ea580c 50%, #d97706 100%)'}}>
-          <div className="absolute inset-0 opacity-[0.07]" style={{backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px'}} />
-          <div className="absolute -end-6 -top-6 w-36 h-36 rounded-full bg-white/10" />
-          <div className="absolute end-4 -bottom-4 w-20 h-20 rounded-full bg-white/10" />
-          <div className="relative px-5 py-5 flex items-center gap-4">
-            <div className="flex-1">
-              <p className="text-orange-200 text-xs font-bold mb-1">{h.welcome}</p>
-              <h1 className="text-white text-[22px] font-bold leading-snug tracking-tight mb-3">
-                {h.mobileTitle1}<br />{h.mobileTitle2}
-              </h1>
-              <Link
-                href="/produits"
-                className="inline-flex items-center gap-1.5 bg-white text-orange-700 text-[13px] font-bold px-4 py-2.5 rounded-xl shadow-md active:scale-95 transition-transform"
-              >
-                {h.buyNow}
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="rtl-flip"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-              </Link>
+        {/* ── Garanties : fixes, sans défilement ── */}
+        <div className="grid grid-cols-3 gap-2 px-3 pb-1 text-center">
+          {trustItems.map(({ Icon, title }) => (
+            <div key={title} className="flex flex-col items-center gap-1.5">
+              <span className="w-9 h-9 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 flex items-center justify-center">
+                <Icon className="w-4.5 h-4.5" />
+              </span>
+              <span className="text-xs font-medium text-stone-600 dark:text-stone-300 leading-tight">{title}</span>
             </div>
-            <CabaLogo className="shrink-0 w-20 h-20 text-white/15" />
-          </div>
-        </div>
-
-        {/* ── Trust Pills — défilement infini (mobile) ── */}
-        <div className="overflow-hidden pb-2">
-          {/* La piste est dupliquée (×2) pour que la boucle soit invisible */}
-          <div className="trust-marquee-track flex gap-2 w-max">
-            {[...trustItemsMobile, ...trustItemsMobile].map(({ Icon, label }, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-1.5 shrink-0 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-full px-3 py-1.5 shadow-sm"
-              >
-                <Icon className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400 shrink-0" />
-                <span className="text-xs font-semibold text-stone-600 dark:text-stone-300 whitespace-nowrap">
-                  {label}
-                </span>
-              </div>
-            ))}
-          </div>
+          ))}
         </div>
 
       </section>
@@ -154,13 +129,9 @@ export default async function HomePage() {
       </section>
 
       {/* ── Catégories ── */}
-      <section className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-24">
-        <SectionHeader
-          eyebrow={h.browse}
-          title={h.categories}
-          logo
-        />
-        <Suspense fallback={<GridSkeleton />}>
+      <section className="max-w-7xl mx-auto px-3 md:px-6 pt-6 pb-8 md:py-16">
+        <SectionHeader title={h.categories} href="/categories" linkLabel={t.home.seeAllShort} />
+        <Suspense fallback={<TilesSkeleton />}>
           <CategoriesSection />
         </Suspense>
       </section>
@@ -181,12 +152,9 @@ export default async function HomePage() {
       </section>
 
       {/* ── Best-sellers ── */}
-      <section className="bg-stone-50 dark:bg-stone-950 py-8 md:py-24 px-4 md:px-6 transition-colors duration-300">
-        <div className="max-w-7xl mx-auto">
-          <SectionHeader
-            eyebrow={<><Flame className="w-4 h-4" /> {h.popular}</>}
-            title={h.bestSellers}
-          />
+      <section className="bg-stone-50 dark:bg-stone-950 py-8 md:py-16">
+        <div className="max-w-7xl mx-auto px-3 md:px-6">
+          <SectionHeader title={h.bestSellers} href="/produits" linkLabel={t.home.seeAllShort} />
           <Suspense fallback={<GridSkeleton />}>
             <BestSellersSection />
           </Suspense>
@@ -194,20 +162,12 @@ export default async function HomePage() {
       </section>
 
       {/* ── Dernières arrivées ── */}
-      <section className="bg-[#FAF7F2] dark:bg-stone-900 py-8 md:py-24 px-4 md:px-6 transition-colors duration-300">
-        <div className="max-w-7xl mx-auto">
-          <SectionHeader eyebrow={h.newArrivalsEyebrow} title={h.newArrivals} logo />
+      <section className="bg-[#FAF7F2] dark:bg-stone-900 py-8 md:py-16">
+        <div className="max-w-7xl mx-auto px-3 md:px-6">
+          <SectionHeader title={h.newArrivals} href="/produits" linkLabel={t.home.seeAllShort} />
           <Suspense fallback={<GridSkeleton />}>
             <ProduitsSection />
           </Suspense>
-          <div className="text-center mt-10 md:mt-16">
-            <Link
-              href="/produits"
-              className="border border-stone-800 dark:border-stone-400 text-stone-800 dark:text-stone-200 hover:bg-stone-900 hover:text-white dark:hover:bg-stone-100 dark:hover:text-stone-900 text-xs px-12 py-4 transition-all duration-300 inline-block rounded-xl"
-            >
-              {h.seeAll}
-            </Link>
-          </div>
         </div>
       </section>
     </div>
@@ -253,9 +213,11 @@ async function BestSellersSection() {
           key={produit.id}
           produit={produit as unknown as ProductCardData}
           badges={
-            <span className="text-xs bg-orange-600 text-white font-bold px-2 py-0.5 rounded-full shadow flex items-center gap-1">
-              <Flame className="w-3 h-3" /> #{idx + 1}
-            </span>
+            idx < 3 ? (
+              <span className="text-xs font-semibold bg-stone-900 text-white px-2 py-0.5 rounded-full">
+                {t.home.topRank(idx + 1)}
+              </span>
+            ) : undefined
           }
         />
       ))}
@@ -273,13 +235,10 @@ async function CategoriesSection() {
         products: {
           where:   PRODUIT_ACTIF_WHERE,
           orderBy: [{ createdAt: 'desc' }],
-          take:    30,
-          include: {
-            vendeur:    VENDEUR_RANK_SELECT,
-            variants:   VARIANT_SELECT,
-            orderItems: { select: { id: true, order: { select: { statut: true } } } },
-          },
+          take:    12,
+          select:  { images: true, createdAt: true, vendeur: VENDEUR_RANK_SELECT },
         },
+        _count: { select: { products: { where: PRODUIT_ACTIF_WHERE } } },
       },
     }),
   ])
@@ -288,81 +247,23 @@ async function CategoriesSection() {
     return <EmptyState message={t.home.noCategories} />
   }
 
+  // Les catégories les plus fournies d'abord ; 6 tuiles suffisent, « Voir tout » mène au reste
+  const tuiles = [...categories]
+    .sort((a, b) => b._count.products - a._count.products)
+    .slice(0, 6)
+
   return (
-    <div className="space-y-10 md:space-y-14">
-      {categories.map((cat) => {
-        const avecVentes = cat.products.map((p) => ({
-          ...p,
-          ventes: p.orderItems.filter((oi) => oi.order.statut !== 'ANNULEE').length,
-        }))
-        // Badge de rang réservé aux 3 meilleures ventes réelles de la catégorie
-        const top3 = new Map(
-          [...avecVentes]
-            .filter((p) => p.ventes > 0)
-            .sort((a, b) => b.ventes - a.ventes)
-            .slice(0, 3)
-            .map((p, i) => [p.id, i + 1]),
-        )
-        // Ordre d'affichage : priorité abonnement → wilaya du visiteur → date
-        const produitsTries = rankProducts(avecVentes, viewerWilaya).slice(0, 10)
-
-        return (
-          <div key={cat.id}>
-            {/* En-tête catégorie */}
-            <div className="flex items-center justify-between mb-4 md:mb-5">
-              <div className="flex items-center gap-2 md:gap-3">
-                {cat.image ? (
-                  <Image
-                    src={cat.image}
-                    alt={cat.nom}
-                    width={32}
-                    height={32}
-                    className="w-7 h-7 md:w-8 md:h-8 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center">
-                    <Tag className="w-3.5 h-3.5 md:w-4 md:h-4 text-stone-400" />
-                  </div>
-                )}
-                <h3 className="text-base md:text-lg font-semibold tracking-tight text-stone-900 dark:text-stone-100">
-                  {cat.nom}
-                </h3>
-                <span className="text-xs text-stone-400 dark:text-stone-500 hidden sm:inline">
-                  {t.home.productsCount(cat.products.length)}
-                </span>
-              </div>
-              <Link
-                href={`/categories/${cat.id}`}
-                className="text-xs font-semibold text-orange-700 dark:text-orange-500 hover:text-orange-800"
-              >
-                <span className="hidden sm:inline border border-orange-200 dark:border-orange-800 hover:border-orange-400 px-3 py-1.5 rounded-full transition-colors">{t.home.seeAllShort}</span>
-                <span className="sm:hidden text-lg leading-none inline-block rtl-flip">›</span>
-              </Link>
-            </div>
-
-            {/* Rangée scrollable */}
-            <div className="products-row flex gap-3 md:gap-4 overflow-x-auto pb-3 scrollbar-hide snap-x snap-mandatory">
-              {produitsTries.map((produit) => {
-                const rang = top3.get(produit.id)
-                return (
-                  <ProductCard
-                    key={produit.id}
-                    produit={{ ...produit, category: cat } as unknown as ProductCardData}
-                    compact
-                    badges={
-                      rang ? (
-                        <span key="rank" className="w-6 h-6 flex items-center justify-center text-xs font-bold bg-stone-900/80 text-white rounded-full backdrop-blur-sm shadow">
-                          {rang}
-                        </span>
-                      ) : undefined
-                    }
-                  />
-                )
-              })}
-            </div>
-          </div>
-        )
-      })}
+    <div className="flex md:grid md:grid-cols-6 gap-3 md:gap-4 overflow-x-auto md:overflow-visible scrollbar-hide snap-x snap-mandatory -mx-3 px-3 md:mx-0 md:px-0 pb-1">
+      {tuiles.map((cat) => (
+        <div key={cat.id} className="w-28 shrink-0 snap-start md:w-auto">
+          <CategoryTile
+            href={`/categories/${cat.id}`}
+            nom={cat.nom}
+            detail={t.catalog.categories.productsCount(cat._count.products)}
+            images={rankProducts(cat.products, viewerWilaya).slice(0, 4).map(p => p.images[0])}
+          />
+        </div>
+      ))}
     </div>
   )
 }
@@ -401,26 +302,36 @@ async function ProduitsSection() {
 // ─── Composants UI partagés ───────────────────────────────────────────────────
 
 function SectionHeader({
-  eyebrow,
   title,
-  logo = false,
+  href,
+  linkLabel,
 }: {
-  eyebrow: React.ReactNode
   title: string
-  logo?: boolean
+  href: string
+  linkLabel: string
 }) {
   return (
-    <div className="text-center mb-8 md:mb-16">
-      {logo && (
-        <CabaLogo className="hidden md:block w-16 h-16 text-orange-700 dark:text-orange-500 mx-auto mb-4 opacity-80" />
-      )}
-      <p className="text-xs font-semibold text-orange-700 dark:text-orange-500 mb-3 md:mb-4 flex items-center justify-center gap-2">
-        {eyebrow}
-      </p>
-      <h2 className="text-2xl md:text-4xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">
+    <div className="flex items-baseline justify-between gap-4 mb-4 md:mb-6">
+      <h2 className="text-xl md:text-2xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">
         {title}
       </h2>
-      <div className="w-10 md:w-12 h-px bg-orange-700 dark:bg-orange-500 mx-auto mt-4 md:mt-6" />
+      <Link
+        href={href}
+        className="shrink-0 inline-flex items-center gap-0.5 text-sm font-medium text-orange-700 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-300"
+      >
+        {linkLabel}
+        <ChevronRight className="w-4 h-4 rtl-flip" />
+      </Link>
+    </div>
+  )
+}
+
+function TilesSkeleton() {
+  return (
+    <div className="flex md:grid md:grid-cols-6 gap-3 md:gap-4 overflow-hidden">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="w-28 shrink-0 md:w-auto aspect-[4/5] rounded-2xl bg-stone-100 dark:bg-stone-800 animate-pulse" />
+      ))}
     </div>
   )
 }

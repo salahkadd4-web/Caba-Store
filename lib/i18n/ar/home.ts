@@ -23,6 +23,7 @@ const home: typeof fr = {
   noCategories: 'لا توجد فئات متاحة.',
   noProducts: 'لا توجد منتجات متاحة.',
   productsCount: (n: number) => `${n} منتج`,
+  topRank: (n: number): string => `الأفضل ${n}`,
   trust: [
     { title: 'توصيل خلال 48 ساعة', desc: 'في كل أنحاء الجزائر' },
     { title: 'الدفع عند الاستلام', desc: 'ادفع عند استلام طلبك' },

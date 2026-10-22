@@ -33,7 +33,7 @@ export default function CategoryTile({
   return (
     <Link
       href={href}
-      className="group flex flex-col bg-white dark:bg-stone-900 rounded-2xl overflow-hidden border border-stone-200 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-600 transition-colors"
+      className="group h-full flex flex-col bg-white dark:bg-stone-900 rounded-2xl overflow-hidden border border-stone-200 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-600 transition-colors"
     >
       <div className={`aspect-square bg-stone-100 dark:bg-stone-800 ${collage ? 'grid grid-cols-2 gap-px' : 'grid'}`}>
         {cases.length === 0 ? (
@@ -57,7 +57,7 @@ export default function CategoryTile({
         )}
       </div>
       <div className={compact ? 'px-2.5 py-2' : 'px-3.5 py-3'}>
-        <p className={`${compact ? 'text-xs' : 'text-sm md:text-[15px]'} font-medium text-stone-800 dark:text-stone-100 line-clamp-1`}>{nom}</p>
+        <p className={`${compact ? 'text-xs' : 'text-sm md:text-[15px]'} font-medium text-stone-800 dark:text-stone-100 line-clamp-2 leading-snug`}>{nom}</p>
         {detail && !compact && <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">{detail}</p>}
       </div>
     </Link>

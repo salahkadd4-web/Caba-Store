@@ -21,6 +21,7 @@ const home = {
   noCategories: 'Aucune catégorie disponible.',
   noProducts: 'Aucun produit disponible.',
   productsCount: (n: number): string => `${n} produits`,
+  topRank: (n: number): string => `Top ${n}`,
   trust: [
     { title: 'Livraison 48h', desc: 'Partout en Algérie' },
     { title: 'Paiement à la livraison', desc: 'Payez à la réception' },
