@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useSession }  from 'next-auth/react'
 import { useIsMobile } from '@/lib/hooks/useIsMobile'
 import { useI18n } from '@/components/I18nProvider'
+import { isAuthPath } from '@/lib/auth-paths'
 
 export default function BottomNav() {
   const isMobile        = useIsMobile()
@@ -16,7 +17,7 @@ export default function BottomNav() {
 
   if (!isMobile) return null
   if (pathname.startsWith('/admin') || pathname.startsWith('/vendeur')) return null
-  if (pathname.startsWith('/connexion') || pathname.startsWith('/inscription')) return null
+  if (isAuthPath(pathname)) return null
 
   // /commandes et /retours sont des pages dashboard pour admin/vendeur
   if ((pathname.startsWith('/commandes') || pathname.startsWith('/retours')) &&

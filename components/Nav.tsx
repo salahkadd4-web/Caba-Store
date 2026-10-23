@@ -13,6 +13,7 @@ import {
 import { APP_URL } from '@/lib/constants'
 import { useI18n } from '@/components/I18nProvider'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
+import { isAuthPath } from '@/lib/auth-paths'
 
 function ChevronDown({ open }: { open: boolean }) {
   return (
@@ -124,8 +125,8 @@ export default function Nav() {
   if (pathname?.startsWith('/vendeur')) return null
   if (pathname?.startsWith('/commandes') && (session?.user?.role === 'ADMIN' || session?.user?.role === 'VENDEUR')) return null
   if (pathname?.startsWith('/retours')   && (session?.user?.role === 'ADMIN' || session?.user?.role === 'VENDEUR')) return null
-  const isAuthPage = pathname?.startsWith('/connexion') || pathname?.startsWith('/inscription')
-  if (isAuthPage) return null
+  // Pages de compte : header conservé sur ordinateur ; sur téléphone, l'écran natif a sa propre barre
+  const isAuthPage = isAuthPath(pathname)
 
   const isVendeur = session?.user?.role === 'VENDEUR'
   const isAdmin   = session?.user?.role === 'ADMIN'
@@ -151,10 +152,11 @@ export default function Nav() {
 
   return (
     <>
-      <div className="h-16" />
+      <div className={`h-16 ${isAuthPage ? 'hidden md:block' : ''}`} />
 
       <header
         className={`
+          ${isAuthPage ? 'hidden md:block' : ''}
           bg-[#FAF7F2]/95 dark:bg-stone-900/95 backdrop-blur-sm
           fixed top-0 start-0 end-0 z-50
           border-b border-stone-200 dark:border-stone-800

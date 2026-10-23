@@ -2,6 +2,7 @@ import type fr from '../fr/auth'
 
 const auth: typeof fr = {
   tagline: 'Excellence within reach',
+  stepOf: (c: number, n: number): string => `Step ${c} of ${n}`,
   or: 'or',
   continueWithGoogle: 'Continue with Google',
   continueWithGoogleSeller: 'Continue with Google — Seller',
@@ -28,6 +29,7 @@ const auth: typeof fr = {
   loginQuestion: 'Log in?',
 
   signin: {
+    subtitle: 'Good to see you again.',
     guest: 'Browse as a guest',
     googleAccount: 'This account uses Google sign-in.',
     badCredentials: 'Incorrect username or password.',
@@ -53,6 +55,7 @@ const auth: typeof fr = {
   },
 
   signup: {
+    subtitle: 'A few details to get started.',
     stepInfo: 'Details',
     stepConfirm: 'Confirmation',
     newAccount: 'New account',

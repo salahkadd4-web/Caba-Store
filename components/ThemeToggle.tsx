@@ -4,6 +4,8 @@ import { useTheme } from '@/components/ThemeProvider'
 import { useState, useRef, useEffect, useCallback, useMemo, useSyncExternalStore } from 'react'
 import { Sun, Moon, Monitor } from 'lucide-react'
 import { useI18n } from '@/components/I18nProvider'
+import { usePathname } from 'next/navigation'
+import { isAuthPath } from '@/lib/auth-paths'
 
 const options: { key: 'light' | 'dark' | 'system'; icon: React.ElementType }[] = [
   { key: 'light',  icon: Sun },
@@ -36,6 +38,7 @@ function getInitialPos(): { x: number; y: number } {
 
 export default function ThemeToggle() {
   const { theme, setTheme } = useTheme()
+  const pathname = usePathname()
   const { t } = useI18n()
 
   const [open,     setOpen]     = useState(false)
@@ -131,6 +134,10 @@ export default function ThemeToggle() {
 
   if (!pos) return null
 
+  // Pages de compte sur téléphone : les actions sont fixées en bas d'écran, le
+  // bouton flottant les couvrirait — on ne garde que la version desktop.
+  const surPageCompte = isAuthPath(pathname)
+
   return (
     <>
       {/* ── DESKTOP — même coin que le Header (bottom-right) ── */}
@@ -182,7 +189,7 @@ export default function ThemeToggle() {
       {/* ── MOBILE — draggable, même style ── */}
       <div
         ref={mobileRef}
-        className="md:hidden fixed z-50"
+        className={`md:hidden fixed z-50 ${surPageCompte ? 'hidden' : ''}`}
         style={{
           left: pos.x, top: pos.y,
           width: BTN,  height: BTN,

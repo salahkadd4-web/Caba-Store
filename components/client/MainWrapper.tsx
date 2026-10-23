@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import { useSession }  from 'next-auth/react'
+import { isAuthPath } from '@/lib/auth-paths'
 
 /**
  * Wrapper du <main> racine.
@@ -20,8 +21,9 @@ export default function MainWrapper({ children }: { children: React.ReactNode })
     ((pathname?.startsWith('/commandes') || pathname?.startsWith('/retours')) &&
       (role === 'ADMIN' || role === 'VENDEUR'))
 
+  // Pas de barre du bas sur les dashboards ni sur les pages de compte
   return (
-    <main className={isDashboard ? '' : 'pb-16 md:pb-0'}>
+    <main className={isDashboard || isAuthPath(pathname) ? '' : 'pb-16 md:pb-0'}>
       {children}
     </main>
   )

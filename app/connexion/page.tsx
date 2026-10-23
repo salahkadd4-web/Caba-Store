@@ -5,12 +5,13 @@ import { useState, Suspense, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Check } from 'lucide-react'
-import CabaLogo from '@/components/CabaLogo'
+import { Check, Lock, Mail } from 'lucide-react'
 import GoogleIcon from '@/components/client/GoogleIcon'
-import LanguageSwitcher from '@/components/LanguageSwitcher'
 import { useI18n } from '@/components/I18nProvider'
-import AuthBrandPanel from '@/components/client/AuthBrandPanel'
+import {
+  AuthActions, AuthAlert, AuthDivider, AuthField, AuthScreen, PasswordField, Spinner,
+  authLink, authPrimaryBtn, authSecondaryBtn,
+} from '@/components/auth/AuthUI'
 
 const GOOGLE_WEB_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? ''
 
@@ -35,19 +36,11 @@ function GuestLink() {
   if (!isNative) return null
 
   return (
-    <div className="mt-6 text-center">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="flex-1 h-px bg-stone-100 dark:bg-stone-800" />
-        <span className="text-xs text-stone-300 dark:text-stone-700 ">{t.auth.or}</span>
-        <div className="flex-1 h-px bg-stone-100 dark:bg-stone-800" />
-      </div>
-      <Link
-        href="/"
-        className="inline-flex items-center gap-1.5 text-xs text-stone-400 dark:text-stone-500 hover:text-orange-700 dark:hover:text-orange-500 transition-colors underline underline-offset-4"
-      >
+    <p className="text-center">
+      <Link href="/" className="text-sm text-stone-500 dark:text-stone-400 underline underline-offset-4 hover:text-orange-700">
         {t.auth.signin.guest}
       </Link>
-    </div>
+    </p>
   )
 }
 
@@ -233,189 +226,108 @@ function ConnexionContent() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex flex-col lg:flex-row transition-colors duration-300">
+    <AuthScreen
+      title={s.title}
+      subtitle={s.subtitle}
+      backIcon="close"
+      below={
+        <p>
+          {s.noAccount}{' '}
+          <Link href="/inscription" className={authLink}>{s.register}</Link>
+        </p>
+      }
+    >
+      {/* ── Bannières ── */}
+      {inscription === 'client' && (
+        <AuthAlert tone="success">
+          <p className="font-medium flex items-center gap-1.5"><Check className="w-4 h-4" />{s.clientCreated}</p>
+          <p>{s.clientCreatedDesc}</p>
+        </AuthAlert>
+      )}
+      {inscription === 'vendeur' && (
+        <AuthAlert tone="success">
+          <p className="font-medium flex items-center gap-1.5"><Check className="w-4 h-4" />{s.shopCreated}</p>
+          <p>{s.shopCreatedDesc1}</p>
+          <p>{s.shopCreatedDesc2}</p>
+        </AuthAlert>
+      )}
+      {reset === 'success' && <AuthAlert tone="info">{s.passwordReset}</AuthAlert>}
+      {error && <AuthAlert tone="error">{error}</AuthAlert>}
 
-      <AuthBrandPanel />
+      {/* ── Connexion rapide (développement uniquement) ── */}
+      {IS_DEV && (
+        <div className="border border-dashed border-amber-400 dark:border-amber-600 bg-amber-50 dark:bg-amber-950/40 p-3 rounded-xl">
+          <p className="text-xs text-amber-700 dark:text-amber-400 mb-2 text-center">{s.devQuickLogin}</p>
+          <div className="grid grid-cols-3 gap-2">
+            {DEV_ACCOUNTS.map((acc) => (
+              <button
+                key={acc.role}
+                type="button"
+                onClick={() => quickLogin(acc)}
+                disabled={loading || loadingGoogle}
+                className="text-xs py-2 border border-amber-300 dark:border-amber-700 bg-white dark:bg-stone-900 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 rounded-xl transition-colors disabled:opacity-50"
+              >
+                {acc.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Formulaire ── */}
-      <div className="flex-1 flex flex-col items-center justify-center p-8 overflow-y-auto">
-        <div className="w-full max-w-sm py-8">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <AuthField
+          id="identifiant"
+          name="identifiant"
+          type="text"
+          inputMode="email"
+          autoComplete="username"
+          label={s.identifier}
+          icon={Mail}
+          value={form.identifiant}
+          onChange={handleChange}
+          placeholder={s.identifierPlaceholder}
+          dir="ltr"
+          required
+        />
+        <PasswordField
+          id="motDePasse"
+          name="motDePasse"
+          autoComplete="current-password"
+          label={s.password}
+          labelAside={<Link href="/recuperer-mot-de-passe" className={`text-sm ${authLink}`}>{s.forgot}</Link>}
+          icon={Lock}
+          value={form.motDePasse}
+          onChange={handleChange}
+          placeholder="••••••••"
+          required
+        />
 
-          <div className="flex justify-end mb-6 -mt-2">
-            <LanguageSwitcher className="border border-stone-200 dark:border-stone-700" />
-          </div>
-
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">{s.title}</h1>
-            <p className="text-stone-500 dark:text-stone-400 mt-1">{s.welcome}</p>
-          </div>
-
-          {/* ── Bannière succès inscription client ── */}
-          {inscription === 'client' && (
-            <div className="border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950 px-4 py-3 mb-6 rounded-xl space-y-1">
-              <p className="text-xs font-medium text-green-700 dark:text-green-400 flex items-center gap-1.5">
-                <Check className="w-3.5 h-3.5" />
-                {s.clientCreated}
-              </p>
-              <p className="text-xs text-green-600 dark:text-green-500 ">
-                {s.clientCreatedDesc}
-              </p>
-            </div>
-          )}
-
-          {/* ── Bannière succès inscription vendeur ── */}
-          {inscription === 'vendeur' && (
-            <div className="border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950 px-4 py-3 mb-6 rounded-xl space-y-1.5">
-              <p className="text-xs font-medium text-green-700 dark:text-green-400 flex items-center gap-1.5">
-                <Check className="w-3.5 h-3.5" />
-                {s.shopCreated}
-              </p>
-              <p className="text-xs text-green-600 dark:text-green-500 ">
-                {s.shopCreatedDesc1}
-              </p>
-              <p className="text-xs text-green-600 dark:text-green-500 ">
-                {s.shopCreatedDesc2}
-              </p>
-            </div>
-          )}
-
-          {/* ── Bannière succès reset mot de passe ── */}
-          {reset === 'success' && (
-            <div className="border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 text-xs px-4 py-3 mb-6 rounded-xl ">
-              {s.passwordReset}
-            </div>
-          )}
-
-          {/* ── Erreur ── */}
-          {error && (
-            <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 text-xs px-4 py-3 mb-6 rounded-xl ">
-              {error}
-            </div>
-          )}
-
-          {/* ── Dev quick-login ── */}
-          {IS_DEV && (
-            <div className="border border-dashed border-amber-400 dark:border-amber-600 bg-amber-50 dark:bg-amber-950/40 p-3 mb-6 rounded-xl">
-              <p className="text-xs text-amber-700 dark:text-amber-400 mb-2 text-center">
-                {s.devQuickLogin}
-              </p>
-              <div className="grid grid-cols-3 gap-2">
-                {DEV_ACCOUNTS.map((acc) => (
-                  <button
-                    key={acc.role}
-                    type="button"
-                    onClick={() => quickLogin(acc)}
-                    disabled={loading || loadingGoogle}
-                    className="text-xs py-2 border border-amber-300 dark:border-amber-700 bg-white dark:bg-stone-900 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 rounded-xl transition-colors disabled:opacity-50"
-                  >
-                    {acc.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ── Bouton Google ── */}
-          <button
-            onClick={handleGoogle}
-            disabled={loadingGoogle || loading}
-            className="w-full flex items-center justify-center gap-3 border border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600 hover:bg-stone-100 dark:hover:bg-stone-900 text-stone-700 dark:text-stone-200 text-sm font-medium h-11 rounded-xl transition-colors duration-300 disabled:opacity-50 mb-6"
-          >
-            {loadingGoogle
-              ? <span className="w-4 h-4 border-2 border-stone-200 border-t-stone-500 rounded-full animate-spin" />
-              : <GoogleIcon />
-            }
+        <AuthActions>
+          <button type="submit" disabled={loading || loadingGoogle} className={authPrimaryBtn}>
+            {loading ? <><Spinner light /> {s.loggingIn}</> : s.submit}
+          </button>
+          <div className="hidden md:block"><AuthDivider /></div>
+          <button type="button" onClick={handleGoogle} disabled={loadingGoogle || loading} className={authSecondaryBtn}>
+            {loadingGoogle ? <Spinner /> : <GoogleIcon />}
             {a.continueWithGoogle}
           </button>
-
-          {/* ── Séparateur ── */}
-          <div className="flex items-center gap-4 mb-6">
-            <div className="flex-1 h-px bg-stone-200 dark:bg-stone-800" />
-            <span className="text-xs text-stone-400 dark:text-stone-600 ">{a.or}</span>
-            <div className="flex-1 h-px bg-stone-200 dark:bg-stone-800" />
-          </div>
-
-          {/* ── Formulaire email/mdp ── */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1.5">
-                {s.identifier}
-              </label>
-              <input
-                type="text"
-                name="identifiant"
-                value={form.identifiant}
-                onChange={handleChange}
-                required
-                className="w-full h-11 px-3.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 focus:border-orange-700 dark:focus:border-orange-500 focus:ring-2 focus:ring-orange-700/15 outline-none text-sm text-stone-800 dark:text-stone-100 transition-colors duration-300"
-                placeholder={s.identifierPlaceholder}
-                dir="ltr"
-              />
-            </div>
-            <div>
-              <div className="flex justify-between items-center mb-1.5">
-                <label className="block text-sm font-medium text-stone-700 dark:text-stone-300">
-                  {s.password}
-                </label>
-                <Link
-                  href="/recuperer-mot-de-passe"
-                  className="text-sm font-medium text-orange-700 dark:text-orange-400 hover:text-orange-800 transition-colors"
-                >
-                  {s.forgot}
-                </Link>
-              </div>
-              <input
-                type="password"
-                name="motDePasse"
-                value={form.motDePasse}
-                onChange={handleChange}
-                required
-                className="w-full h-11 px-3.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 focus:border-orange-700 dark:focus:border-orange-500 focus:ring-2 focus:ring-orange-700/15 outline-none text-sm text-stone-800 dark:text-stone-100 transition-colors duration-300"
-                placeholder="••••••••"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading || loadingGoogle}
-              className="w-full bg-orange-700 hover:bg-orange-800 text-white text-sm font-semibold h-12 rounded-xl transition-colors duration-300 disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
-            >
-              {loading
-                ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {s.loggingIn}</>
-                : s.submit
-              }
-            </button>
-          </form>
-
-          {/* ── Lien inscription ── */}
-          <p className="text-center text-sm text-stone-500 dark:text-stone-400 mt-8">
+          {/* Lien d'inscription : dans la barre du bas sur téléphone, sous la carte sur ordinateur */}
+          <p className="md:hidden text-center text-sm text-stone-500 dark:text-stone-400">
             {s.noAccount}{' '}
-            <Link
-              href="/inscription"
-              className="text-orange-700 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-300 transition-colors font-medium"
-            >
-              {s.register}
-            </Link>
+            <Link href="/inscription" className={authLink}>{s.register}</Link>
           </p>
-
           <GuestLink />
-        </div>
-
-        {/* ── Logo mobile (bas de page) ── */}
-        <div className="lg:hidden mt-12 flex flex-col items-center gap-3 pb-8">
-          <div className="w-16 h-px bg-stone-200 dark:bg-stone-800" />
-          <CabaLogo className="w-12 h-12 text-orange-700 dark:text-orange-500 opacity-60" />
-          <p className="text-xs text-stone-300 dark:text-stone-700 ">{t.common.appName}</p>
-        </div>
-      </div>
-    </div>
+        </AuthActions>
+      </form>
+    </AuthScreen>
   )
 }
 
 export default function ConnexionPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex items-center justify-center">
+      <div className="min-h-screen bg-white md:bg-[#f3f0ec] dark:bg-stone-950 flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-stone-200 dark:border-stone-700 border-t-orange-700 rounded-full animate-spin" />
       </div>
     }>

@@ -1,6 +1,7 @@
 /** Authentification : connexion, inscription, finalisation Google / vendeur, mot de passe oublié. */
 const auth = {
   tagline: "L'excellence à portée de main",
+  stepOf: (c: number, n: number): string => `Étape ${c} sur ${n}`,
   or: 'ou',
   continueWithGoogle: 'Continuer avec Google',
   continueWithGoogleSeller: 'Continuer avec Google — Vendeur',
@@ -27,6 +28,7 @@ const auth = {
   loginQuestion: 'Se connecter ?',
 
   signin: {
+    subtitle: 'Content de vous revoir.',
     guest: "Parcourir en tant qu'invité",
     googleAccount: 'Ce compte utilise la connexion Google.',
     badCredentials: 'Identifiant ou mot de passe incorrect.',
@@ -52,6 +54,7 @@ const auth = {
   },
 
   signup: {
+    subtitle: 'Quelques informations pour commencer.',
     stepInfo: 'Informations',
     stepConfirm: 'Confirmation',
     newAccount: 'Nouveau compte',

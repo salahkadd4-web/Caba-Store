@@ -4,50 +4,16 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import Link from 'next/link'
-import { Check, X } from 'lucide-react'
-import CabaLogo from '@/components/CabaLogo'
+import { Check, Lock, Mail, ShoppingBag, Smartphone, Store, X } from 'lucide-react'
 import GoogleIcon from '@/components/client/GoogleIcon'
-import LanguageSwitcher from '@/components/LanguageSwitcher'
 import WilayaCommuneSelect from '@/components/WilayaCommuneSelect'
 import { useI18n } from '@/components/I18nProvider'
-import AuthBrandPanel from '@/components/client/AuthBrandPanel'
+import {
+  AuthActions, AuthAlert, AuthDivider, AuthField, AuthScreen, OtpInput, PasswordField, RoleChoice,
+  RuleChips, Segmented, Spinner, authLabelCls, authLink, authPrimaryBtn, authSecondaryBtn, authSelectCls,
+} from '@/components/auth/AuthUI'
 
 const GOOGLE_WEB_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? ''
-
-// ─── Composants stables (hors du composant parent pour éviter les remontages) ─
-
-function Stepper({ etape }: { etape: number }) {
-  const { t } = useI18n()
-  return (
-    <div className="flex items-center gap-3 mb-10">
-      {[1, 2].map((s) => (
-        <div key={s} className="flex items-center gap-3">
-          <div
-            className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium transition-colors duration-300 ${
- etape === s
- ? 'bg-orange-700 text-white'
- : s < etape
- ? 'border-2 border-orange-700 text-orange-700'
- : 'border border-stone-300 dark:border-stone-700 text-stone-400 dark:text-stone-600'
- }`}
-          >
-            {s < etape ? <Check className="w-3.5 h-3.5" /> : s}
-          </div>
-          <span
-            className={`text-xs hidden sm:block transition-colors duration-300 ${
- etape === s ? 'text-orange-700 dark:text-orange-500 font-medium' : 'text-stone-400 dark:text-stone-600'
- }`}
-          >
-            {s === 1 ? t.auth.signup.stepInfo : t.auth.signup.stepConfirm}
-          </span>
-          {s < 2 && (
-            <div className={`w-8 h-px ${etape > 1 ? 'bg-orange-300 dark:bg-orange-800' : 'bg-stone-200 dark:bg-stone-800'}`} />
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
 
 export default function InscriptionPage() {
   const router = useRouter()
@@ -68,7 +34,6 @@ export default function InscriptionPage() {
   const [loading, setLoading]             = useState(false)
   const [loadingGoogle, setLoadingGoogle] = useState(false)
   const [error, setError]                 = useState<string | null>(null)
-  const [showPwd, setShowPwd]             = useState(false)
 
   const [checkingId, setCheckingId] = useState(false)
   const [idStatus, setIdStatus]     = useState<'idle' | 'available' | 'taken'>('idle')
@@ -166,17 +131,6 @@ export default function InscriptionPage() {
     } finally { setLoading(false) }
   }
 
-  // ── Styles partagés ────────────────────────────────────────────────────────
-  const inputCls = (status?: 'available' | 'taken' | 'idle') =>
-    `w-full h-11 ps-3.5 pe-9 rounded-xl border bg-white dark:bg-stone-900 outline-none focus:ring-2 focus:ring-orange-700/15 text-sm text-stone-800 dark:text-stone-100 transition-colors duration-300 placeholder-stone-300 dark:placeholder-stone-700 ${
-      status === 'available' ? 'border-green-500 dark:border-green-400' :
-      status === 'taken'     ? 'border-red-400 dark:border-red-500' :
-      'border-stone-300 dark:border-stone-700 focus:border-orange-700 dark:focus:border-orange-500'
-    }`
-
-  const baseInput = 'w-full h-11 px-3.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 focus:border-orange-700 dark:focus:border-orange-500 focus:ring-2 focus:ring-orange-700/15 outline-none text-sm text-stone-800 dark:text-stone-100 transition-colors duration-300 placeholder-stone-300 dark:placeholder-stone-700'
-  const labelCls  = 'block text-xs   text-stone-500 dark:text-stone-400 mb-2'
-
   const handleGoogle = async () => {
     setLoadingGoogle(true); setError(null)
     try {
@@ -206,249 +160,144 @@ export default function InscriptionPage() {
     } finally { setLoadingGoogle(false) }
   }
 
+  const identifiant = identifiantType === 'email' ? form.email : form.telephone
+  const pwd = form.motDePasse
+  const reglesMdp = [
+    { ok: pwd.length >= 8,          label: s.rules.length },
+    { ok: /[A-Z]/.test(pwd),        label: s.rules.upper },
+    { ok: /[0-9]/.test(pwd),        label: s.rules.number },
+    { ok: /[^A-Za-z0-9]/.test(pwd), label: s.rules.symbol },
+  ]
+  const statutId = checkingId
+    ? <Spinner />
+    : idStatus === 'available' ? <Check className="w-5 h-5 text-emerald-600" aria-hidden="true" />
+    : idStatus === 'taken'     ? <X className="w-5 h-5 text-red-500" aria-hidden="true" />
+    : null
+
+  // ── Étape 2 : code de confirmation ───────────────────────────────────────
+  if (etape === 2) {
+    return (
+      <AuthScreen
+        title={s.stepConfirm}
+        subtitle={<>{a.codeSentTo} <span className="font-medium text-stone-900 dark:text-stone-100" dir="ltr">{identifiant}</span></>}
+        step={{ current: 2, total: 2 }}
+        onBack={() => { setEtape(1); setCode(''); setError(null) }}
+      >
+        <OtpInput value={code} onChange={setCode} label={a.confirmationCode} />
+        {error && <AuthAlert tone="error">{error}</AuthAlert>}
+        <AuthActions>
+          <button type="button" onClick={handleEtape2} disabled={loading || code.length !== 6} className={authPrimaryBtn}>
+            {loading ? <><Spinner light /> {a.verifying}</> : s.confirmAccount}
+          </button>
+          <button type="button" onClick={() => { setEtape(1); setCode(''); setError(null) }}
+            className="w-full text-sm text-stone-500 dark:text-stone-400 hover:text-orange-700 py-2">
+            {a.editMyInfo}
+          </button>
+        </AuthActions>
+      </AuthScreen>
+    )
+  }
+
+  // ── Étape 1 : informations ───────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex flex-col lg:flex-row transition-colors duration-300">
+    <AuthScreen
+      title={s.title}
+      subtitle={s.subtitle}
+      step={{ current: 1, total: 2 }}
+      backHref="/connexion"
+      below={<p>{s.alreadyAccount}{' '}<Link href="/connexion" className={authLink}>{a.login}</Link></p>}
+    >
+      <form onSubmit={e => { e.preventDefault(); if (canSubmitEtape1 && !loading) handleEtape1() }} className="space-y-4">
+        <RoleChoice
+          label={s.iAm}
+          value={role}
+          onChange={setRole}
+          options={[
+            { value: 'CLIENT',  title: a.googleFinalize.buy,  desc: a.googleFinalize.clientAccount, icon: ShoppingBag },
+            { value: 'VENDEUR', title: a.googleFinalize.sell, desc: a.googleFinalize.sellerAccount, icon: Store },
+          ]}
+        />
+        {role === 'VENDEUR' && <AuthAlert tone="info">{s.sellerBlocked}</AuthAlert>}
 
-      <AuthBrandPanel />
+        <button type="button" onClick={handleGoogle} disabled={loadingGoogle || loading} className={authSecondaryBtn}>
+          {loadingGoogle ? <Spinner /> : <GoogleIcon />}
+          {role === 'VENDEUR' ? a.continueWithGoogleSeller : a.continueWithGoogle}
+        </button>
+        <AuthDivider />
 
-      {/* ── Formulaire ── */}
-      <div className="flex-1 flex flex-col items-center justify-center p-8 overflow-y-auto">
-        <div className="w-full max-w-sm py-8">
+        <div className="grid grid-cols-2 gap-3">
+          <AuthField id="nom" label={s.lastName} value={form.nom} onChange={handleChange('nom')} placeholder={s.lastNamePlaceholder} autoComplete="family-name" />
+          <AuthField id="prenom" label={s.firstName} value={form.prenom} onChange={handleChange('prenom')} placeholder={s.firstNamePlaceholder} autoComplete="given-name" />
+        </div>
 
-          <div className="flex justify-end mb-6 -mt-2">
-            <LanguageSwitcher className="border border-stone-200 dark:border-stone-700" />
-          </div>
+        {role === 'VENDEUR' && (
+          <>
+            <AuthField id="nomBoutique" label={a.shopName} icon={Store} value={form.nomBoutique} onChange={handleChange('nomBoutique')} placeholder={a.shopPlaceholder} />
+            <WilayaCommuneSelect
+              wilaya={lieu.wilaya}
+              commune={lieu.commune}
+              onChange={setLieu}
+              required
+              selectClassName={authSelectCls}
+              labelClassName={authLabelCls}
+              className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+            />
+          </>
+        )}
 
-          <div className="mb-8">
-            <h1 className="text-3xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">{s.title}</h1>
-            <p className="text-stone-500 dark:text-stone-400 mt-1">{s.newAccount}</p>
-          </div>
-
-          <Stepper etape={etape} />
-
-          {/* ── ÉTAPE 1 ── */}
-          {etape === 1 && (
-            <div className="space-y-7">
-
-              {/* Choix rôle */}
-              <div>
-                <p className={labelCls}>{s.iAm}</p>
-                <div className="flex gap-0 border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden">
-                  {(['CLIENT', 'VENDEUR'] as const).map((r) => (
-                    <button key={r} onClick={() => setRole(r)}
-                      className={`flex-1 py-3.5 text-xs transition-colors duration-200 ${
- role === r
- ? 'bg-orange-700 text-white'
- : 'bg-white dark:bg-stone-950 text-stone-400 dark:text-stone-600 hover:text-stone-800 dark:hover:text-stone-200'
- }`}>
-                      {r === 'CLIENT' ? s.client : s.seller}
-                    </button>
-                  ))}
-                </div>
-                {role === 'VENDEUR' && (
-                  <p className="mt-3 text-xs text-stone-400 dark:text-stone-500 border-s-2 border-orange-300 dark:border-orange-800 ps-3">
-                    {s.sellerBlocked}
-                  </p>
-                )}
-              </div>
-
-              {/* Bouton Google */}
-              <button onClick={handleGoogle} disabled={loadingGoogle || loading}
-                className="w-full flex items-center justify-center gap-3 border border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600 hover:bg-stone-100 dark:hover:bg-stone-900 text-stone-700 dark:text-stone-200 text-xs py-3.5 rounded-xl transition-colors duration-300 disabled:opacity-50">
-                {loadingGoogle
-                  ? <span className="w-4 h-4 border-2 border-stone-200 border-t-stone-500 rounded-full animate-spin" />
-                  : <GoogleIcon />
-                }
-                {role === 'VENDEUR' ? a.continueWithGoogleSeller : a.continueWithGoogle}
-              </button>
-
-              {/* Séparateur */}
-              <div className="flex items-center gap-4">
-                <div className="flex-1 h-px bg-stone-200 dark:bg-stone-800" />
-                <span className="text-xs text-stone-400 dark:text-stone-600 ">{a.or}</span>
-                <div className="flex-1 h-px bg-stone-200 dark:bg-stone-800" />
-              </div>
-
-              {/* Nom / Prénom */}
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className={labelCls}>{s.lastName}</label>
-                  <input type="text" value={form.nom} onChange={handleChange('nom')} placeholder={s.lastNamePlaceholder}
-                    className={baseInput} />
-                </div>
-                <div>
-                  <label className={labelCls}>{s.firstName}</label>
-                  <input type="text" value={form.prenom} onChange={handleChange('prenom')} placeholder={s.firstNamePlaceholder}
-                    className={baseInput} />
-                </div>
-              </div>
-
-              {/* Nom boutique (vendeur) */}
-              {role === 'VENDEUR' && (
-                <>
-                  <div>
-                    <label className={labelCls}>{a.shopName}</label>
-                    <input type="text" value={form.nomBoutique} onChange={handleChange('nomBoutique')} placeholder={a.shopPlaceholder}
-                      className={baseInput} />
-                  </div>
-                  <WilayaCommuneSelect
-                    wilaya={lieu.wilaya}
-                    commune={lieu.commune}
-                    onChange={setLieu}
-                    required
-                    selectClassName={baseInput}
-                    labelClassName={labelCls}
-                    className="grid grid-cols-1 sm:grid-cols-2 gap-6"
-                  />
-                </>
-              )}
-
-              {/* Identifiant */}
-              <div>
-                <div className="flex items-center gap-4 mb-3">
-                  {(['email', 'telephone'] as const).map((type) => (
-                    <button key={type} onClick={() => { setIdentifiantType(type); setIdStatus('idle') }}
-                      className={`text-xs pb-1 transition-colors duration-200 ${
- identifiantType === type
- ? 'text-orange-700 dark:text-orange-500 border-b-2 border-orange-700 dark:border-orange-500'
- : 'text-stone-400 dark:text-stone-600 hover:text-stone-700 dark:hover:text-stone-400'
- }`}>
-                      {type === 'email' ? s.email : s.phone}
-                    </button>
-                  ))}
-                </div>
-                <div className="relative">
-                  {identifiantType === 'email' ? (
-                    <input type="email" value={form.email}
-                      onChange={e => { handleChange('email')(e); setIdStatus('idle') }}
-                      placeholder={s.emailPlaceholder}
-                      className={inputCls(idStatus === 'idle' ? undefined : idStatus)} />
-                  ) : (
-                    <input type="tel" value={form.telephone}
-                      onChange={e => { handleChange('telephone')(e); setIdStatus('idle') }}
-                      placeholder={s.phonePlaceholder}
-                      className={inputCls(idStatus === 'idle' ? undefined : idStatus)} />
-                  )}
-                  <div className="absolute end-3 top-1/2 -translate-y-1/2">
-                    {checkingId && <svg className="animate-spin w-3.5 h-3.5 text-stone-400" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>}
-                    {!checkingId && idStatus === 'available' && <Check className="w-4 h-4 text-green-500" />}
-                    {!checkingId && idStatus === 'taken'     && <X className="w-4 h-4 text-red-400" />}
-                  </div>
-                </div>
-                {idStatus === 'available' && (
-                  <p className="text-xs text-green-700 dark:text-green-400 mt-1.5 flex items-center gap-1">
-                    <Check className="w-3 h-3" />{identifiantType === 'email' ? s.emailAvailable : s.numberAvailable}
-                  </p>
-                )}
-                {idStatus === 'taken' && (
-                  <p className="text-xs text-red-500 dark:text-red-400 mt-1.5">
-                    ✗ {identifiantType === 'email' ? s.emailTaken : s.phoneTaken} —{' '}
-                    <Link href="/connexion" className="underline underline-offset-2">{a.loginQuestion}</Link>
-                  </p>
-                )}
-              </div>
-
-              {/* Mot de passe */}
-              <div>
-                <label className={labelCls}>{s.password}</label>
-                <div className="relative">
-                  <input type={showPwd ? 'text' : 'password'} value={form.motDePasse}
-                    onChange={handleChange('motDePasse')} placeholder={s.passwordPlaceholder}
-                    className={`${baseInput} pe-16`} />
-                  <button type="button" onClick={() => setShowPwd(v => !v)}
-                    className="absolute end-3 top-1/2 -translate-y-1/2 text-xs font-medium text-stone-500 dark:text-stone-400 hover:text-orange-700 dark:hover:text-orange-500 transition-colors">
-                    {showPwd ? s.hide : s.show}
-                  </button>
-                </div>
-                {form.motDePasse.length > 0 && (() => {
-                  const pwd = form.motDePasse
-                  const conditions = [
-                    { ok: pwd.length >= 8,          label: s.rules.length },
-                    { ok: /[A-Z]/.test(pwd),         label: s.rules.upper },
-                    { ok: /[0-9]/.test(pwd),          label: s.rules.number },
-                    { ok: /[^A-Za-z0-9]/.test(pwd),  label: s.rules.symbol },
-                  ]
-                  return (
-                    <div className="mt-3 space-y-1.5">
-                      {conditions.map(({ ok, label }) => (
-                        <p key={label} className={`text-xs flex items-center gap-2 transition-colors duration-200 ${ok ? 'text-green-700 dark:text-green-400' : 'text-stone-400 dark:text-stone-600'}`}>
-                          <span className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-full transition-all duration-200 ${ok ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400' : 'border border-stone-300 dark:border-stone-700'}`}>
-                            {ok && <Check className="w-2.5 h-2.5" />}
-                          </span>
-                          {label}
-                        </p>
-                      ))}
-                    </div>
-                  )
-                })()}
-              </div>
-
-              {error && (
-                <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 text-xs px-4 py-3 rounded-xl ">{error}</div>
-              )}
-
-              <button onClick={handleEtape1} disabled={loading || !canSubmitEtape1}
-                className="w-full bg-orange-700 hover:bg-orange-800 text-white text-xs py-4 rounded-xl transition-colors duration-300 disabled:opacity-40 mt-2 flex items-center justify-center gap-2">
-                {loading
-                  ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {a.sending}</>
-                  : a.receiveCode
-                }
-              </button>
-
-              <p className="text-center text-xs text-stone-400 dark:text-stone-500 ">
-                {s.alreadyAccount}{' '}
-                <Link href="/connexion" className="text-orange-700 dark:text-orange-500 hover:text-orange-800 underline underline-offset-4 transition-colors font-medium">{a.login}</Link>
+        <Segmented
+          label={t.auth.signin.identifier}
+          value={identifiantType}
+          onChange={v => { setIdentifiantType(v); setIdStatus('idle') }}
+          options={[{ value: 'email', label: s.email }, { value: 'telephone', label: s.phone }]}
+        />
+        <AuthField
+          id="identifiant"
+          type={identifiantType === 'email' ? 'email' : 'tel'}
+          inputMode={identifiantType === 'email' ? 'email' : 'tel'}
+          autoComplete={identifiantType === 'email' ? 'email' : 'tel'}
+          aria-label={identifiantType === 'email' ? s.email : s.phone}
+          icon={identifiantType === 'email' ? Mail : Smartphone}
+          value={identifiant}
+          onChange={e => { handleChange(identifiantType === 'email' ? 'email' : 'telephone')(e); setIdStatus('idle') }}
+          placeholder={identifiantType === 'email' ? s.emailPlaceholder : s.phonePlaceholder}
+          dir="ltr"
+          tone={idStatus === 'available' ? 'ok' : idStatus === 'taken' ? 'error' : 'default'}
+          end={statutId}
+          hint={
+            idStatus === 'available' ? (
+              <p className="text-sm text-emerald-700 dark:text-emerald-400">{identifiantType === 'email' ? s.emailAvailable : s.numberAvailable}</p>
+            ) : idStatus === 'taken' ? (
+              <p className="text-sm text-red-600 dark:text-red-400">
+                {identifiantType === 'email' ? s.emailTaken : s.phoneTaken}.{' '}
+                <Link href="/connexion" className={authLink}>{a.loginQuestion}</Link>
               </p>
-            </div>
-          )}
+            ) : null
+          }
+        />
 
-          {/* ── ÉTAPE 2 — Code de confirmation ── */}
-          {etape === 2 && (
-            <div className="space-y-7">
-              <div>
-                <p className={`${labelCls} mb-1`}>{a.codeSentTo}</p>
-                <p className="text-sm text-stone-900 dark:text-stone-100 font-medium">
-                  {identifiantType === 'email' ? form.email : form.telephone}
-                </p>
-              </div>
-              <div>
-                <label className={`${labelCls} mb-4`}>{a.confirmationCode}</label>
-                <input type="text" inputMode="numeric" value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  maxLength={6} placeholder="• • • • • •"
-                  className="w-full h-14 px-3.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 focus:border-orange-700 dark:focus:border-orange-500 focus:ring-2 focus:ring-orange-700/15 outline-none text-center text-2xl font-mono tracking-[0.5em] text-stone-800 dark:text-stone-100 transition-colors duration-300 placeholder-stone-300 dark:placeholder-stone-700" />
-                <div className="flex gap-1.5 mt-2 justify-center">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className={`h-0.5 flex-1 transition-colors duration-200 ${i < code.length ? 'bg-orange-700 dark:bg-orange-500' : 'bg-stone-200 dark:bg-stone-800'}`} />
-                  ))}
-                </div>
-              </div>
-              {error && (
-                <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 text-xs px-4 py-3 rounded-xl ">{error}</div>
-              )}
-              <button onClick={handleEtape2} disabled={loading || code.length !== 6}
-                className="w-full bg-orange-700 hover:bg-orange-800 text-white text-xs py-4 rounded-xl transition-colors duration-300 disabled:opacity-40 flex items-center justify-center gap-2">
-                {loading
-                  ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {a.verifying}</>
-                  : s.confirmAccount
-                }
-              </button>
-              <button onClick={() => { setEtape(1); setCode(''); setError(null) }}
-                className="w-full text-xs text-stone-400 dark:text-stone-600 hover:text-orange-700 dark:hover:text-orange-500 transition-colors py-2">
-                {a.editMyInfo}
-              </button>
-            </div>
-          )}
+        <PasswordField
+          id="motDePasse"
+          label={s.password}
+          icon={Lock}
+          autoComplete="new-password"
+          value={form.motDePasse}
+          onChange={handleChange('motDePasse')}
+          placeholder={s.passwordPlaceholder}
+          hint={pwd.length > 0 ? <div className="pt-1"><RuleChips rules={reglesMdp} /></div> : null}
+        />
 
-        </div>
+        {error && <AuthAlert tone="error">{error}</AuthAlert>}
 
-        {/* Logo mobile */}
-        <div className="lg:hidden mt-12 flex flex-col items-center gap-3 pb-8">
-          <div className="w-16 h-px bg-stone-200 dark:bg-stone-800" />
-          <CabaLogo className="w-12 h-12 text-orange-700 dark:text-orange-500 opacity-60" />
-          <p className="text-xs text-stone-300 dark:text-stone-700 ">{t.common.appName}</p>
-        </div>
-      </div>
-    </div>
+        <AuthActions>
+          <button type="submit" disabled={loading || !canSubmitEtape1} className={authPrimaryBtn}>
+            {loading ? <><Spinner light /> {a.sending}</> : a.receiveCode}
+          </button>
+          <p className="md:hidden text-center text-sm text-stone-500 dark:text-stone-400">
+            {s.alreadyAccount}{' '}<Link href="/connexion" className={authLink}>{a.login}</Link>
+          </p>
+        </AuthActions>
+      </form>
+    </AuthScreen>
   )
 }
