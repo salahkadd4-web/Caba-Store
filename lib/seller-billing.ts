@@ -281,7 +281,12 @@ export async function ajusterCommissionApresRetour(
     },
   })
   if (!rr || rr.status !== 'APPROVED' || rr.commissionAjustee) return { type: 'aucun' }
-  await tx.returnRequest.update({ where: { id: rr.id }, data: { commissionAjustee: true } })
+  // Réservation atomique : si l'admin et le webhook arrivent en même temps, un seul corrige.
+  const { count } = await tx.returnRequest.updateMany({
+    where: { id: rr.id, status: 'APPROVED', commissionAjustee: false },
+    data: { commissionAjustee: true },
+  })
+  if (count === 0) return { type: 'aucun' }
 
   const vendeurId = rr.order.items.find(i => i.product.vendeurId)?.product.vendeurId
   const livreeLe = rr.order.livreeLe
