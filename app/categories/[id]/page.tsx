@@ -11,6 +11,7 @@ import { PRODUIT_VISIBLE } from '@/lib/product-visibility'
 import { getI18n } from '@/lib/i18n/server'
 import { rankProducts, VENDEUR_RANK_SELECT } from '@/lib/product-ranking'
 import { getViewerWilaya } from '@/lib/viewer'
+import { imageOpenGraph } from '@/lib/cloudinary-account'
 
 export async function generateMetadata({
   params,
@@ -36,7 +37,8 @@ export async function generateMetadata({
       title,
       description,
       type: 'website',
-      ...(cat.image && { images: [{ url: cat.image, alt: cat.nom }] }),
+      // JPEG 1200×630 dérivé par Cloudinary (aperçus WhatsApp / Facebook) ; l'URL en base ne change pas.
+      ...(cat.image && { images: [imageOpenGraph(cat.image, cat.nom)] }),
     },
   }
 }

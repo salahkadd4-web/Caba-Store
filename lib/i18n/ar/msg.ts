@@ -119,6 +119,7 @@ const msg: typeof fr = {
   paymentConfirmed: 'تم تأكيد الدفع',
   paymentConfirmedUnblocked: 'تم تأكيد الدفع — رُفع التجميد عن البائع',
   returnAlreadyDecided: 'تمت معالجة هذا الإرجاع مسبقًا',
+  invalidImageUrl: 'صورة غير صالحة: استخدم صورة مرفوعة عبر كابا ستور',
   invoiceNotFound: 'الفاتورة غير موجودة أو مدفوعة مسبقًا',
   invalidOffer: 'عرض غير صالح',
   offerSaved: (date: string) => `تم حفظ العرض — سيُطبَّق بتاريخ ${date}`,

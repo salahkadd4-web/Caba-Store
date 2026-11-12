@@ -48,7 +48,8 @@ export default function CategoryTile({
                   src={src}
                   alt=""
                   fill
-                  sizes={collage ? '(min-width: 1024px) 12vw, 25vw' : '(min-width: 1024px) 16vw, 33vw'}
+                  // Tuile ≤ 25 % d'un conteneur de 1280 px ; collage = 4 cases d'une demi-tuile
+                  sizes={collage ? '(min-width: 1280px) 160px, (min-width: 1024px) 12.5vw, 25vw' : '(min-width: 1280px) 320px, (min-width: 1024px) 25vw, 50vw'}
                   className={`object-contain ${collage ? 'p-2' : 'p-3'} group-hover:scale-[1.03] transition-transform duration-300`}
                 />
               )}

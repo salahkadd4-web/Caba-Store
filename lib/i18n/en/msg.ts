@@ -118,6 +118,7 @@ const msg: typeof fr = {
   paymentConfirmed: 'Payment confirmed',
   paymentConfirmedUnblocked: 'Payment confirmed — the seller is unblocked',
   returnAlreadyDecided: 'This return has already been handled',
+  invalidImageUrl: 'Invalid image: use an image uploaded through Caba Store',
   invoiceNotFound: 'Invoice not found or already paid',
   invalidOffer: 'Invalid offer',
   offerSaved: (date: string): string => `Offer saved — it will apply on ${date}`,

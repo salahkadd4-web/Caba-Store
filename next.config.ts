@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next'
+import { lireCloudName } from './lib/cloudinary-account'
 
 // ─── Security Headers HTTP ────────────────────────────────────────────────────
 // Appliqués à toutes les réponses via next.config.
@@ -36,10 +37,30 @@ const nextConfig: NextConfig = {
     ]
   },
 
+  // ── Images ──────────────────────────────────────────────────────────────────
+  // Un seul optimiseur par requête : Next.js / Vercel (AVIF/WebP, q=75).
+  // Cloudinary stocke des originaux déjà normalisés à l'upload (≤ 1200 px, q_auto,
+  // cf. app/api/upload/route.ts) : on ne lui demande aucune transformation de plus.
   images: {
     formats: ['image/avif', 'image/webp'],
+    // Les originaux font au plus 1200 px : au-delà, chaque largeur produisait le
+    // même fichier (vérifié en production : 1200, 1920, 3840 → mêmes octets) pour
+    // une transformation et une entrée de cache Vercel de plus.
+    deviceSizes: [640, 750, 828, 1080, 1200],
+    imageSizes: [32, 48, 64, 96, 128, 256, 384],
+    // URLs Cloudinary versionnées (v123/…) et immuables : 30 jours, comme le
+    // max-age envoyé par Cloudinary. S'applique aussi aux avatars Google / Blob.
+    minimumCacheTTL: 2_592_000,
     remotePatterns: [
-      { protocol: 'https', hostname: 'res.cloudinary.com' },
+      // Restreint au compte Caba Store : /_next/image ne transforme pas les images
+      // d'autres comptes Cloudinary à nos frais.
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        // Nom nettoyé (trim) et validé ; absent ou invalide → compte par défaut,
+        // jamais un filtre ouvert à tous les comptes (cf. lib/cloudinary-account.ts).
+        pathname: `/${lireCloudName()}/**`,
+      },
       { protocol: 'https', hostname: '*.public.blob.vercel-storage.com' },
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
     ],

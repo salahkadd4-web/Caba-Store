@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { getI18n } from '@/lib/i18n/server'
+import { imagesValides } from '@/lib/cloudinary-account'
 
 async function getVendeur() {
   const session = await auth()
@@ -32,10 +33,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const vendeur = await getVendeur()
   if (!vendeur) return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
   const { id } = await params
-  const produit = await prisma.product.findFirst({ where: { id, vendeurId: vendeur.id } })
+  const produit = await prisma.product.findFirst({
+    where: { id, vendeurId: vendeur.id },
+    include: { variants: { select: { images: true } } },
+  })
   if (!produit) return NextResponse.json({ error: t.msg.productNotFound }, { status: 404 })
 
   const { nom, description, prix, stock, images, categoryId, actif, prixVariables, typeOption, variants } = await req.json()
+
+  // Images : URL Cloudinary du compte Caba Store ; celles déjà enregistrées sur ce produit restent acceptées.
+  const dejaEnBase = new Set([...produit.images, ...produit.variants.flatMap(v => v.images)])
+  if ((images !== undefined && !imagesValides(images, dejaEnBase)) ||
+      (Array.isArray(variants) && variants.some((v: { images?: unknown }) => v?.images !== undefined && v?.images !== null && !imagesValides(v.images, dejaEnBase))))
+    return NextResponse.json({ error: t.msg.invalidImageUrl }, { status: 400 })
 
   const updated = await prisma.product.update({
     where: { id },

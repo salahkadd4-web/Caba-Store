@@ -13,6 +13,7 @@ import {
 } from '@/lib/dashboard-ui'
 import { useI18n } from '@/components/I18nProvider'
 import { usePhotoPicker } from '@/components/PhotoPicker'
+import { preparerImagePourUpload } from '@/lib/preparer-image'
 
 interface Category { id: string; nom: string }
 interface VariantOption { valeur: string; stock: string }
@@ -118,7 +119,7 @@ export default function VendeurProduitsPage() {
 
   const handleImageUpload = async (file: File) => {
     setUploadingImg(true)
-    const fd = new FormData(); fd.append('file', file)
+    const fd = new FormData(); fd.append('file', await preparerImagePourUpload(file))
     const res = await fetch('/api/upload', { method: 'POST', body: fd })
     if (res.ok) { const { url } = await res.json(); setForm(f => ({ ...f, images: [...f.images, url] })) }
     setUploadingImg(false)
@@ -126,7 +127,7 @@ export default function VendeurProduitsPage() {
 
   const handleVariantImageUpload = async (file: File, idx: number) => {
     setVarUploadIdx(idx)
-    const fd = new FormData(); fd.append('file', file)
+    const fd = new FormData(); fd.append('file', await preparerImagePourUpload(file))
     const res = await fetch('/api/upload', { method: 'POST', body: fd })
     if (res.ok) {
       const { url } = await res.json()
