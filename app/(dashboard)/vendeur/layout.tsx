@@ -20,6 +20,7 @@ import {
   Clock, ShieldOff, ArrowLeft, Mail,
 } from 'lucide-react'
 import VendeurDocumentsClient from '@/components/vendeur/VendeurDocumentsClient'
+import RappelPaiementBanner from '@/components/vendeur/RappelPaiementBanner'
 import { getI18n } from '@/lib/i18n/server'
 
 // ─── Configuration par statut (EN_ATTENTE + SUSPENDU uniquement) ──────────────
@@ -83,7 +84,12 @@ export default async function VendeurLayout({
 
   // ── Accès autorisé ────────────────────────────────────────────────────────
   if (vendeur?.statut === 'APPROUVE') {
-    return <>{children}</>
+    return (
+      <>
+        <RappelPaiementBanner vendeurId={vendeur.id} />
+        {children}
+      </>
+    )
   }
 
   // ── Pièces requises → formulaire d'upload ─────────────────────────────────

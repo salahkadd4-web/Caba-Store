@@ -43,7 +43,7 @@ model VendeurProfile {
   products        Product[]
   documents       VendeurDocument[]
   abonnement        Abonnement?
-  prioriteAffichage Int             @default(3)
+  prioriteAffichage Int             @default(4) // = niveau d'abonnement (cf. lib/billing-offers.ts)
   user            User              @relation(fields: [userId], references: [id])
 }
 
@@ -135,19 +135,57 @@ model VariantOption {
   @@index([variantId])
 }
 
+/// Formule de facturation d'un vendeur (cf. lib/billing-offers.ts).
+/// dateDebut / dateFin = cycle mensuel en cours (ancré sur la date d'approbation).
 model Abonnement {
-  id           String           @id @default(cuid())
-  vendeurId    String           @unique
-  niveau       NiveauAbonnement @default(NIVEAU_3)
-  statut       StatutAbonnement @default(GRATUIT)
-  dateDebut    DateTime         @default(now())
-  dateFin      DateTime
-  periodicite  String?          // "mensuel" | "annuel"
-  notifsSent   String[]   @default([])
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  vendeur      VendeurProfile   @relation(fields: [vendeurId], references: [id])
-  paiements    Paiement[]
+  id                   String           @id @default(cuid())
+  vendeurId            String           @unique
+  mode                 ModeFacturation  @default(COMMISSION)
+  niveau               NiveauAbonnement @default(NIVEAU_4)
+  statut               StatutAbonnement @default(ACTIF)
+  dateDebut            DateTime         @default(now())
+  dateFin              DateTime
+  periodicite          String?          // forfait : "mensuel" | "semestriel" | "annuel"
+  forfaitFin           DateTime?        // fin du forfait en cours
+  prochainMode         ModeFacturation? // offre choisie, appliquée au prochain cycle
+  prochainNiveau       NiveauAbonnement?
+  prochainePeriodicite String?
+  avoir                Float            @default(0) // crédit (retours sur commission déjà payée), déduit de la prochaine facture
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  vendeur              VendeurProfile   @relation(fields: [vendeurId], references: [id])
+  paiements            Paiement[]
+  factures             Facture[]
+}
+
+/// Somme due par un vendeur : commission d'un cycle écoulé ou forfait.
+/// A_VENIR = forfait pas encore exigible (aucune commande livrée sur sa période).
+model Facture {
+  id             String           @id @default(cuid())
+  abonnementId   String
+  type           ModeFacturation
+  niveau         NiveauAbonnement
+  periodicite    String?
+  taux           Float?
+  ventesBrutes   Float            @default(0)
+  nbCommandes    Int              @default(0)
+  montant        Float            // net, après déduction de l'avoir
+  avoirDeduit    Float            @default(0)
+  periodeDebut   DateTime
+  periodeFin     DateTime
+  statut         StatutFacture    @default(EN_ATTENTE)
+  emiseLe        DateTime?        // date à laquelle elle devient exigible
+  echeance       DateTime?        // au-delà, le vendeur est bloqué
+  rappelsEnvoyes Int[]            @default([])
+  paiementId     String?          @unique
+  payeeLe        DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  abonnement     Abonnement       @relation(fields: [abonnementId], references: [id])
+  paiement       Paiement?        @relation(fields: [paiementId], references: [id])
+
+  @@index([abonnementId])
+  @@index([statut, echeance])
 }
 
 model Paiement {
@@ -161,6 +199,7 @@ model Paiement {
   confirmeParAdmin  Boolean    @default(false)
   createdAt         DateTime   @default(now())
   abonnement        Abonnement @relation(fields: [abonnementId], references: [id])
+  facture           Facture?
 
   @@index([abonnementId])
 }
@@ -221,6 +260,7 @@ model Order {
   refusLivraisonSignale Boolean     @default(false)
   refusLivraisonRaison  String?
   approbationsVendeurs  Json?
+  livreeLe              DateTime?   // passage au statut LIVREE (base de la commission)
   user                  User        @relation(fields: [userId], references: [id])
   items                 OrderItem[]
   returnRequest         ReturnRequest?
@@ -228,6 +268,7 @@ model Order {
   @@index([userId])
   @@index([groupeId])
   @@index([statut, createdAt])
+  @@index([livreeLe])
 }
 
 model ReturnRequest {
@@ -237,6 +278,10 @@ model ReturnRequest {
   status            ReturnRequestStatus @default(PENDING)
   reason            String?
   description       String?
+  productId         String?             // produit retourné (null = toute la commande)
+  reponses          Json?               // réponses du formulaire de retour
+  decideLe          DateTime?           // décision prise par l'admin dans Caba Store
+  commissionAjustee Boolean             @default(false) // commission vendeur déjà corrigée
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   order             Order               @relation(fields: [orderId], references: [id])
@@ -336,11 +381,22 @@ enum NiveauAbonnement {
   NIVEAU_1
   NIVEAU_2
   NIVEAU_3
+  NIVEAU_4
+}
+
+enum ModeFacturation {
+  COMMISSION
+  FORFAIT
 }
 
 enum StatutAbonnement {
-  GRATUIT
   ACTIF
-  EXPIRE
-  SUSPENDU
+  BLOQUE
+}
+
+enum StatutFacture {
+  A_VENIR
+  EN_ATTENTE
+  PAYEE
+  ANNULEE
 }

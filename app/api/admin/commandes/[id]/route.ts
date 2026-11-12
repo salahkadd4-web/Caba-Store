@@ -90,9 +90,10 @@ export async function PATCH(
         await prisma.order.updateMany({
           where: {
             groupeId: orderRef.groupeId,
-            statut: { not: 'ANNULEE' },
+            statut: { notIn: ['ANNULEE', 'LIVREE'] },
           },
-          data: { statut: 'LIVREE' },
+          // livreeLe : date de livraison, base de la commission vendeur (lib/billing-cron.ts)
+          data: { statut: 'LIVREE', livreeLe: new Date() },
         })
         return NextResponse.json({
           message: t.msg.groupDelivered(orderRef.groupeId.slice(0, 8)),
@@ -103,7 +104,13 @@ export async function PATCH(
     // Mise à jour simple (pas de groupeId, ou statut ≠ LIVREE)
     const commande = await prisma.order.update({
       where: { id },
-      data:  { statut },
+      data:  {
+        statut,
+        // Date de livraison (base de la commission) : posée au passage à LIVREE, effacée si on en sort.
+        ...(statut === 'LIVREE'
+          ? (actuelle.statut === 'LIVREE' ? {} : { livreeLe: new Date() })
+          : { livreeLe: null }),
+      },
     })
 
     return NextResponse.json({

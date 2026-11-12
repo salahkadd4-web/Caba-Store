@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useState, useEffect, useRef, useCallback } from 'react'
-import SellerInvoiceActions from '@/components/billing/SellerInvoiceActions'
+import AdminAbonnementPanel from '@/components/billing/AdminAbonnementPanel'
 import { useScrollLock } from '@/lib/hooks/useScrollLock'
 import {
   Ban, Banknote, CheckCircle2, ClipboardList,
@@ -25,35 +25,6 @@ export interface Vendeur {
   documents: Doc[]
   _count: { products: number; categories: number }
 }
-interface Paiement { id: string; montant: number; methode: string; reference: string | null; dateReglement: string; note: string | null }
-interface BillingDetail {
-  rate: number
-  subscriptionAmount: number
-  grossSales: number
-  salesFee: number
-  totalDue: number
-  soldItemsCount: number
-  deliveredOrdersCount: number
-  periodStart: string | null
-  periodEnd: string | null
-}
-interface InvoiceDetail extends BillingDetail {
-  version: 'seller_invoice_v1'
-  invoiceNumber: string
-  sellerId: string
-  level: string
-  periodicite: string | null
-  paymentId: string
-  paidAt: string
-  methode: string
-  reference: string | null
-  adminNote: string | null
-  amount: number
-  paymentDate: string
-}
-interface AbonnementDetail {
-  id: string; niveau: string; statut: string; dateFin: string; periodicite: string | null; joursRestants: number; paiements: Paiement[]; billing: BillingDetail; invoices: InvoiceDetail[]
-}
 
 // Libellés : t.admin.sellers.status / subStatus, t.billing.levels
 const statutConfig: Record<string, { color: string; icon: React.ElementType }> = {
@@ -61,17 +32,6 @@ const statutConfig: Record<string, { color: string; icon: React.ElementType }> =
   APPROUVE:        { color: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',       icon: CheckCircle2 },
   SUSPENDU:        { color: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',               icon: Ban          },
   PIECES_REQUISES: { color: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',   icon: ClipboardList },
-}
-const NIVEAU_LABELS: Record<string, { price: number; color: string }> = {
-  NIVEAU_1: { price: 5000, color: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300' },
-  NIVEAU_2: { price: 4000, color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'         },
-  NIVEAU_3: { price: 3000, color: 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300'     },
-}
-const STATUT_ABO_LABELS: Record<string, { color: string }> = {
-  GRATUIT:  { color: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'     },
-  ACTIF:    { color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'         },
-  EXPIRE:   { color: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'             },
-  SUSPENDU: { color: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300' },
 }
 // Libellés enregistrés en base (français, lisibles par le vendeur) ; affichage traduit via t.admin.sellers.docTypes
 const DOC_TYPES = [
@@ -89,15 +49,11 @@ function useDebounce<T>(value: T, delay: number): T {
   return d
 }
 
-const inputField  = `w-full rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 py-2 text-sm text-stone-800 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-orange-400 transition`
-const selectField = `w-full rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 py-2 text-sm text-stone-700 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-orange-400 transition`
 
 export default function VendeursClient({ initialData }: { initialData: Vendeur[] }) {
   const { t, fmt, locale } = useI18n()
   const s_ = t.admin.sellers
   const d = (v: Date | string) => new Date(v).toLocaleDateString(fmt.intl)
-  const levelLabel = (k: string) => t.billing.levels[k]?.label ?? k
-  const levelWithPrice = (k: string) => NIVEAU_LABELS[k] ? s_.levelPrice(levelLabel(k), fmt.price(NIVEAU_LABELS[k].price)) : k
   const docLabel = (doc: { type: string; label: string }) => s_.docTypes[doc.type]?.label ?? doc.label
   const router = useRouter()
   const pathname = usePathname()
@@ -117,11 +73,6 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
   const [docAction,    setDocAction]    = useState<{ docId: string; action: 'accepter' | 'refuser'; note: string } | null>(null)
   const [toastMsg,     setToastMsg]     = useState<string | null>(null)
   const [onglet,       setOnglet]       = useState<'infos' | 'abonnement'>('infos')
-  const [abonnement,   setAbonnement]   = useState<AbonnementDetail | null>(null)
-  const [loadingAbo,   setLoadingAbo]   = useState(false)
-  const [aboForm,      setAboForm]      = useState({ niveau: 'NIVEAU_3', periodicite: 'mensuel', methode: 'virement', reference: '', note: '' })
-  const [savingAbo,    setSavingAbo]    = useState(false)
-  const [aboMsg,       setAboMsg]       = useState<string | null>(null)
 
   useScrollLock(!!selected || showDocModal)
 
@@ -166,20 +117,8 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
 
   const fetchDetail = useCallback(async (id: string, tab: 'infos' | 'abonnement' = 'infos') => {
     const res = await fetch(`/api/admin/vendeurs/${id}`)
-    if (res.ok) { setSelected(await res.json()); setOnglet(tab); setAbonnement(null) }
+    if (res.ok) { setSelected(await res.json()); setOnglet(tab) }
   }, [])
-
-  const fetchAbonnement = useCallback(async (vendeurId: string) => {
-    setLoadingAbo(true)
-    const res = await fetch(`/api/admin/vendeurs/${vendeurId}/abonnement`)
-    if (res.ok) {
-      const data = await res.json()
-      setAbonnement({ ...data, joursRestants: Math.max(0, Math.ceil((new Date(data.dateFin).getTime() - Date.now()) / 86400000)) })
-    } else { setAbonnement(null) }
-    setLoadingAbo(false)
-  }, [])
-
-  useEffect(() => { if (selected && onglet === 'abonnement') fetchAbonnement(selected.id) }, [selected, onglet, fetchAbonnement])
 
   useEffect(() => {
     const selectedId = searchParams.get('id')
@@ -212,16 +151,6 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
     if (res.ok) { showToast(data.message); await fetchDetail(selected.id); await refresh() }
     else showToast(data.error || s_.error)
     setDocAction(null); setSaving(false)
-  }
-
-  const handleConfirmerPaiement = async () => {
-    if (!selected) return
-    setSavingAbo(true)
-    const res  = await fetch(`/api/admin/vendeurs/${selected.id}/abonnement`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(aboForm) })
-    const data = await res.json()
-    setAboMsg(data.message ?? data.error)
-    if (res.ok) fetchAbonnement(selected.id)
-    setSavingAbo(false); setTimeout(() => setAboMsg(null), 4000)
   }
 
   const toggleNewDoc = (doc: typeof DOC_TYPES[0]) => {
@@ -425,175 +354,11 @@ export default function VendeursClient({ initialData }: { initialData: Vendeur[]
               )}
 
               {onglet === 'abonnement' && (
-                <div className="space-y-4">
-                  {loadingAbo ? (
-                    <p className="text-sm text-stone-400 text-center py-8">{t.common.loading}</p>
-                  ) : !abonnement ? (
-                    <p className="text-sm text-stone-400 text-center py-8">{s_.noSubscription}</p>
-                  ) : (
-                    <>
-                      <div className="bg-stone-50 dark:bg-stone-800 rounded-xl p-4 space-y-2.5 text-sm">
-                        {[
-                          { label: s_.subStatusLabel, value: <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUT_ABO_LABELS[abonnement.statut]?.color ?? ''}`}>{tr(s_.subStatus, abonnement.statut)}</span> },
-                          { label: s_.currentLevel,   value: <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${NIVEAU_LABELS[abonnement.niveau]?.color ?? ''}`}>{levelWithPrice(abonnement.niveau)}</span> },
-                          { label: s_.expiresOn,      value: <span className="font-semibold text-stone-800 dark:text-stone-100">{d(abonnement.dateFin)}</span> },
-                          { label: s_.daysLeft,       value: <span className={`font-bold ${abonnement.statut === 'EXPIRE' ? 'text-red-500' : abonnement.joursRestants <= 7 ? 'text-orange-500' : 'text-emerald-600 dark:text-emerald-400'}`}>{abonnement.statut === 'EXPIRE' ? s_.expired : s_.daysCount(abonnement.joursRestants)}</span> },
-                        ].map(({ label, value }) => (
-                          <div key={label} className="flex justify-between items-center">
-                            <span className="text-stone-500">{label}</span>
-                            {value}
-                          </div>
-                        ))}
-                      </div>
-                      <div className="grid gap-3 sm:grid-cols-3">
-                        <div className="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-4">
-                          <p className="text-xs text-stone-500 mb-1">{s_.subscription}</p>
-                          <p className="text-lg font-semibold text-stone-900 dark:text-white">{fmt.price(abonnement.billing.subscriptionAmount)}</p>
-                        </div>
-                        <div className="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-4">
-                          <p className="text-xs text-stone-500 mb-1">{s_.salesFees}</p>
-                          <p className="text-lg font-semibold text-stone-900 dark:text-white">{fmt.price(abonnement.billing.salesFee)}</p>
-                          <p className="text-xs text-stone-400 mt-1">{s_.feeOn(fmt.price(abonnement.billing.grossSales))}</p>
-                        </div>
-                        <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 p-4">
-                          <p className="text-xs text-emerald-700 dark:text-emerald-300 mb-1">{s_.totalDue}</p>
-                          <p className="text-lg font-semibold text-emerald-800 dark:text-emerald-200">{fmt.price(abonnement.billing.totalDue)}</p>
-                        </div>
-                      </div>
-                      <div className="rounded-xl border border-stone-200 dark:border-stone-700 p-4 bg-stone-50 dark:bg-stone-800/50 text-sm space-y-2">
-                        <div className="flex justify-between gap-3">
-                          <span className="text-stone-500">{s_.deliveredSalesPeriod}</span>
-                          <span className="font-medium text-stone-800 dark:text-stone-100">{fmt.price(abonnement.billing.grossSales)}</span>
-                        </div>
-                        <div className="flex justify-between gap-3">
-                          <span className="text-stone-500">{s_.deliveredOrders}</span>
-                          <span className="font-medium text-stone-800 dark:text-stone-100">{abonnement.billing.deliveredOrdersCount}</span>
-                        </div>
-                        <div className="flex justify-between gap-3">
-                          <span className="text-stone-500">{s_.soldLines}</span>
-                          <span className="font-medium text-stone-800 dark:text-stone-100">{abonnement.billing.soldItemsCount}</span>
-                        </div>
-                        <div className="flex justify-between gap-3">
-                          <span className="text-stone-500">{s_.billedPeriod}</span>
-                          <span className="font-medium text-stone-800 dark:text-stone-100 text-end">
-                            {abonnement.billing.periodStart && abonnement.billing.periodEnd
-                              ? `${d(abonnement.billing.periodStart)} - ${d(abonnement.billing.periodEnd)}`
-                              : t.billing.undefinedPeriod}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="border border-stone-200 dark:border-stone-700 rounded-xl p-4 space-y-3">
-                        <p className="font-semibold text-sm text-stone-800 dark:text-stone-100">{s_.confirmPayment}</p>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="text-xs text-stone-500 mb-1 block">{s_.level}</label>
-                            <select value={aboForm.niveau} onChange={e => setAboForm(f => ({...f, niveau: e.target.value}))} className={selectField}>
-                              {(['NIVEAU_1', 'NIVEAU_2', 'NIVEAU_3'] as const).map(k => (
-                                <option key={k} value={k}>{s_.levelPricePerMonth(levelLabel(k), fmt.price(NIVEAU_LABELS[k].price))}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="text-xs text-stone-500 mb-1 block">{s_.periodicity}</label>
-                            <select value={aboForm.periodicite} onChange={e => setAboForm(f => ({...f, periodicite: e.target.value}))} className={selectField}>
-                              <option value="mensuel">{s_.monthly}</option>
-                              <option value="annuel">{s_.yearly}</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="text-xs text-stone-500 mb-1 block">{s_.method}</label>
-                            <select value={aboForm.methode} onChange={e => setAboForm(f => ({...f, methode: e.target.value}))} className={selectField}>
-                              <option value="virement">{s_.bankTransfer}</option>
-                              <option value="ccp">{s_.ccp}</option>
-                              <option value="cash">{s_.cash}</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="text-xs text-stone-500 mb-1 block">{s_.reference}</label>
-                            <input value={aboForm.reference} onChange={e => setAboForm(f => ({...f, reference: e.target.value}))} placeholder={s_.referencePlaceholder} className={inputField} />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="text-xs text-stone-500 mb-1 block">{s_.internalNoteShort}</label>
-                          <input value={aboForm.note} onChange={e => setAboForm(f => ({...f, note: e.target.value}))} placeholder={s_.notePlaceholder} className={inputField} />
-                        </div>
-                        {aboMsg && <p className="text-sm text-center font-medium text-emerald-600 dark:text-emerald-400">{aboMsg}</p>}
-                        <button onClick={handleConfirmerPaiement} disabled={savingAbo}
-                          className="w-full bg-orange-700 hover:bg-orange-800 disabled:opacity-50 text-white font-medium py-2.5 rounded-xl text-sm transition active:scale-95">
-                          {savingAbo ? t.common.saving : s_.confirmAndRenew}
-                        </button>
-                      </div>
-                      {abonnement.paiements.length > 0 && (
-                        <div>
-                          <p className="font-semibold text-sm text-stone-800 dark:text-stone-100 mb-2">{s_.history}</p>
-                          <div className="space-y-2">
-                            {abonnement.invoices.map((invoice, index) => (
-                              <div key={invoice.paymentId} className="bg-stone-50 dark:bg-stone-800 rounded-xl px-3 py-3 text-sm space-y-3">
-                                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                                  <div className="space-y-2 min-w-0">
-                                    <div>
-                                      <p className="font-medium text-stone-900 dark:text-white">{invoice.invoiceNumber}</p>
-                                      <p className="text-stone-400 text-xs mt-0.5">{d(invoice.paymentDate)} · {tr(t.billing.methods, invoice.methode)}</p>
-                                    </div>
-                                    <div className="grid gap-2 sm:grid-cols-2">
-                                      <div>
-                                        <p className="text-xs text-stone-400 ">{s_.period}</p>
-                                        <p className="text-stone-700 dark:text-stone-200">
-                                          {invoice.periodStart && invoice.periodEnd
-                                            ? `${d(invoice.periodStart)} - ${d(invoice.periodEnd)}`
-                                            : t.billing.undefinedPeriod}
-                                        </p>
-                                      </div>
-                                      <div>
-                                        <p className="text-xs text-stone-400 ">{s_.total}</p>
-                                        <p className="text-stone-700 dark:text-stone-200 font-medium">{fmt.price(invoice.totalDue)}</p>
-                                      </div>
-                                      <div>
-                                        <p className="text-xs text-stone-400 ">{s_.subscription}</p>
-                                        <p className="text-stone-700 dark:text-stone-200">{fmt.price(invoice.subscriptionAmount)}</p>
-                                      </div>
-                                      <div>
-                                        <p className="text-xs text-stone-400 ">{s_.salesFees}</p>
-                                        <p className="text-stone-700 dark:text-stone-200">{fmt.price(invoice.salesFee)}</p>
-                                      </div>
-                                    </div>
-                                    {(invoice.reference || invoice.adminNote || abonnement.paiements[index]?.note) && (
-                                      <p className="text-stone-400 text-xs mt-0.5">
-                                        {invoice.reference ? t.billing.ref(invoice.reference) : ''}
-                                        {invoice.reference && (invoice.adminNote || abonnement.paiements[index]?.note) ? ' · ' : ''}
-                                        {invoice.adminNote || abonnement.paiements[index]?.note}
-                                      </p>
-                                    )}
-                                  </div>
-
-                                  <SellerInvoiceActions invoice={{
-                                    invoiceNumber: invoice.invoiceNumber,
-                                    sellerName: selected.nomBoutique || `${selected.user.prenom} ${selected.user.nom}`,
-                                    levelLabel: levelWithPrice(invoice.level),
-                                    periodiciteLabel: invoice.periodicite ? tr(t.billing.periodicity, invoice.periodicite) : t.billing.offered,
-                                    paymentDateLabel: d(invoice.paymentDate),
-                                    periodLabel: invoice.periodStart && invoice.periodEnd
-                                      ? `${d(invoice.periodStart)} - ${d(invoice.periodEnd)}`
-                                      : t.billing.undefinedPeriod,
-                                    paymentMethodLabel: tr(t.billing.methods, invoice.methode),
-                                    reference: invoice.reference,
-                                    adminNote: invoice.adminNote,
-                                    grossSalesLabel: fmt.price(invoice.grossSales),
-                                    salesFeeLabel: fmt.price(invoice.salesFee),
-                                    subscriptionAmountLabel: fmt.price(invoice.subscriptionAmount),
-                                    totalDueLabel: fmt.price(invoice.totalDue),
-                                    deliveredOrdersCount: invoice.deliveredOrdersCount,
-                                    soldItemsCount: invoice.soldItemsCount,
-                                  }} />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
+                <AdminAbonnementPanel
+                  key={selected.id}
+                  vendeurId={selected.id}
+                  sellerName={selected.nomBoutique || `${selected.user.prenom} ${selected.user.nom}`}
+                />
               )}
             </div>
           </div>

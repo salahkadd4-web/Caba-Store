@@ -5,9 +5,10 @@
  * Utilisée par toutes les listes publiques, la fiche produit, le panier et la
  * création de commande — un produit masqué ne doit être ni affiché ni commandé.
  *
- * Visible = produit actif ET (catalogue admin OU vendeur approuvé dont
- * l'abonnement n'a pas expiré). Un vendeur suspendu ou à qui des pièces sont
- * demandées (statut ≠ APPROUVE) voit donc ses produits masqués.
+ * Visible = produit actif ET (catalogue admin OU vendeur approuvé dont le
+ * compte n'est pas bloqué pour impayé — priorité 99, cf. lib/billing-cron.ts).
+ * Un vendeur suspendu ou à qui des pièces sont demandées (statut ≠ APPROUVE)
+ * voit donc ses produits masqués.
  */
 
 import type { Prisma } from '@/generated/prisma/client'

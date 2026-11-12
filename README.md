@@ -18,11 +18,11 @@ Marketplace algérienne multi-vendeurs : vente en ligne de produits avec paiemen
 - Dashboard avec KPIs (produits, commandes, chiffre d'affaires livré), top produits, facturation (`lib/seller-billing.ts`).
 - CRUD produits : variantes, options, prix dégressifs, upload multi-images Cloudinary.
 - Catégories soumises à approbation admin, pièces justificatives (Vercel Blob).
-- Abonnements payants (3 niveaux) avec priorité d'affichage, factures, historique de paiements, crons d'expiration et de rappel.
-- Commission de 1 % sur les ventes livrées ; approbation de ses commandes.
+- Facturation au choix (`lib/billing-offers.ts`) : 4 niveaux = 4 priorités d'affichage, en **forfait** (5000 / 4000 / 3000 / 2000 DA par mois, −10 % sur 6 mois, −20 % sur 12 mois, dû dès la première commande livrée) ou en **commission** (5 / 4 / 3 / 2 % du prix des articles livrés, facturée à la fin de chaque cycle mensuel, à régler dans le mois suivant). Démarrage en commission 2 %. Rappels à J+7, 15, 21, 25, 27, 29 ; impayé à l'échéance → compte bloqué jusqu'à confirmation du paiement par l'admin. Un retour accepté sort le produit de la commission (facture recalculée, ou avoir déduit de la facture suivante si elle est déjà payée).
+- Approbation de ses commandes.
 
 ### Côté admin
-- KPIs (produits, clients, commandes, CA livré en DA), gestion produits / catégories / clients / vendeurs (approbation, suspension, notes admin), abonnements et paiements, statistiques détaillées (top/flop produits, ventes par catégorie, CA par vendeur, revenus par abonnement, expirations à 30 jours).
+- KPIs (produits, clients, commandes, CA livré en DA), gestion produits / catégories / clients / vendeurs (approbation, suspension, notes admin), retours (liste des réclamations, accepter / refuser), abonnements (factures à encaisser, confirmation des paiements, changement d'offre), statistiques détaillées (top/flop produits, ventes par catégorie, CA par vendeur, vendeurs et montants encaissés par niveau).
 
 ## Stack technique
 
@@ -59,7 +59,7 @@ Marketplace algérienne multi-vendeurs : vente en ligne de produits avec paiemen
 - API : `app/api/**` (~45 routes : auth, panier, commandes, retours, produits, vendeur, admin, profil, upload, crons)
 
 ### Modèle de données (Prisma)
-`User`, `VendeurProfile`, `VendeurDocument`, `Category`, `Product` (avec `prixVariables` JSON pour les prix dégressifs), `ProductVariant`, `VariantOption`, `Abonnement`, `Paiement`, `Cart`/`CartItem`, `Favorite`, `Order`/`OrderItem`, `ReturnRequest`, `ResetToken`, `OtpToken`.
+`User`, `VendeurProfile`, `VendeurDocument`, `Category`, `Product` (avec `prixVariables` JSON pour les prix dégressifs), `ProductVariant`, `VariantOption`, `Abonnement`, `Facture`, `Paiement`, `Cart`/`CartItem`, `Favorite`, `Order`/`OrderItem`, `ReturnRequest`, `ResetToken`, `OtpToken`.
 
 ## Démarrage
 
@@ -113,7 +113,7 @@ Ouvrez [http://localhost:3000](http://localhost:3000). En développement, le cod
 
 ### Vercel
 - Build : `prisma generate && prisma db push --accept-data-loss && next build` (défini dans `vercel.json`).
-- 2 **Vercel Cron** : `check-abonnements` (2h UTC : expiration des abonnements, masquage des produits) et `notif-abonnements` (8h UTC : emails de rappel aux seuils 75/50/25/10 %), protégés par `CRON_SECRET`.
+- 1 **Vercel Cron** quotidien, `/api/cron/abonnements` (7h UTC, protégé par `CRON_SECRET`) : clôture des cycles et factures de commission, forfaits devenus exigibles, e-mails de rappel, blocage des impayés (`lib/billing-cron.ts`).
 - L'application Android (Capacitor) charge `https://caba-store.vercel.app/app-entry` ; gardez `NEXT_PUBLIC_APP_URL` à jour.
 
 ### Application Android

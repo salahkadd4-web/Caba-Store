@@ -2,12 +2,8 @@
   "buildCommand": "prisma generate && prisma migrate deploy && next build",
   "crons": [
     {
-      "path": "/api/cron/check-abonnements",
-      "schedule": "0 2 * * *"
-    },
-    {
-      "path": "/api/cron/notif-abonnements",
-      "schedule": "0 8 * * *"
+      "path": "/api/cron/abonnements",
+      "schedule": "0 7 * * *"
     }
   ]
 }

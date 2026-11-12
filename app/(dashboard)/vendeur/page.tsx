@@ -1,7 +1,8 @@
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
-import { getSellerBillingBreakdown, SELLER_SALE_FEE_RATE } from '@/lib/seller-billing'
+import { getEtatFacturation } from '@/lib/seller-billing'
+import { libelleOffre } from '@/components/billing/labels'
 
 export const dynamic = 'force-dynamic'
 import Link from 'next/link'
@@ -22,7 +23,7 @@ export default async function VendeurDashboard() {
 
   const vendeur = await prisma.vendeurProfile.findUnique({
     where:   { userId: session.user.id },
-    include: { documents: true, abonnement: true },
+    select: { id: true, nomBoutique: true },
   })
 
   // Le layout (vendeur/layout.tsx) bloque déjà les vendeurs non approuvés.
@@ -57,7 +58,7 @@ export default async function VendeurDashboard() {
   ])
 
   const ca = caData[0]?.total ?? 0
-  const billing = await getSellerBillingBreakdown(vendeur.id, vendeur.abonnement ?? null)
+  const etat = await getEtatFacturation(vendeur.id)
 
   const dernieresCommandes = await prisma.order.findMany({
     where:   { items: { some: { product: { vendeurId: vid } } } },
@@ -82,14 +83,21 @@ export default async function VendeurDashboard() {
       subTone: commandesEnAttente > 0 ? 'text-amber-700 dark:text-amber-400 font-medium' : undefined,
       Icon: ShoppingCart, accent: 'text-stone-600 dark:text-stone-300', bg: 'bg-stone-100 dark:bg-stone-800',
     },
+    etat?.commissionEnCours
+      ? {
+          href: '/vendeur/abonnement', label: h.commissionKpi, value: fmt.price(etat.commissionEnCours.montant),
+          sub: h.commissionSub(Math.round(etat.commissionEnCours.taux * 100), fmt.price(etat.commissionEnCours.ventesBrutes)),
+          Icon: Percent, accent: 'text-stone-600 dark:text-stone-300', bg: 'bg-stone-100 dark:bg-stone-800',
+        }
+      : {
+          href: '/vendeur/abonnement', label: h.offerKpi, value: etat ? (t.billing.levels[etat.niveau]?.label ?? etat.niveau) : '—',
+          sub: etat ? libelleOffre(t, etat) : '',
+          Icon: Percent, accent: 'text-stone-600 dark:text-stone-300', bg: 'bg-stone-100 dark:bg-stone-800',
+        },
     {
-      href: '/vendeur/abonnement', label: h.salesFee, value: fmt.price(billing.salesFee),
-      sub: h.feeOn(Math.round(SELLER_SALE_FEE_RATE * 100), fmt.price(billing.grossSales)),
-      Icon: Percent, accent: 'text-stone-600 dark:text-stone-300', bg: 'bg-stone-100 dark:bg-stone-800',
-    },
-    {
-      href: '/vendeur/abonnement', label: h.totalDue, value: fmt.price(billing.totalDue),
-      sub: h.totalDueSub,
+      href: '/vendeur/abonnement', label: h.toPay, value: fmt.price(etat?.totalAPayer ?? 0),
+      sub: etat?.prochaineEcheance ? h.toPayBefore(fmt.date(etat.prochaineEcheance)) : h.nothingToPay,
+      subTone: etat?.statut === 'BLOQUE' ? 'text-red-600 dark:text-red-400 font-medium' : undefined,
       Icon: Receipt, accent: 'text-stone-600 dark:text-stone-300', bg: 'bg-stone-100 dark:bg-stone-800',
     },
   ]
@@ -108,7 +116,7 @@ export default async function VendeurDashboard() {
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {kpis.map(({ href, label, value, sub, subTone, Icon, accent, bg }) => (
-          <Link key={href} href={href} className={`${kpiCard} group`}>
+          <Link key={label} href={href} className={`${kpiCard} group`}>
             <div className={`w-9 h-9 rounded-xl ${bg} flex items-center justify-center mb-1`}>
               <Icon className={`w-4 h-4 ${accent}`} />
             </div>

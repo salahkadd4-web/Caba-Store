@@ -7,7 +7,7 @@ import CabaLogo from '@/components/CabaLogo'
 import { ArrowRight, ChevronRight, RotateCcw, ShieldCheck, Truck, Wallet, Headphones } from 'lucide-react'
 import { PRODUIT_VISIBLE } from '@/lib/product-visibility'
 import { getI18n } from '@/lib/i18n/server'
-import { rankProducts, VENDEUR_RANK_SELECT } from '@/lib/product-ranking'
+import { dansLOrdre, idsClasses, rankProducts, VENDEUR_RANK_SELECT } from '@/lib/product-ranking'
 import { getViewerWilaya } from '@/lib/viewer'
 
 // ─── Filtres Prisma réutilisables ─────────────────────────────────────────────
@@ -233,9 +233,8 @@ async function CategoriesSection() {
       where:   { products: { some: PRODUIT_ACTIF_WHERE } },
       include: {
         products: {
+          // Tous les produits (requête légère) pour que l'aperçu montre les mieux classés
           where:   PRODUIT_ACTIF_WHERE,
-          orderBy: [{ createdAt: 'desc' }],
-          take:    12,
           select:  { images: true, createdAt: true, vendeur: VENDEUR_RANK_SELECT },
         },
         _count: { select: { products: { where: PRODUIT_ACTIF_WHERE } } },
@@ -269,22 +268,17 @@ async function CategoriesSection() {
 }
 
 async function ProduitsSection() {
-  const [{ t }, viewerWilaya, produitsRaw] = await Promise.all([
-    getI18n(),
-    getViewerWilaya(),
-    prisma.product.findMany({
-      where:   PRODUIT_ACTIF_WHERE,
-      orderBy: [{ createdAt: 'desc' }],
-      take:    8,
-      include: {
-        vendeur:  { select: { ...VENDEUR_RANK_SELECT.select, nomBoutique: true } },
-        category: { select: { nom: true } },
-        variants: VARIANT_SELECT,
-      },
-    }),
-  ])
-
-  const produits = rankProducts(produitsRaw, viewerWilaya)
+  const [{ t }, viewerWilaya] = await Promise.all([getI18n(), getViewerWilaya()])
+  // Les 8 mieux classés parmi tout le catalogue (admin, puis niveau 1 → 4, wilaya, date)
+  const ids = await idsClasses(PRODUIT_ACTIF_WHERE, viewerWilaya, 8)
+  const produits = dansLOrdre(await prisma.product.findMany({
+    where:   { id: { in: ids } },
+    include: {
+      vendeur:  { select: { ...VENDEUR_RANK_SELECT.select, nomBoutique: true } },
+      category: { select: { nom: true } },
+      variants: VARIANT_SELECT,
+    },
+  }), ids)
 
   if (produits.length === 0) {
     return <EmptyState message={t.home.noProducts} />

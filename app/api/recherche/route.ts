@@ -22,10 +22,8 @@ export async function GET(req: NextRequest) {
         ...PRODUIT_VISIBLE,
         nom: { contains: q, mode: 'insensitive' },
       },
-      // On prend plus pour trier puis limiter à 5
-      take: 20,
-      // Tri DB par date ; le classement complet se fait en JS (rankProducts)
-      orderBy: [{ createdAt: 'desc' }],
+      // Tous les résultats sont classés, puis limités à 5 (un take avant le classement
+      // écarterait des produits mieux classés mais plus anciens).
       select: {
         id: true,
         nom: true,

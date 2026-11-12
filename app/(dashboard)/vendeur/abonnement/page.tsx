@@ -1,73 +1,36 @@
 import { auth }     from '@/auth'
 import { redirect } from 'next/navigation'
 import { prisma }   from '@/lib/prisma'
-import { AlertTriangle, CheckCircle2, Clock, CreditCard, Percent, Receipt, XCircle } from 'lucide-react'
-import SellerInvoiceActions from '@/components/billing/SellerInvoiceActions'
-import { SELLER_SALE_FEE_RATE, SELLER_SUBSCRIPTION_PRICING, buildSellerInvoiceRecord, getPlainSellerInvoiceNote, getSellerBillingBreakdown } from '@/lib/seller-billing'
+import { CalendarClock, CreditCard, Lock, Percent, Receipt } from 'lucide-react'
+import { getEtatFacturation } from '@/lib/seller-billing'
+import { prioriteDuNiveau } from '@/lib/billing-offers'
 import { getI18n } from '@/lib/i18n/server'
-import { tr } from '@/lib/i18n'
+import OffreChooser from '@/components/billing/OffreChooser'
+import FactureCard from '@/components/billing/FactureCard'
+import { libelleOffre } from '@/components/billing/labels'
 
-const TARIFS = SELLER_SUBSCRIPTION_PRICING
+export const dynamic = 'force-dynamic'
 
-const NIVEAU_COLOR: Record<string, string> = {
-  NIVEAU_1: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300',
-  NIVEAU_2: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-  NIVEAU_3: 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300',
-}
+const section = 'rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5'
+const sectionTitle = 'text-base font-bold text-stone-800 dark:text-stone-100'
 
 export default async function VendeurAbonnementPage() {
   const [session, { t, fmt }] = await Promise.all([auth(), getI18n()])
   if (!session?.user || session.user.role !== 'VENDEUR') redirect('/connexion')
   const b = t.billing
-  const d = (v: Date | string) => new Date(v).toLocaleDateString(fmt.intl)
-  const levelOf = (k: string) => b.levels[k] ?? { label: TARIFS[k as keyof typeof TARIFS]?.label ?? k, desc: TARIFS[k as keyof typeof TARIFS]?.desc ?? '' }
-  const periodiciteOf = (p: string | null) => p ? tr(b.periodicity, p) : b.offered
 
   const profile = await prisma.vendeurProfile.findUnique({
     where: { userId: session.user.id },
-    include: {
-      abonnement: {
-        include: { paiements: { orderBy: { createdAt: 'desc' }, take: 10 } },
-      },
-    },
+    select: { id: true, nomBoutique: true },
   })
-
   // Le layout (vendeur/layout.tsx) bloque les vendeurs non approuvés avant d'atteindre cette page.
   if (!profile) return null
 
-  const abo = profile.abonnement
-  const billing = await getSellerBillingBreakdown(profile.id, abo)
-  const sellerName = profile.nomBoutique || `${session.user.name ?? b.sellerFallback}`
-  const now = new Date()
-  const joursRestants = abo
-    ? Math.max(0, Math.ceil((new Date(abo.dateFin).getTime() - now.getTime()) / 86400000))
-    : 0
-
-  const statutConfig = {
-    GRATUIT:  { label: b.status.GRATUIT, color: 'text-emerald-600 dark:text-emerald-400', icon: CheckCircle2, bg: 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800' },
-    ACTIF:    { label: b.status.ACTIF, color: 'text-emerald-600 dark:text-emerald-400',       icon: CheckCircle2, bg: 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800' },
-    EXPIRE:   { label: b.status.EXPIRE, color: 'text-red-600 dark:text-red-400',        icon: XCircle,      bg: 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800' },
-    SUSPENDU: { label: b.status.SUSPENDU, color: 'text-orange-600 dark:text-orange-400',  icon: AlertTriangle, bg: 'bg-orange-50 dark:bg-orange-950/40 border-orange-200 dark:border-orange-800' },
-  }
-
-  const sc   = abo ? statutConfig[abo.statut as keyof typeof statutConfig] : null
-  const Icon = sc?.icon ?? Clock
-
-  const progressPct = abo && abo.statut !== 'EXPIRE'
-    ? Math.min(100, (joursRestants / 365) * 100)
-    : 0
-
-  const invoices = abo?.paiements.map((payment) => buildSellerInvoiceRecord(payment, {
-    vendeurId: profile.id,
-    niveau: abo.niveau,
-    periodicite: abo.periodicite,
-    dateDebut: abo.dateDebut,
-    dateFin: abo.dateFin,
-  })) ?? []
+  const etat = await getEtatFacturation(profile.id)
+  const sellerName = profile.nomBoutique || session.user.name || b.sellerFallback
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center">
           <CreditCard className="w-5 h-5 text-stone-600 dark:text-stone-300" />
@@ -78,228 +41,117 @@ export default async function VendeurAbonnementPage() {
         </div>
       </div>
 
-      {/* Statut actuel */}
-      {abo && sc ? (
-        <div className={`border rounded-2xl p-5 ${sc.bg}`}>
-          <div className="flex items-center gap-3 mb-4">
-            <Icon className={`w-6 h-6 ${sc.color}`} />
-            <div>
-              <p className={`text-lg font-bold ${sc.color}`}>{sc.label}</p>
-              <p className="text-sm text-stone-500 dark:text-stone-400">
-                {abo.statut === 'EXPIRE'
-                  ? b.expiredOn(d(abo.dateFin))
-                  : b.expiresOn(d(abo.dateFin), joursRestants)
-                }
+      {!etat ? (
+        <div className="bg-stone-50 dark:bg-stone-800 rounded-2xl border border-stone-200 dark:border-stone-700 p-8 text-center">
+          <p className="text-stone-500 dark:text-stone-400">{b.noSubscription}</p>
+        </div>
+      ) : (
+        <>
+          {/* Compte bloqué */}
+          {etat.statut === 'BLOQUE' && (
+            <div className="rounded-2xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-5">
+              <p className="font-semibold text-red-700 dark:text-red-300 flex items-center gap-2">
+                <Lock className="w-4 h-4 shrink-0" /> {b.blockedTitle}
               </p>
-            </div>
-          </div>
-
-          {/* Barre de progression */}
-          {abo.statut !== 'EXPIRE' && (
-            <div className="w-full bg-stone-200 dark:bg-stone-700 rounded-full h-2 mb-4">
-              <div
-                className={`h-2 rounded-full transition-all ${joursRestants <= 7 ? 'bg-amber-500' : 'bg-emerald-600'}`}
-                style={{ width: `${progressPct}%` }}
-              />
+              <p className="text-sm text-red-700 dark:text-red-300 mt-1">{b.blockedDesc(fmt.price(etat.totalAPayer))}</p>
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div className="bg-white/60 dark:bg-black/20 rounded-xl p-3">
-              <p className="text-stone-500 dark:text-stone-400 text-xs mb-0.5">{b.level}</p>
-              <p className="font-semibold text-stone-900 dark:text-stone-100">
-                {levelOf(abo.niveau).label}
-              </p>
-              <span className={`mt-1 inline-block text-xs px-1.5 py-0.5 rounded-full font-medium ${NIVEAU_COLOR[abo.niveau] ?? ''}`}>
-                {levelOf(abo.niveau).desc}
-              </span>
-            </div>
-            <div className="bg-white/60 dark:bg-black/20 rounded-xl p-3">
-              <p className="text-stone-500 dark:text-stone-400 text-xs mb-0.5">{b.periodicityLabel}</p>
-              <p className="font-semibold text-stone-900 dark:text-stone-100 capitalize">
-                {periodiciteOf(abo.periodicite)}
-              </p>
+          {/* Offre actuelle */}
+          <div className={section}>
+            <p className="text-xs text-stone-500 dark:text-stone-400 mb-1">{b.currentOffer}</p>
+            <p className="text-lg font-semibold text-stone-900 dark:text-stone-100">{libelleOffre(t, etat)}</p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 text-sm">
+              <div className="rounded-xl bg-stone-50 dark:bg-stone-800/70 p-3">
+                <p className="text-xs text-stone-500 dark:text-stone-400 mb-0.5">{b.displayPriority}</p>
+                <p className="font-medium text-stone-800 dark:text-stone-100">{b.priorityN(prioriteDuNiveau(etat.niveau))}</p>
+              </div>
+              <div className="rounded-xl bg-stone-50 dark:bg-stone-800/70 p-3">
+                <p className="text-xs text-stone-500 dark:text-stone-400 mb-0.5">
+                  {etat.mode === 'FORFAIT' && etat.forfaitFin ? b.forfaitEnds : b.currentCycle}
+                </p>
+                <p className="font-medium text-stone-800 dark:text-stone-100">
+                  {etat.mode === 'FORFAIT' && etat.forfaitFin
+                    ? fmt.date(etat.forfaitFin)
+                    : b.periodRange(fmt.date(etat.cycleDebut), fmt.date(etat.cycleFin))}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-      ) : (
-        <div className="bg-stone-50 dark:bg-stone-800 rounded-2xl border border-stone-200 dark:border-stone-700 p-8 text-center">
-          <Clock className="w-10 h-10 mx-auto mb-3 text-stone-300" />
-          <p className="text-stone-500 dark:text-stone-400">{b.noSubscription}</p>
-        </div>
-      )}
 
-      {/* Alerte renouvellement */}
-      {abo && (abo.statut === 'EXPIRE' || joursRestants <= 14) && (
-        <div className="bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 rounded-2xl p-4">
-          <p className="font-semibold text-orange-700 dark:text-orange-300 flex items-center gap-2 mb-1 text-sm">
-            <AlertTriangle className="w-4 h-4 shrink-0" />
-            {abo.statut === 'EXPIRE'
-              ? b.expiredAlert
-              : b.expiresInAlert(joursRestants)}
-          </p>
-          <p className="text-sm text-orange-600 dark:text-orange-400">
-            {b.contactAdminRenew}
-          </p>
-        </div>
-      )}
-
-      {/* Grille des plans */}
-      <div>
-        <h2 className="text-base font-bold text-stone-700 dark:text-stone-200 mb-3">{b.plans}</h2>
-        <div className="grid gap-3">
-          {(Object.entries(TARIFS) as [string, typeof TARIFS[keyof typeof TARIFS]][]).map(([key, tarif]) => {
-            const isActuel = abo?.niveau === key
-            return (
-              <div key={key}
-                className={`rounded-2xl border p-4 flex justify-between items-center transition ${
- isActuel
- ? 'border-orange-600 dark:border-orange-500 border-2 bg-white dark:bg-stone-900'
- : 'border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 hover:border-stone-300 dark:hover:border-stone-600'
- }`}>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="font-semibold text-stone-900 dark:text-stone-100">{levelOf(key).label}</p>
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${NIVEAU_COLOR[key] ?? ''}`}>
-                      {levelOf(key).desc}
-                    </span>
-                  </div>
-                  <p className="text-sm text-stone-500 dark:text-stone-400">
-                    <span className="font-bold text-stone-800 dark:text-stone-100">{fmt.price(tarif.mensuel)}</span>
-                    {' '}{b.perMonth}
-                    <span className="ms-3 text-xs text-stone-400">{b.orPerYear(fmt.price(tarif.annuel))}</span>
-                  </p>
+          {/* À régler */}
+          <div className={section}>
+            <h2 className={`${sectionTitle} flex items-center gap-2 mb-1`}>
+              <Receipt className="w-4 h-4 text-stone-500" /> {b.toPay}
+            </h2>
+            {etat.aPayer.length === 0 ? (
+              <p className="text-sm text-stone-500 dark:text-stone-400">{b.nothingToPay}</p>
+            ) : (
+              <>
+                <p className="text-sm text-stone-500 dark:text-stone-400 mb-3">{b.howToPay}</p>
+                <div className="space-y-3">
+                  {etat.aPayer.map(f => <FactureCard key={f.id} facture={f} sellerName={sellerName} />)}
                 </div>
-                {isActuel && (
-                  <span className="text-xs font-semibold text-orange-800 dark:text-orange-300 bg-orange-50 dark:bg-orange-950/50 px-3 py-1.5 rounded-full shrink-0">
-                    {b.currentPlan}
-                  </span>
+              </>
+            )}
+            {etat.avoir > 0 && (
+              <p className="mt-3 text-sm text-emerald-800 dark:text-emerald-300 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 p-3">
+                {b.creditAvailable(fmt.price(etat.avoir))}
+              </p>
+            )}
+            {etat.forfaitAVenir && (
+              <p className="mt-3 text-sm text-stone-600 dark:text-stone-300 rounded-xl bg-stone-50 dark:bg-stone-800/70 p-3">
+                {b.forfaitPending(fmt.price(etat.forfaitAVenir.montant))}
+              </p>
+            )}
+          </div>
+
+          {/* Commission du cycle en cours */}
+          {etat.commissionEnCours && (
+            <div className={section}>
+              <h2 className={`${sectionTitle} flex items-center gap-2 mb-3`}>
+                <Percent className="w-4 h-4 text-stone-500" /> {b.commissionThisCycle}
+              </h2>
+              <p className="text-2xl font-semibold tabular-nums text-stone-900 dark:text-stone-100">
+                {fmt.price(etat.commissionEnCours.montant)}
+              </p>
+              <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
+                {b.commissionDetail(
+                  Math.round(etat.commissionEnCours.taux * 100),
+                  fmt.price(etat.commissionEnCours.ventesBrutes),
+                  etat.commissionEnCours.nbCommandes,
                 )}
+              </p>
+              <p className="text-xs text-stone-500 dark:text-stone-400 mt-2 flex items-center gap-1.5">
+                <CalendarClock className="w-3.5 h-3.5 shrink-0" /> {b.commissionBilledOn(fmt.date(etat.cycleFin))}
+              </p>
+            </div>
+          )}
+
+          {/* Choix de l'offre */}
+          <div className={section}>
+            <h2 className={`${sectionTitle} mb-3`}>{b.chooseOffer}</h2>
+            <OffreChooser
+              endpoint="/api/vendeur/abonnement"
+              method="POST"
+              actuelle={{ mode: etat.mode, niveau: etat.niveau, periodicite: etat.periodicite }}
+              prochaine={etat.prochaineOffre}
+              dateEffet={etat.prochaineOffre?.dateEffet ?? etat.dateEffetChangement}
+            />
+          </div>
+
+          {/* Historique */}
+          <div>
+            <h2 className={`${sectionTitle} mb-3`}>{b.history}</h2>
+            {etat.historique.length === 0 ? (
+              <p className="text-sm text-stone-500 dark:text-stone-400">{b.noInvoices}</p>
+            ) : (
+              <div className="space-y-3">
+                {etat.historique.map(f => <FactureCard key={f.id} facture={f} sellerName={sellerName} />)}
               </div>
-            )
-          })}
-        </div>
-        <p className="text-xs text-stone-400 mt-3 text-center">
-          {b.changePlanNote}
-        </p>
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-3">
-        <div className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4">
-          <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400 text-xs mb-2">
-            <CreditCard className="w-3.5 h-3.5" /> {b.subscription}
+            )}
           </div>
-          <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{fmt.price(billing.subscriptionAmount)}</p>
-          <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">{b.subscriptionDesc}</p>
-        </div>
-        <div className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-4">
-          <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400 text-xs mb-2">
-            <Percent className="w-3.5 h-3.5" /> {b.salesFees}
-          </div>
-          <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{fmt.price(billing.salesFee)}</p>
-          <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">{b.salesFeesDesc(Math.round(SELLER_SALE_FEE_RATE * 100), fmt.price(billing.grossSales))}</p>
-        </div>
-        <div className="rounded-2xl bg-stone-900 dark:bg-stone-800 p-4">
-          <div className="flex items-center gap-2 text-stone-400 text-xs mb-2">
-            <Receipt className="w-3.5 h-3.5" /> {b.totalDue}
-          </div>
-          <p className="text-2xl font-semibold tabular-nums text-white">{fmt.price(billing.totalDue)}</p>
-          <p className="text-xs text-stone-400 mt-1">{b.totalDueDesc}</p>
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5 space-y-4">
-        <div>
-          <h2 className="text-base font-bold text-stone-800 dark:text-stone-100">{b.billingDetail}</h2>
-          <p className="text-sm text-stone-500 dark:text-stone-400">
-            {billing.periodStart && billing.periodEnd
-              ? b.periodRange(d(billing.periodStart), d(billing.periodEnd))
-              : b.periodFallback}
-          </p>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-xl bg-stone-50 dark:bg-stone-800/70 p-4">
-            <p className="text-xs text-stone-500 dark:text-stone-400 mb-1">{b.deliveredSales}</p>
-            <p className="text-lg font-semibold text-stone-900 dark:text-stone-100">{fmt.price(billing.grossSales)}</p>
-            <p className="text-xs text-stone-400 mt-1">{b.deliveredCounts(billing.deliveredOrdersCount, billing.soldItemsCount)}</p>
-          </div>
-          <div className="rounded-xl bg-stone-50 dark:bg-stone-800/70 p-4">
-            <p className="text-xs text-stone-500 dark:text-stone-400 mb-1">{b.formula}</p>
-            <p className="text-sm text-stone-800 dark:text-stone-100 font-medium">{fmt.price(billing.subscriptionAmount)} + {fmt.price(billing.salesFee)}</p>
-            <p className="text-xs text-stone-400 mt-1">{b.formulaDesc(Math.round(SELLER_SALE_FEE_RATE * 100))}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Historique paiements */}
-      {abo && abo.paiements.length > 0 && (
-        <div>
-          <h2 className="text-base font-bold text-stone-700 dark:text-stone-200 mb-3">{b.history}</h2>
-          <div className="space-y-3">
-            {invoices.map((invoice, idx) => (
-              <div key={invoice.paymentId} className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-4 md:p-5">
-                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                  <div className="space-y-2 min-w-0">
-                    <div>
-                      <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">{invoice.invoiceNumber}</p>
-                      <p className="text-xs text-stone-400">{b.paidOn(d(invoice.paymentDate), tr(b.methods, invoice.methode))}</p>
-                    </div>
-                    <div className="grid gap-2 sm:grid-cols-2 text-sm">
-                      <div className="rounded-xl bg-stone-50 dark:bg-stone-800/70 p-3">
-                        <p className="text-xs text-stone-500 dark:text-stone-400 mb-1">{b.period}</p>
-                        <p className="font-medium text-stone-800 dark:text-stone-100">
-                          {invoice.periodStart && invoice.periodEnd
-                            ? `${d(invoice.periodStart)} - ${d(invoice.periodEnd)}`
-                            : b.undefinedPeriod}
-                        </p>
-                      </div>
-                      <div className="rounded-xl bg-stone-50 dark:bg-stone-800/70 p-3">
-                        <p className="text-xs text-stone-500 dark:text-stone-400 mb-1">{b.invoiceTotal}</p>
-                        <p className="font-medium text-stone-800 dark:text-stone-100">{fmt.price(invoice.totalDue)}</p>
-                      </div>
-                      <div className="rounded-xl bg-stone-50 dark:bg-stone-800/70 p-3">
-                        <p className="text-xs text-stone-500 dark:text-stone-400 mb-1">{b.subscription}</p>
-                        <p className="font-medium text-stone-800 dark:text-stone-100">{fmt.price(invoice.subscriptionAmount)}</p>
-                      </div>
-                      <div className="rounded-xl bg-stone-50 dark:bg-stone-800/70 p-3">
-                        <p className="text-xs text-stone-500 dark:text-stone-400 mb-1">{b.salesFeesShort}</p>
-                        <p className="font-medium text-stone-800 dark:text-stone-100">{fmt.price(invoice.salesFee)}</p>
-                      </div>
-                    </div>
-                    {(invoice.reference || invoice.adminNote || abo.paiements[idx]?.note) && (
-                      <p className="text-xs text-stone-500 dark:text-stone-400">
-                        {invoice.reference ? b.ref(invoice.reference) : ''}
-                        {invoice.reference && (invoice.adminNote || abo.paiements[idx]?.note) ? ' · ' : ''}
-                        {invoice.adminNote || getPlainSellerInvoiceNote(abo.paiements[idx]?.note)}
-                      </p>
-                    )}
-                  </div>
-
-                  <SellerInvoiceActions invoice={{
-                    invoiceNumber: invoice.invoiceNumber,
-                    sellerName,
-                    levelLabel: levelOf(invoice.level).label,
-                    periodiciteLabel: periodiciteOf(invoice.periodicite),
-                    paymentDateLabel: d(invoice.paymentDate),
-                    periodLabel: invoice.periodStart && invoice.periodEnd
-                      ? `${d(invoice.periodStart)} - ${d(invoice.periodEnd)}`
-                      : b.undefinedPeriod,
-                    paymentMethodLabel: tr(b.methods, invoice.methode),
-                    reference: invoice.reference,
-                    adminNote: invoice.adminNote,
-                    grossSalesLabel: fmt.price(invoice.grossSales),
-                    salesFeeLabel: fmt.price(invoice.salesFee),
-                    subscriptionAmountLabel: fmt.price(invoice.subscriptionAmount),
-                    totalDueLabel: fmt.price(invoice.totalDue),
-                    deliveredOrdersCount: invoice.deliveredOrdersCount,
-                    soldItemsCount: invoice.soldItemsCount,
-                  }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        </>
       )}
     </div>
   )
