@@ -117,6 +117,7 @@ const msg = {
   paymentConfirmed: 'Paiement confirmé',
   paymentConfirmedUnblocked: 'Paiement confirmé — le vendeur est débloqué',
   returnAlreadyDecided: 'Ce retour a déjà été traité',
+  invalidImageUrl: 'Image invalide : utilisez une image envoyée depuis Caba Store',
   invoiceNotFound: 'Facture introuvable ou déjà réglée',
   invalidOffer: 'Offre invalide',
   offerSaved: (date: string): string => `Offre enregistrée — elle s'appliquera le ${date}`,

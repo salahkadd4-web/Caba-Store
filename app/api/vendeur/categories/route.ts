@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { getI18n } from '@/lib/i18n/server'
+import { estImageCabaStore } from '@/lib/cloudinary-account'
 
 // GET /api/vendeur/categories
 // Retourne : mes propositions + toutes les catégories approuvées
@@ -68,8 +69,9 @@ export async function POST(req: NextRequest) {
 
   const { nom, description, image } = body
 
-  // Image facultative : uniquement une URL issue de /api/upload (Cloudinary)
-  const imageUrl = typeof image === 'string' && image.startsWith('https://res.cloudinary.com/') ? image : null
+  // Image facultative : uniquement une URL Cloudinary du compte Caba Store (issue de
+  // /api/upload). Autre compte, autre domaine ou URL malformée → ignorée, comme avant.
+  const imageUrl = estImageCabaStore(image) ? image : null
 
   if (!nom?.trim()) {
     return NextResponse.json({ error: t.msg.categoryNameRequired }, { status: 400 })

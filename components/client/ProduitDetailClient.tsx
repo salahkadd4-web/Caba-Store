@@ -36,6 +36,13 @@ type LigneSelection = {
   stockMax: number; quantite: number; image?: string
 }
 
+
+// Image principale : même `sizes` en rendu mobile et desktop. La page est d'abord
+// rendue en mobile côté serveur puis bascule en desktop à l'hydratation : avec le
+// même `sizes`, le navigateur choisit la même URL et ne télécharge l'image qu'une
+// fois. Desktop : cadre de 440 px au plus (max-h-110) ; mobile : pleine largeur.
+const SIZES_IMAGE_PRINCIPALE = '(min-width: 768px) 440px, 100vw'
+
 export default function ProduitDetailClient({
   produit,
 }: {
@@ -184,7 +191,7 @@ export default function ProduitDetailClient({
         {/* Galerie compacte 4:3 */}
         <div className="relative bg-white border border-stone-200 dark:border-stone-800 rounded-2xl overflow-hidden mb-3" style={{ aspectRatio: '1/0.85' }}>
           {images[imageIdx]
-            ? <Image key={`${images[imageIdx]}-${imageIdx}`} src={images[imageIdx]} alt={produit.nom} fill priority sizes="100vw" className="object-contain p-4" />
+            ? <Image key={`${images[imageIdx]}-${imageIdx}`} src={images[imageIdx]} alt={produit.nom} fill preload={imageIdx === 0} loading="eager" fetchPriority={imageIdx === 0 ? 'high' : 'auto'} sizes={SIZES_IMAGE_PRINCIPALE} className="object-contain p-4" />
             : <Package className="w-20 h-20 text-stone-300 dark:text-stone-600 absolute inset-0 m-auto" />
           }
           {previewVariant && (
@@ -486,7 +493,7 @@ export default function ProduitDetailClient({
       <div>
         <div className="bg-stone-100 dark:bg-stone-800 rounded-2xl aspect-square max-h-110 flex items-center justify-center overflow-hidden relative">
           {images[imageIdx]
-            ? <Image key={`${images[imageIdx]}-${imageIdx}`} src={images[imageIdx]} alt={produit.nom} fill priority sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover transition-opacity duration-300" />
+            ? <Image key={`${images[imageIdx]}-${imageIdx}`} src={images[imageIdx]} alt={produit.nom} fill preload={imageIdx === 0} loading="eager" fetchPriority={imageIdx === 0 ? 'high' : 'auto'} sizes={SIZES_IMAGE_PRINCIPALE} className="object-cover transition-opacity duration-300" />
             : <Package className="w-24 h-24 text-stone-300 dark:text-stone-600" />
           }
           {previewVariant && (

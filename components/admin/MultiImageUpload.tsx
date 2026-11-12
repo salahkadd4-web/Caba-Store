@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useI18n } from '@/components/I18nProvider'
 import { usePhotoPicker } from '@/components/PhotoPicker'
 import { FolderOpen, X } from 'lucide-react'
+import { preparerImagePourUpload } from '@/lib/preparer-image'
 
 interface MultiImageUploadProps {
   values: string[]
@@ -24,7 +25,7 @@ export default function MultiImageUpload({ values, onChange, label }: MultiImage
 
       for (const file of files) {
         const formData = new FormData()
-        formData.append('file', file)
+        formData.append('file', await preparerImagePourUpload(file))
 
         const res = await fetch('/api/upload', {
           method: 'POST',

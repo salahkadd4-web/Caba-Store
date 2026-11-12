@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 import { getI18n } from '@/lib/i18n/server'
+import { imagesValides } from '@/lib/cloudinary-account'
 
 type VariantInput = {
   nom: string
@@ -54,6 +55,10 @@ export async function POST(req: NextRequest) {
   if (!nom?.trim()) return NextResponse.json({ error: t.msg.nameRequired }, { status: 400 })
   if (!prix || isNaN(prix)) return NextResponse.json({ error: t.msg.invalidPrice }, { status: 400 })
   if (!categoryId) return NextResponse.json({ error: t.msg.categoryRequired }, { status: 400 })
+  // Images : uniquement des URL Cloudinary du compte Caba Store (issues de /api/upload)
+  if ((images !== undefined && images !== null && !imagesValides(images)) ||
+      (Array.isArray(variants) && variants.some((v: VariantInput) => v?.images !== undefined && v?.images !== null && !imagesValides(v.images))))
+    return NextResponse.json({ error: t.msg.invalidImageUrl }, { status: 400 })
 
   const cat = await prisma.category.findFirst({ where: { id: categoryId, statut: 'APPROUVEE' } })
   if (!cat) return NextResponse.json({ error: t.msg.invalidCategory }, { status: 400 })

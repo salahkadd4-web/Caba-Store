@@ -12,6 +12,7 @@ import { trierOptions } from '@/lib/prix'
 import { getI18n } from '@/lib/i18n/server'
 import { dansLOrdre, idsClasses, VENDEUR_RANK_SELECT } from '@/lib/product-ranking'
 import { getViewerWilaya } from '@/lib/viewer'
+import { imageOpenGraph } from '@/lib/cloudinary-account'
 
 export async function generateMetadata({
   params,
@@ -37,7 +38,8 @@ export async function generateMetadata({
       title:       produit.nom,
       description,
       type:        'website',
-      ...(produit.images[0] && { images: [{ url: produit.images[0], alt: produit.nom }] }),
+      // JPEG 1200×630 dérivé par Cloudinary (aperçus WhatsApp / Facebook) ; l'URL en base ne change pas.
+      ...(produit.images[0] && { images: [imageOpenGraph(produit.images[0], produit.nom)] }),
     },
   }
 }

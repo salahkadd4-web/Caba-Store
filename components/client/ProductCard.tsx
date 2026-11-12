@@ -120,10 +120,12 @@ export default function ProductCard({
             src={produit.images[0]}
             alt={produit.nom}
             fill
+            // Grilles de 2 colonnes (mobile) à 3–4 colonnes, dans un conteneur de
+            // 1280 px au plus : une carte ne dépasse jamais ~384 px de large.
             sizes={
               compact
                 ? '160px'
-                : '(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw'
+                : '(min-width: 1280px) 384px, (min-width: 768px) 33vw, 50vw'
             }
             className={`object-contain ${compact ? 'p-2.5' : 'p-3 md:p-4'} group-hover:scale-[1.03] transition-transform duration-300`}
           />

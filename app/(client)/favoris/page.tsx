@@ -123,7 +123,7 @@ export default function FavorisPage() {
                       src={favori.product.images[0]}
                       alt={favori.product.nom}
                       fill
-                      sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                      sizes="(min-width: 1280px) 320px, (min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
                       className="object-cover hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
