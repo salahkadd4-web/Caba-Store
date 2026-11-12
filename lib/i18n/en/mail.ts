@@ -23,25 +23,23 @@ const mail: typeof fr = {
     ignore: "If you didn't make this request, ignore this email.",
     userFallback: 'User',
   },
-  subscription: {
-    thresholds: {
-      '25': { titre: '📅 Subscription reminder — 75% remaining', urgence: 'For your information' },
-      '50': { titre: '⏳ Subscription reminder — 50% remaining', urgence: 'Halfway through your subscription' },
-      '75': { titre: '⚠️ Subscription expiring soon — 25% remaining', urgence: 'Remember to renew' },
-      '90': { titre: '🚨 Subscription about to expire — 10% remaining', urgence: 'Urgent action required' },
-    },
-    adminLevel: 'Admin level',
-    levelPerMonth: (label: string, price: string): string => `${label} — ${price}/month`,
-    hello: 'Hello',
-    approaching: (shop: string, level: string): string =>
-      `Your subscription for the shop <strong>${shop}</strong> (<strong>${level}</strong>) is about to expire.`,
-    subscription: 'Subscription',
-    expirationDate: 'Expiry date',
+  billing: {
+    hello: (prenom: string): string => `Hello ${prenom},`,
+    reminderSubject: (n: number): string => `Caba Store — ${n} day${n === 1 ? '' : 's'} left to pay your invoice`,
+    reminderTitle: (n: number): string => `${n} day${n === 1 ? '' : 's'} left`,
+    reminderIntro: (shop: string): string =>
+      `A quick reminder for the shop <strong>${shop}</strong>: a Caba Store invoice is due.`,
+    reminderNote: 'Pay by bank transfer, CCP or cash to the administration. Your products stay online until the due date.',
+    amountDue: 'Amount due',
+    dueDate: 'Pay before',
     daysLeft: 'Days left',
     days: (n: number): string => `${n} day${n === 1 ? '' : 's'}`,
-    hiddenWarning: 'Without renewal, your products will be <strong>hidden from the store</strong> as soon as your subscription expires.',
-    renew: 'Renew my subscription',
-    footer: 'CabaStore • This email is sent automatically, please do not reply.',
+    blockedSubject: 'Caba Store — your seller account is blocked',
+    blockedIntro: (shop: string): string =>
+      `The payment due date for the shop <strong>${shop}</strong> has passed: your products are no longer displayed.`,
+    blockedNote: 'As soon as the administration confirms your payment, your account is unblocked and your products are back online.',
+    seeDetails: 'View my subscription',
+    footer: 'Caba Store • This email is sent automatically, please do not reply.',
   },
 }
 

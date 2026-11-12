@@ -84,7 +84,8 @@ export async function PATCH(
     // Écriture conditionnée au statut lu : deux clics simultanés n'avancent pas deux fois
     const { count } = await prisma.order.updateMany({
       where: { id, statut: commande.statut },
-      data:  { statut },
+      // livreeLe : date de livraison, base de la commission vendeur (lib/billing-cron.ts)
+      data:  { statut, ...(statut === 'LIVREE' ? { livreeLe: new Date() } : {}) },
     })
     if (count === 0) {
       return NextResponse.json({ error: t.msg.orderAlreadyProcessed }, { status: 409 })

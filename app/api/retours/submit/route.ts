@@ -23,6 +23,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthToken } from '@/lib/getAuthToken'
 import { submitReturn, FlowmerceError } from '@/lib/flowmerce'
+import { ajusterCommissionApresRetour } from '@/lib/seller-billing'
+import type { Prisma } from '@/generated/prisma/client'
 import { rateLimit, rateLimits } from '@/lib/security'
 import { getI18n } from '@/lib/i18n/server'
 
@@ -88,6 +90,9 @@ export async function POST(req: NextRequest) {
         status:           'PENDING',
         reason:           null,
         description:      null,
+        productId,
+        // Réponses du client, affichées à l'admin sur la page Retours.
+        reponses:         answers as Prisma.InputJsonValue,
       },
     })
   } catch (err) {
@@ -142,16 +147,18 @@ export async function POST(req: NextRequest) {
     rawStatus === 'REJECTED' ? 'REJECTED' : 'PENDING'
 
   try {
-    await prisma.$transaction([
-      prisma.returnRequest.update({
+    await prisma.$transaction(async (tx) => {
+      await tx.returnRequest.update({
         where: { id: returnRequest.id },
         data:  { flowmerceClaimId: claimId, status: localStatus },
-      }),
-      prisma.order.update({
+      })
+      await tx.order.update({
         where: { id: orderId },
         data:  { retourDemande: true },
-      }),
-    ])
+      })
+      // Retour accepté d'office par Flowmerce : la commission du vendeur est corrigée.
+      if (localStatus === 'APPROVED') await ajusterCommissionApresRetour(tx, returnRequest.id)
+    })
   } catch (err) {
     // Le claim existe déjà chez Flowmerce. On ne ment pas au client : succès.
     // Le webhook /api/retours/webhook réconciliera l'état plus tard.

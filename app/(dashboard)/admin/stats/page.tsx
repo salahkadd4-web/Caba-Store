@@ -10,11 +10,9 @@ import {
   heading, kpiCard, kpiCardDark, sectionHeading, tableWrapper,
 } from '@/lib/dashboard-ui'
 import { getI18n } from '@/lib/i18n/server'
-import { SELLER_SUBSCRIPTION_PRICING } from '@/lib/seller-billing'
+import { FORFAIT_MENSUEL, NIVEAUX_VENDEUR, TAUX_COMMISSION } from '@/lib/billing-offers'
 
 async function getStats() {
-  const now         = new Date()
-  const dans30Jours = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
 
   // ── Toutes les requêtes indépendantes en parallèle ─────────────────────────
   const [
@@ -30,10 +28,10 @@ async function getStats() {
     caParVendeur, nbParVendeur,
     // CA et retours par client en deux requêtes groupées
     caParClient, retoursParClient,
-    // Abonnements groupés par niveau+statut en une requête
+    // Abonnements groupés par niveau, formule et statut ; factures par niveau
     abonnementsGroupes,
-    revenusParNiveau,
-    bientotExpireParNiveau,
+    encaisseParNiveau,
+    aEncaisserParNiveau,
   ] = await Promise.all([
     prisma.user.count({ where: { role: 'CLIENT' } }),
     prisma.user.count({ where: { role: 'VENDEUR' } }),
@@ -108,21 +106,19 @@ async function getStats() {
       GROUP BY o."userId"
     `,
 
-    // Abonnements groupés (niveau + statut)
-    prisma.$queryRaw<{ niveau: string; statut: string; nb: number }[]>`
-      SELECT niveau, statut, COUNT(id)::int AS nb FROM "Abonnement" GROUP BY niveau, statut
+    // Abonnements groupés (niveau + formule + statut)
+    prisma.$queryRaw<{ niveau: string; mode: string; statut: string; nb: number }[]>`
+      SELECT niveau, mode, statut, COUNT(id)::int AS nb FROM "Abonnement" GROUP BY niveau, mode, statut
     `,
-    // Revenus par niveau
-    prisma.$queryRaw<{ niveau: string; revenu: number }[]>`
-      SELECT a.niveau, COALESCE(SUM(p.montant), 0)::float AS revenu
-      FROM "Paiement" p JOIN "Abonnement" a ON a.id = p."abonnementId"
-      WHERE p."confirmeParAdmin" = true GROUP BY a.niveau
+    // Factures réglées par niveau
+    prisma.$queryRaw<{ niveau: string; total: number }[]>`
+      SELECT niveau, COALESCE(SUM(montant), 0)::float AS total FROM "Facture"
+      WHERE statut = 'PAYEE' GROUP BY niveau
     `,
-    // Bientôt expiré par niveau
-    prisma.$queryRaw<{ niveau: string; nb: number }[]>`
-      SELECT niveau, COUNT(id)::int AS nb FROM "Abonnement"
-      WHERE statut IN ('ACTIF','GRATUIT') AND "dateFin" >= ${now} AND "dateFin" <= ${dans30Jours}
-      GROUP BY niveau
+    // Factures à encaisser par niveau
+    prisma.$queryRaw<{ niveau: string; total: number }[]>`
+      SELECT niveau, COALESCE(SUM(montant), 0)::float AS total FROM "Facture"
+      WHERE statut = 'EN_ATTENTE' GROUP BY niveau
     `,
   ])
 
@@ -147,20 +143,20 @@ async function getStats() {
     .sort((a, b) => b.ca - a.ca)
 
   // ── Assemblage abonnements ─────────────────────────────────────────────────
-  const NIVEAUX = ['NIVEAU_1', 'NIVEAU_2', 'NIVEAU_3'] as const
-  const revNivMap  = new Map(revenusParNiveau.map(r => [r.niveau, r.revenu]))
-  const expNivMap  = new Map(bientotExpireParNiveau.map(r => [r.niveau, r.nb]))
+  const encMap = new Map(encaisseParNiveau.map(r => [r.niveau, r.total]))
+  const aEncMap = new Map(aEncaisserParNiveau.map(r => [r.niveau, r.total]))
 
-  const statsAbonnements = NIVEAUX.map(niveau => {
+  const statsAbonnements = NIVEAUX_VENDEUR.map(niveau => {
     const rows = abonnementsGroupes.filter(r => r.niveau === niveau)
-    const get  = (s: string) => rows.find(r => r.statut === s)?.nb ?? 0
-    const actif = get('ACTIF'); const gratuit = get('GRATUIT')
-    const expire = get('EXPIRE'); const suspendu = get('SUSPENDU')
+    const nb = (f: (r: typeof rows[number]) => boolean) => rows.filter(f).reduce((s, r) => s + r.nb, 0)
     return {
-      niveau, actif, gratuit, expire, suspendu,
-      total: actif + gratuit + expire + suspendu,
-      bientotExpire: expNivMap.get(niveau) ?? 0,
-      revenu: revNivMap.get(niveau) ?? 0,
+      niveau,
+      total: nb(() => true),
+      commission: nb(r => r.mode === 'COMMISSION'),
+      forfait: nb(r => r.mode === 'FORFAIT'),
+      bloques: nb(r => r.statut === 'BLOQUE'),
+      encaisse: encMap.get(niveau) ?? 0,
+      aEncaisser: aEncMap.get(niveau) ?? 0,
     }
   })
 
@@ -262,57 +258,45 @@ export default async function AdminStatsPage() {
       {/* Abonnements */}
       <div>
         <h2 className={sectionHeading}><CreditCard className="w-4 h-4 text-stone-500 dark:text-stone-400" /> {s_.subscriptions}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {stats.statsAbonnements.map(a => {
             // Cartes neutres ; seul le niveau qui compte le plus de vendeurs est souligné en orange
             const plusUtilise = a.total > 0 && a.total === Math.max(...stats.statsAbonnements.map(x => x.total))
-            const cfg = plusUtilise
-              ? { border: 'border-orange-600 dark:border-orange-500', badge: 'bg-orange-50 dark:bg-orange-950/50 text-orange-800 dark:text-orange-300' }
-              : { border: 'border-stone-200 dark:border-stone-800',   badge: 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200' }
-            const label = t.billing.levels[a.niveau]?.label ?? a.niveau
-            const tarif = s_.perMonth(fmt.price(SELLER_SUBSCRIPTION_PRICING[a.niveau].mensuel))
-            const tauxActif = a.total > 0 ? Math.round(((a.actif + a.gratuit) / a.total) * 100) : 0
+            const badge = plusUtilise
+              ? 'bg-orange-50 dark:bg-orange-950/50 text-orange-800 dark:text-orange-300'
+              : 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200'
             return (
-              <div key={a.niveau} className={`bg-white dark:bg-stone-900 rounded-2xl ${plusUtilise ? 'border-2' : 'border'} ${cfg.border} p-5 space-y-4`}>
+              <div key={a.niveau} className={`bg-white dark:bg-stone-900 rounded-2xl p-5 space-y-4 ${plusUtilise ? 'border-2 border-orange-600 dark:border-orange-500' : 'border border-stone-200 dark:border-stone-800'}`}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${cfg.badge}`}>{label}</span>
-                    <p className="text-xs text-stone-400 mt-1">{tarif}</p>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${badge}`}>{t.billing.levels[a.niveau]?.label ?? a.niveau}</span>
+                    <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">
+                      {s_.offerPrices(Math.round(TAUX_COMMISSION[a.niveau] * 100), fmt.price(FORFAIT_MENSUEL[a.niveau]))}
+                    </p>
                   </div>
                   <p className="text-3xl font-bold text-stone-800 dark:text-stone-100">{a.total}</p>
                 </div>
-                <div>
-                  <div className="flex justify-between text-xs text-stone-500 mb-1">
-                    <span>{s_.activeRate}</span><span className="font-medium">{tauxActif}%</span>
-                  </div>
-                  <div className="w-full bg-stone-100 dark:bg-stone-800 rounded-full h-1.5">
-                    <div className="h-1.5 rounded-full bg-emerald-600 transition-all" style={{ width: `${tauxActif}%` }} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="grid grid-cols-3 gap-2 text-xs">
                   {[
-                    { label: s_.active,    value: a.actif,   cls: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300' },
-                    { label: s_.free,      value: a.gratuit, cls: 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300'             },
-                    { label: s_.expired,   value: a.expire,  cls: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'         },
-                    { label: s_.suspended, value: a.suspendu,cls: 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300'                 },
-                  ].map(s => (
-                    <div key={s.label} className={`${s.cls} rounded-xl p-2 text-center`}>
-                      <p className="font-bold text-base">{s.value}</p>
-                      <p className="opacity-80">{s.label}</p>
+                    { label: t.billing.modes.COMMISSION, value: a.commission, cls: 'bg-stone-50 dark:bg-stone-800/70 text-stone-700 dark:text-stone-200' },
+                    { label: t.billing.modes.FORFAIT,    value: a.forfait,    cls: 'bg-stone-50 dark:bg-stone-800/70 text-stone-700 dark:text-stone-200' },
+                    { label: s_.blocked,                 value: a.bloques,    cls: a.bloques > 0 ? 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300' : 'bg-stone-50 dark:bg-stone-800/70 text-stone-700 dark:text-stone-200' },
+                  ].map(x => (
+                    <div key={x.label} className={`${x.cls} rounded-xl p-2 text-center`}>
+                      <p className="font-bold text-base">{x.value}</p>
+                      <p className="opacity-80">{x.label}</p>
                     </div>
                   ))}
                 </div>
                 <div className="border-t border-stone-100 dark:border-stone-800 pt-3 space-y-1.5 text-xs">
                   <div className="flex justify-between">
                     <span className="text-stone-500">{s_.collected}</span>
-                    <span className="font-bold text-stone-800 dark:text-stone-100">{fmt.price(a.revenu)}</span>
+                    <span className="font-bold text-stone-800 dark:text-stone-100">{fmt.price(a.encaisse)}</span>
                   </div>
-                  {a.bientotExpire > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-amber-700 dark:text-amber-400">{s_.expiring30}</span>
-                      <span className="font-bold text-amber-700 dark:text-amber-400">{a.bientotExpire}</span>
-                    </div>
-                  )}
+                  <div className="flex justify-between">
+                    <span className="text-stone-500">{s_.toCollect}</span>
+                    <span className={`font-bold ${a.aEncaisser > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-stone-800 dark:text-stone-100'}`}>{fmt.price(a.aEncaisser)}</span>
+                  </div>
                 </div>
               </div>
             )

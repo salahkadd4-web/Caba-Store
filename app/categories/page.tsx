@@ -18,9 +18,7 @@ export default async function CategoriesPage() {
     include: {
       products: {
         where: PRODUIT_VISIBLE,
-        orderBy: [{ createdAt: 'desc' }],
-        // Assez de produits pour que le classement choisisse un bon aperçu
-        take: 12,
+        // Tous les produits (requête légère) pour que l'aperçu montre les mieux classés
         select: {
           id: true,
           images: true,

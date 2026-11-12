@@ -22,25 +22,23 @@ const mail = {
     ignore: "Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.",
     userFallback: 'Utilisateur',
   },
-  subscription: {
-    thresholds: {
-      '25': { titre: '📅 Rappel abonnement — 75% restant', urgence: 'Pour votre information' },
-      '50': { titre: '⏳ Rappel abonnement — 50% restant', urgence: 'À mi-chemin de votre abonnement' },
-      '75': { titre: '⚠️ Abonnement bientôt expiré — 25% restant', urgence: 'Pensez à renouveler' },
-      '90': { titre: "🚨 Abonnement très proche de l'expiration — 10% restant", urgence: 'Action urgente requise' },
-    } as Record<string, { titre: string; urgence: string }>,
-    adminLevel: 'Niveau Admin',
-    levelPerMonth: (label: string, price: string): string => `${label} — ${price}/mois`,
-    hello: 'Bonjour',
-    approaching: (shop: string, level: string): string =>
-      `Votre abonnement pour la boutique <strong>${shop}</strong> (<strong>${level}</strong>) approche de son expiration.`,
-    subscription: 'Abonnement',
-    expirationDate: "Date d'expiration",
+  billing: {
+    hello: (prenom: string): string => `Bonjour ${prenom},`,
+    reminderSubject: (n: number): string => `Caba Store — il vous reste ${n} jour${n > 1 ? 's' : ''} pour régler votre facture`,
+    reminderTitle: (n: number): string => `Il vous reste ${n} jour${n > 1 ? 's' : ''}`,
+    reminderIntro: (shop: string): string =>
+      `Petit rappel pour la boutique <strong>${shop}</strong> : une facture Caba Store est à régler.`,
+    reminderNote: "Réglez par virement, CCP ou en espèces auprès de l'administration. Vos produits restent en ligne jusqu'à l'échéance.",
+    amountDue: 'Montant à régler',
+    dueDate: 'À régler avant le',
     daysLeft: 'Jours restants',
     days: (n: number): string => `${n} jour${n > 1 ? 's' : ''}`,
-    hiddenWarning: "Sans renouvellement, vos produits seront <strong>masqués de la boutique</strong> dès l'expiration de votre abonnement.",
-    renew: 'Renouveler mon abonnement',
-    footer: 'CabaStore • Cet email est envoyé automatiquement, ne pas répondre.',
+    blockedSubject: 'Caba Store — votre compte vendeur est bloqué',
+    blockedIntro: (shop: string): string =>
+      `L'échéance de paiement de la boutique <strong>${shop}</strong> est passée : vos produits ne sont plus affichés.`,
+    blockedNote: "Dès que l'administration confirme votre paiement, votre compte est débloqué et vos produits réapparaissent.",
+    seeDetails: 'Voir mon abonnement',
+    footer: 'Caba Store • Cet e-mail est envoyé automatiquement, merci de ne pas y répondre.',
   },
 }
 

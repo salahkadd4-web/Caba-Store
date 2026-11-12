@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
-import { getSellerBillingBreakdown } from '@/lib/seller-billing'
+import { getEtatFacturation } from '@/lib/seller-billing'
 import { getI18n } from '@/lib/i18n/server'
 
 // GET /api/vendeur/stats
@@ -14,7 +14,7 @@ export async function GET() {
 
   const vendeur = await prisma.vendeurProfile.findUnique({
     where: { userId: session.user.id },
-    include: { abonnement: true },
+    select: { id: true, statut: true },
   })
   if (!vendeur || vendeur.statut !== 'APPROUVE') {
     return NextResponse.json({ error: t.msg.accountNotApproved }, { status: 403 })
@@ -66,7 +66,12 @@ export async function GET() {
   ])
 
   const chiffreAffaire = caData[0]?.total ?? 0
-  const billing = await getSellerBillingBreakdown(vid, vendeur.abonnement ?? null)
+  const etat = await getEtatFacturation(vid)
+  const billing = etat && {
+    mode: etat.mode, niveau: etat.niveau, statut: etat.statut,
+    commissionEnCours: etat.commissionEnCours,
+    totalAPayer: etat.totalAPayer, prochaineEcheance: etat.prochaineEcheance,
+  }
 
   // 5 produits les moins vendus (avec au moins 1 vente)
   const flop5Produits = await prisma.product.findMany({

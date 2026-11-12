@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
               userId,
               statut:            'EN_ATTENTE',
               nomBoutique,
-              prioriteAffichage: 3,
+              prioriteAffichage: 4, // offre de départ : commission Niveau 4
             },
           })
         }
@@ -234,7 +234,7 @@ export async function POST(req: NextRequest) {
               userId,
               statut:            'EN_ATTENTE',
               nomBoutique:       savedData.nomBoutique,
-              prioriteAffichage: 3,
+              prioriteAffichage: 4, // offre de départ : commission Niveau 4
             },
           })
         }

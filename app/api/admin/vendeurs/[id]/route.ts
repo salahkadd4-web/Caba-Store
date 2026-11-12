@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
+import { donneesAbonnementInitial, prioriteAbonnement } from '@/lib/seller-billing'
 import { prisma } from '@/lib/prisma'
 import { getI18n } from '@/lib/i18n/server'
 
@@ -99,26 +100,16 @@ export async function PATCH(
       )
     }
 
-    const dateFin = new Date()
-    dateFin.setFullYear(dateFin.getFullYear() + 1) // 1 an gratuit
-
-    await prisma.$transaction([
-      prisma.vendeurProfile.update({
+    // Premier mois en commission Niveau 4 (2 %) ; un vendeur réapprouvé garde son abonnement.
+    await prisma.$transaction(async (tx) => {
+      const abo = await tx.abonnement.findUnique({ where: { vendeurId: id } })
+        ?? await tx.abonnement.create({ data: donneesAbonnementInitial(id) })
+      await tx.vendeurProfile.update({
         where: { id },
-        data: { statut: 'APPROUVE', adminNote: adminNote || null, prioriteAffichage: 3 },
-      }),
-      prisma.abonnement.upsert({
-        where: { vendeurId: id },
-        update: {},
-        create: {
-          vendeurId: id,
-          niveau: 'NIVEAU_3',
-          statut: 'GRATUIT',
-          dateFin,
-        },
-      }),
-    ])
-    return NextResponse.json({ message: t.msg.sellerApprovedFreeYear })
+        data: { statut: 'APPROUVE', adminNote: adminNote || null, prioriteAffichage: prioriteAbonnement(abo) },
+      })
+    })
+    return NextResponse.json({ message: t.msg.sellerApprovedCommission })
   }
 
   if (action === 'suspendre') {

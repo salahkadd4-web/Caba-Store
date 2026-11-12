@@ -2,188 +2,58 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { getI18n } from '@/lib/i18n/server'
+import { METHODES_PAIEMENT, lireOffre } from '@/lib/billing-offers'
 import {
-  buildSellerInvoiceRecord,
-  createSellerInvoiceNote,
-  getSellerBillingBreakdown,
-  getSellerInvoiceNumber,
-  getPlainSellerInvoiceNote,
-  getSubscriptionAmount,
+  choisirOffre, confirmerPaiementFacture, dateEffetProchaineOffre, getEtatFacturation,
 } from '@/lib/seller-billing'
 
-const NIVEAU_TO_PRIORITE: Record<string, number> = {
-  NIVEAU_0: 0, NIVEAU_1: 1, NIVEAU_2: 2, NIVEAU_3: 3,
-}
-
-// GET — détail abonnement
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { t } = await getI18n()
+async function adminOnly() {
   const session = await auth()
-  if (!session?.user || session.user.role !== 'ADMIN')
-    return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
-
-  const { id } = await params
-  const abonnement = await prisma.abonnement.findUnique({
-    where: { vendeurId: id },
-    include: { paiements: { orderBy: { createdAt: 'desc' }, take: 10 } },
-  })
-  if (!abonnement) return NextResponse.json(null)
-
-  const billing = await getSellerBillingBreakdown(id, abonnement)
-  const invoices = abonnement.paiements.map((payment) => {
-    const invoice = buildSellerInvoiceRecord(payment, abonnement)
-    return {
-      ...invoice,
-      paymentDate: invoice.paymentDate.toISOString(),
-      periodStart: invoice.periodStart?.toISOString() ?? null,
-      periodEnd: invoice.periodEnd?.toISOString() ?? null,
-    }
-  })
-
-  return NextResponse.json({
-    ...abonnement,
-    billing,
-    paiements: abonnement.paiements.map((payment) => ({
-      ...payment,
-      note: getPlainSellerInvoiceNote(payment.note),
-    })),
-    invoices,
-  })
+  return session?.user?.role === 'ADMIN'
 }
 
-// POST — renouveler / changer de niveau + confirmer paiement
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+// GET — état de facturation du vendeur (offre, cycle, factures)
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { t } = await getI18n()
+  if (!(await adminOnly())) return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
+  const { id } = await params
+  return NextResponse.json(await getEtatFacturation(id))
+}
+
+// POST — confirmer le règlement d'une facture { factureId, methode, reference?, note? }
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { t } = await getI18n()
+  if (!(await adminOnly())) return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
+  const { id } = await params
+  const { factureId, methode, reference, note } = await req.json().catch(() => ({}))
+
+  if (typeof factureId !== 'string' || !(METHODES_PAIEMENT as readonly string[]).includes(methode))
+    return NextResponse.json({ error: t.api.invalidData }, { status: 400 })
+
+  // La facture doit appartenir à ce vendeur.
+  const facture = await prisma.facture.findFirst({ where: { id: factureId, abonnement: { vendeurId: id } }, select: { id: true } })
+  if (!facture) return NextResponse.json({ error: t.msg.invoiceNotFound }, { status: 404 })
+
+  const r = await confirmerPaiementFacture(facture.id, {
+    methode,
+    reference: typeof reference === 'string' ? reference.trim().slice(0, 100) : null,
+    note: typeof note === 'string' ? note.trim().slice(0, 500) : null,
+  })
+  if (!r) return NextResponse.json({ error: t.msg.invoiceNotFound }, { status: 409 })
+  return NextResponse.json({ message: r.debloque ? t.msg.paymentConfirmedUnblocked : t.msg.paymentConfirmed })
+}
+
+// PATCH — changer l'offre du vendeur { mode, niveau, periodicite } (prend effet au prochain cycle)
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { t, fmt } = await getI18n()
-  const session = await auth()
-  if (!session?.user || session.user.role !== 'ADMIN')
-    return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
-
+  if (!(await adminOnly())) return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
   const { id } = await params
-  const body = await req.json()
-  const { niveau, periodicite, montant, methode, reference, note } = body
-  // niveau: "NIVEAU_1"|"NIVEAU_2"|"NIVEAU_3"
-  // periodicite: "mensuel"|"annuel"
+  const offre = lireOffre(await req.json().catch(() => null))
+  if (!offre) return NextResponse.json({ error: t.msg.invalidOffer }, { status: 400 })
 
-  const abonnement = await prisma.abonnement.findUnique({ where: { vendeurId: id } })
-  if (!abonnement)
-    return NextResponse.json({ error: t.msg.subscriptionNotFound }, { status: 404 })
-
-  // Calculer nouvelle dateFin
-  const base = abonnement.statut === 'EXPIRE' ? new Date() : new Date(abonnement.dateFin)
-  const dateDebut = new Date(base)
-  const dateFin = new Date(base)
-  if (periodicite === 'annuel') dateFin.setFullYear(dateFin.getFullYear() + 1)
-  else dateFin.setMonth(dateFin.getMonth() + 1)
-
-  const priorite = NIVEAU_TO_PRIORITE[niveau] ?? 3
-  const billing = await getSellerBillingBreakdown(id, {
-    niveau,
-    periodicite,
-    dateDebut,
-    dateFin,
-  })
-  const subscriptionAmount = getSubscriptionAmount(niveau, periodicite)
-  const totalDue = montant ?? billing.totalDue
-
-  const paymentDate = new Date()
-  let paymentId = ''
-
-  await prisma.$transaction(async (tx) => {
-    await tx.abonnement.update({
-      where: { id: abonnement.id },
-      data: { niveau, statut: 'ACTIF', dateDebut, dateFin, periodicite, notifsSent: [] },
-    })
-
-    await tx.vendeurProfile.update({
-      where: { id },
-      data: { prioriteAffichage: priorite },
-    })
-
-    const createdPayment = await tx.paiement.create({
-      data: {
-        abonnementId: abonnement.id,
-        montant: totalDue,
-        methode,
-        reference: reference || null,
-        note: createSellerInvoiceNote({
-          version: 'seller_invoice_v1',
-          invoiceNumber: getSellerInvoiceNumber(`tmp_${abonnement.id}`, paymentDate),
-          sellerId: id,
-          level: niveau,
-          periodicite,
-          paymentId: '',
-          paidAt: paymentDate.toISOString(),
-          methode,
-          reference: reference || null,
-          adminNote: note || null,
-          ...billing,
-          subscriptionAmount,
-          totalDue,
-        }),
-        confirmeParAdmin: true,
-        dateReglement: paymentDate,
-      },
-    })
-
-    paymentId = createdPayment.id
-
-    await tx.paiement.update({
-      where: { id: createdPayment.id },
-      data: {
-        note: createSellerInvoiceNote({
-          version: 'seller_invoice_v1',
-          invoiceNumber: getSellerInvoiceNumber(createdPayment.id, paymentDate),
-          sellerId: id,
-          level: niveau,
-          periodicite,
-          paymentId: createdPayment.id,
-          paidAt: paymentDate.toISOString(),
-          methode,
-          reference: reference || null,
-          adminNote: note || null,
-          ...billing,
-          subscriptionAmount,
-          totalDue,
-        }),
-      },
-    })
-  })
-
+  const abo = await choisirOffre(id, offre)
+  if (!abo) return NextResponse.json({ error: t.msg.subscriptionNotFound }, { status: 404 })
   return NextResponse.json({
-    message: t.msg.subscriptionActiveUntil(niveau, dateFin.toLocaleDateString(fmt.intl)),
-    billing: {
-      ...billing,
-      subscriptionAmount,
-      totalDue,
-    },
-    paymentId,
+    message: abo.prochainMode ? t.msg.offerSaved(fmt.date(dateEffetProchaineOffre(abo))) : t.msg.offerCancelled,
   })
-}
-
-// PATCH — changer niveau uniquement (sans paiement supplémentaire)
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { t } = await getI18n()
-  const session = await auth()
-  if (!session?.user || session.user.role !== 'ADMIN')
-    return NextResponse.json({ error: t.api.unauthorized }, { status: 403 })
-
-  const { id } = await params
-  const { niveau } = await req.json()
-  const priorite = NIVEAU_TO_PRIORITE[niveau] ?? 3
-
-  await prisma.$transaction([
-    prisma.abonnement.update({ where: { vendeurId: id }, data: { niveau } }),
-    prisma.vendeurProfile.update({ where: { id }, data: { prioriteAffichage: priorite } }),
-  ])
-
-  return NextResponse.json({ message: t.msg.levelUpdated })
 }

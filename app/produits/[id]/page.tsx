@@ -10,7 +10,7 @@ import { ChevronRight } from 'lucide-react'
 import { PRODUIT_VISIBLE, isProduitVisible } from '@/lib/product-visibility'
 import { trierOptions } from '@/lib/prix'
 import { getI18n } from '@/lib/i18n/server'
-import { rankProducts, VENDEUR_RANK_SELECT } from '@/lib/product-ranking'
+import { dansLOrdre, idsClasses, VENDEUR_RANK_SELECT } from '@/lib/product-ranking'
 import { getViewerWilaya } from '@/lib/viewer'
 
 export async function generateMetadata({
@@ -145,23 +145,17 @@ async function ProduitsSimilaires({
   categoryId: string
   produitId:  string
 }) {
-  const [viewerWilaya, produitsRaw] = await Promise.all([getViewerWilaya(), prisma.product.findMany({
-    where: {
-      ...PRODUIT_VISIBLE,
-      categoryId,
-      NOT: { id: produitId },
-    },
-    orderBy: [{ createdAt: 'desc' }],
-    take: 8,
+  const viewerWilaya = await getViewerWilaya()
+  // Les 4 mieux classés de la catégorie (admin, puis niveau 1 → 4, wilaya, date)
+  const ids = await idsClasses({ ...PRODUIT_VISIBLE, categoryId, NOT: { id: produitId } }, viewerWilaya, 4)
+  const produits = dansLOrdre(await prisma.product.findMany({
+    where: { id: { in: ids } },
     include: {
       category: true,
       vendeur:  VENDEUR_RANK_SELECT,
       variants: { select: { id: true, nom: true, couleur: true }, orderBy: { createdAt: 'asc' } },
     },
-  })])
-
-  // Priorité d'abonnement → wilaya du visiteur → date
-  const produits = rankProducts(produitsRaw, viewerWilaya).slice(0, 4)
+  }), ids)
 
   if (produits.length === 0) return null
 

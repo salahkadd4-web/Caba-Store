@@ -12,6 +12,7 @@ import 'server-only'
 import { NextRequest, NextResponse } from 'next/server'
 import { createHmac, timingSafeEqual } from 'crypto'
 import { prisma } from '@/lib/prisma'
+import { ajusterCommissionApresRetour } from '@/lib/seller-billing'
 import { getI18n } from '@/lib/i18n/server'
 
 const FLOWMERCE_WEBHOOK_SECRET = process.env.FLOWMERCE_WEBHOOK_SECRET || ''
@@ -66,13 +67,20 @@ export async function POST(req: NextRequest) {
 
   // ── 4. Mise a jour idempotente ───────────────────────────────────────────
   // updateMany ne plante pas si aucune ligne (claim cree hors CabaStore).
+  // Une decision deja prise par l'admin dans Caba Store (decideLe) n'est pas ecrasee.
   const result = await prisma.returnRequest.updateMany({
-    where: { flowmerceClaimId: claimId },
+    where: { flowmerceClaimId: claimId, decideLe: null },
     data:  { status: newStatus },
   })
 
   if (result.count === 0) {
-    console.warn('[flowmerce:webhook] claim inconnu localement', { claimId })
+    console.warn("[flowmerce:webhook] claim inconnu localement ou déjà tranché par l'admin", { claimId })
+  }
+
+  // Retour accepte : correction de la commission du vendeur (une seule fois par retour).
+  if (newStatus === 'APPROVED' && result.count > 0) {
+    const rr = await prisma.returnRequest.findFirst({ where: { flowmerceClaimId: claimId }, select: { id: true } })
+    if (rr) await prisma.$transaction(tx => ajusterCommissionApresRetour(tx, rr.id))
   }
 
   return NextResponse.json({ ok: true, updated: result.count })
