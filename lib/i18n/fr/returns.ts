@@ -45,6 +45,12 @@ const returns = {
     clearSignature: 'Effacer la signature',
     clear: 'Effacer',
     validateSignature: 'Valider la signature',
+    // Champ dépendant (v3) en attente de son parent ; le libellé vient du JSON.
+    awaitingParent: (label: string): string => `Choisissez d'abord « ${label} »`,
+    // Champ mis en avant (v3) quand l'option « Autre » est choisie.
+    recommended: 'recommandé',
+    emphasizedPlaceholder: 'Décrivez le problème rencontré…',
+    emphasizedHelp: 'Quelques mots nous aident à traiter votre demande plus vite.',
   },
 
   validation: {
@@ -58,6 +64,7 @@ const returns = {
     invalidFormat: 'Format invalide',
     minValue: (n: number): string => `Valeur minimale : ${n}`,
     maxValue: (n: number): string => `Valeur maximale : ${n}`,
+    invalidOption: "Ce choix ne correspond plus à la sélection précédente",
     units: { mb: 'Mo', kb: 'Ko', b: 'o' },
   },
 

@@ -9,7 +9,7 @@
 
 import { AlertTriangle } from 'lucide-react'
 import type { ReturnForm, ReturnAnswer, ReturnField } from '@/lib/flowmerce-types'
-import { normalizeOption } from '@/lib/flowmerce-validation'
+import { availableOptions } from '@/lib/flowmerce-dependencies'
 import { useI18n } from '@/components/I18nProvider'
 import type { I18n } from '@/lib/i18n'
 
@@ -19,16 +19,19 @@ interface ReturnConfirmationProps {
   error?: string | null
 }
 
-function formatAnswer(field: ReturnField, value: unknown, { t, fmt }: Pick<I18n, 't' | 'fmt'>): string {
+function formatAnswer(field: ReturnField, answers: ReturnAnswer, { t, fmt }: Pick<I18n, 't' | 'fmt'>): string {
+  const value = answers[field.id]
   if (value === undefined || value === null || value === '') return '—'
+  // Options du champ ; pour un champ dépendant (v3), seulement celles du parent
+  // choisi, au cas où deux parents partagent une même valeur d'option.
+  const opts = availableOptions(field, answers)
 
   if ((field.type === 'select' || field.type === 'radio') && typeof value === 'string') {
-    const opt = (field.options ?? []).map(normalizeOption).find(o => o.value === value)
+    const opt = opts.find(o => o.value === value)
     return opt?.label ?? value
   }
 
   if (field.type === 'checkbox' && Array.isArray(value)) {
-    const opts = (field.options ?? []).map(normalizeOption)
     return value.map(v => opts.find(o => o.value === v)?.label ?? String(v)).join(', ') || '—'
   }
 
@@ -60,7 +63,7 @@ export default function ReturnConfirmation({ form, answers, error }: ReturnConfi
               <div key={field.id} className="flex items-baseline justify-between gap-4">
                 <dt className="text-sm text-stone-500 dark:text-stone-400 shrink-0">{field.label ?? field.id}</dt>
                 <dd className="text-sm font-semibold text-stone-800 dark:text-stone-100 text-end">
-                  {formatAnswer(field, answers[field.id], i18n)}
+                  {formatAnswer(field, answers, i18n)}
                 </dd>
               </div>
             ))}

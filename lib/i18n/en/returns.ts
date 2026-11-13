@@ -46,6 +46,10 @@ const returns: typeof fr = {
     clearSignature: 'Clear signature',
     clear: 'Clear',
     validateSignature: 'Confirm signature',
+    awaitingParent: (label: string): string => `Choose “${label}” first`,
+    recommended: 'recommended',
+    emphasizedPlaceholder: 'Describe the problem you encountered…',
+    emphasizedHelp: 'A few words help us process your request faster.',
   },
 
   validation: {
@@ -59,6 +63,7 @@ const returns: typeof fr = {
     invalidFormat: 'Invalid format',
     minValue: (n: number): string => `Minimum value: ${n}`,
     maxValue: (n: number): string => `Maximum value: ${n}`,
+    invalidOption: 'This choice no longer matches the previous selection',
     units: { mb: 'MB', kb: 'KB', b: 'B' },
   },
 

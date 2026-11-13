@@ -9,11 +9,12 @@
 // La soumission est déléguée au parent (voir ReturnConfirmation) : ce composant
 // se contente de charger, afficher, valider, et exposer { form, answers }.
 
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react'
 import { AlertTriangle, Loader2, PackageX } from 'lucide-react'
 import type { ReturnForm, ReturnAnswer, ReturnPrefill } from '@/lib/flowmerce-types'
 import { ENGINE_VERSION, flattenFields } from '@/lib/flowmerce-types'
 import { validateForm } from '@/lib/flowmerce-validation'
+import { availableOptions, isAwaitingParent, isEmphasized, pruneDependentAnswers, withDependents } from '@/lib/flowmerce-dependencies'
 import DynamicField, { type UploadFn } from './DynamicField'
 import { useI18n } from '@/components/I18nProvider'
 
@@ -77,11 +78,13 @@ const FlowmerceReturnForm = forwardRef<FlowmerceReturnFormHandle, FlowmerceRetur
         if (cancelled) return
         setLoadState(state)
         if (state.kind === 'ready') {
+          const fields = flattenFields(state.form)
           const defaults: ReturnAnswer = {}
-          for (const field of flattenFields(state.form)) {
+          for (const field of fields) {
             if (field.defaultValue !== undefined) defaults[field.id] = field.defaultValue
           }
-          setAnswers({ ...defaults, ...prefill })
+          // Une valeur par défaut d'un champ dépendant peut ne pas correspondre à son parent.
+          setAnswers(pruneDependentAnswers(fields, { ...defaults, ...prefill }))
         }
       })
       return () => { cancelled = true }
@@ -92,8 +95,10 @@ const FlowmerceReturnForm = forwardRef<FlowmerceReturnFormHandle, FlowmerceRetur
     // on le refusionne dans les réponses sans écraser ce que l'utilisateur a saisi.
     useEffect(() => {
       if (loadState.kind === 'ready') {
-        setAnswers(prev => ({ ...prev, ...prefill }))
+        const fields = flattenFields(loadState.form)
+        setAnswers(prev => pruneDependentAnswers(fields, { ...prev, ...prefill }))
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [prefill, loadState.kind])
 
 
@@ -121,15 +126,23 @@ const FlowmerceReturnForm = forwardRef<FlowmerceReturnFormHandle, FlowmerceRetur
       return data.url
     }, [f])
 
+    const formFields = useMemo(
+      () => (loadState.kind === 'ready' ? flattenFields(loadState.form) : []),
+      [loadState],
+    )
+
     const setAnswer = useCallback((fieldId: string, value: unknown) => {
-      setAnswers(prev => ({ ...prev, [fieldId]: value }))
+      // Changer un parent vide, en cascade, les champs dépendants devenus invalides.
+      setAnswers(prev => pruneDependentAnswers(formFields, { ...prev, [fieldId]: value }))
+      // Erreurs à effacer : le champ modifié et les champs qui en dépendent.
+      const touched = withDependents(formFields, fieldId)
       setErrors(prev => {
-        if (!(fieldId in prev)) return prev
-        const next = { ...prev }
-        delete next[fieldId]
-        return next
+        if (!touched.some(id => id in prev)) return prev
+        const rest = { ...prev }
+        for (const id of touched) delete rest[id]
+        return rest
       })
-    }, [])
+    }, [formFields])
 
     // ── Exposé au parent : valider les champs visibles + renvoyer les réponses
     //    complètes (visibles + prefill), prêtes pour la confirmation/soumission ──
@@ -199,16 +212,27 @@ const FlowmerceReturnForm = forwardRef<FlowmerceReturnFormHandle, FlowmerceRetur
                 <p className="text-xs text-stone-400 mt-0.5">{section.description}</p>
               )}
             </div>
-            {section.fields.map(field => (
-              <DynamicField
-                key={field.id}
-                field={field}
-                value={answers[field.id]}
-                error={errors[field.id]}
-                onChange={value => setAnswer(field.id, value)}
-                onUpload={uploadFile}
-              />
-            ))}
+            {section.fields.map(field => {
+              // Dépendances v3 (depends_on / emphasized_by) : sans elles, rendu inchangé.
+              const parent = field.depends_on ? formFields.find(p => p.id === field.depends_on) : undefined
+              return (
+                <DynamicField
+                  key={field.id}
+                  field={field}
+                  value={answers[field.id]}
+                  error={errors[field.id]}
+                  onChange={value => setAnswer(field.id, value)}
+                  onUpload={uploadFile}
+                  options={field.depends_on ? availableOptions(field, answers) : undefined}
+                  // Le placeholder JSON d'un champ dépendant décrit l'attente du
+                  // parent (ex. « Sélectionnez d'abord un motif… ») ; à défaut, texte i18n.
+                  awaitingHint={isAwaitingParent(field, answers)
+                    ? field.placeholder ?? f.awaitingParent(parent?.label ?? field.depends_on ?? '')
+                    : undefined}
+                  emphasized={isEmphasized(field, formFields, answers)}
+                />
+              )
+            })}
           </div>
         ))}
       </div>

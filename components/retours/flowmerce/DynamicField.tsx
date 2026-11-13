@@ -8,7 +8,7 @@
 
 import { useRef, useState } from 'react'
 import { AlertCircle, Check, FileText, Loader2, Trash2, X } from 'lucide-react'
-import type { ReturnField } from '@/lib/flowmerce-types'
+import type { NormalizedOption, ReturnField } from '@/lib/flowmerce-types'
 import { useI18n } from '@/components/I18nProvider'
 import { acceptFor, formatBytes, normalizeOption, validateFileSelection } from '@/lib/flowmerce-validation'
 
@@ -29,14 +29,27 @@ interface DynamicFieldProps {
   error?: string
   onChange: (value: unknown) => void
   onUpload: UploadFn
+  /** Options déjà filtrées par le moteur (champ dépendant, v3). À défaut :
+   *  toutes les options du JSON, comme avant. */
+  options?: NormalizedOption[]
+  /** Champ dépendant dont le parent est vide : texte affiché, champ désactivé. */
+  awaitingHint?: string
+  /** Champ mis en avant (v3) : libellé « — recommandé », placeholder et aide dédiés. */
+  emphasized?: boolean
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
 //  Composant principal — aiguillage par type de champ
 // ═════════════════════════════════════════════════════════════════════════════
 
-export default function DynamicField({ field, value, error, onChange, onUpload }: DynamicFieldProps) {
+export default function DynamicField(props: DynamicFieldProps) {
+  const { field, error, emphasized } = props
+  const { t } = useI18n()
+  const f = t.returns.form
   const label = field.label ?? field.id
+
+  // Mise en avant : seul le placeholder change, le champ garde ses règles.
+  const shownField = emphasized ? { ...field, placeholder: f.emphasizedPlaceholder } : field
 
   return (
     <div>
@@ -44,13 +57,19 @@ export default function DynamicField({ field, value, error, onChange, onUpload }
         <label className="text-sm font-semibold text-stone-700 dark:text-stone-200">
           {label}
           {isRequired(field) && <span className="text-orange-600 dark:text-orange-500 ms-0.5">*</span>}
+          {emphasized && (
+            <span className="ms-1 text-xs font-medium text-orange-700 dark:text-orange-400">— {f.recommended}</span>
+          )}
         </label>
       </div>
 
-      <FieldInput field={field} value={value} error={error} onChange={onChange} onUpload={onUpload} />
+      <FieldInput {...props} field={shownField} />
 
       {field.helpText && (
         <p className="text-xs text-stone-400 mt-1.5 leading-relaxed">{field.helpText}</p>
+      )}
+      {emphasized && (
+        <p className="text-xs text-stone-500 dark:text-stone-400 mt-1.5 leading-relaxed">{f.emphasizedHelp}</p>
       )}
       {error && (
         <p className="text-xs text-red-600 dark:text-red-400 mt-1.5 flex items-center gap-1">
@@ -154,17 +173,41 @@ function TextareaField({ field, value, error, onChange }: DynamicFieldProps) {
 //  Select
 // ═════════════════════════════════════════════════════════════════════════════
 
-function SelectField({ field, value, error, onChange }: DynamicFieldProps) {
+/** Options à afficher : celles filtrées par le moteur, sinon toutes celles du JSON. */
+function optionsOf({ field, options }: DynamicFieldProps): NormalizedOption[] {
+  return options ?? (field.options ?? []).map(normalizeOption)
+}
+
+/** Champ à choix dépendant d'un parent encore vide (radio / cases à cocher).
+ *  Même apparence qu'un select désactivé (voir WilayaCommuneSelect). */
+function AwaitingParent({ hint }: { hint: string }) {
+  return (
+    <div
+      aria-disabled="true"
+      className="w-full text-sm border border-stone-200 dark:border-stone-700 rounded-xl px-3 py-2.5 bg-white dark:bg-stone-800 text-stone-500 dark:text-stone-400 opacity-50 cursor-not-allowed"
+    >
+      {hint}
+    </div>
+  )
+}
+
+function SelectField(props: DynamicFieldProps) {
+  const { field, value, error, onChange, awaitingHint } = props
   const { t } = useI18n()
-  const options = (field.options ?? []).map(normalizeOption)
+  const options = optionsOf(props)
+  // Champ dépendant au parent rempli : son placeholder JSON parlait de l'attente,
+  // on revient au texte générique.
+  const placeholder = awaitingHint
+    ?? (field.depends_on ? t.returns.form.selectPlaceholder : field.placeholder ?? t.returns.form.selectPlaceholder)
 
   return (
     <select
       value={typeof value === 'string' ? value : ''}
+      disabled={awaitingHint !== undefined}
       onChange={e => onChange(e.target.value)}
-      className={`${inputCls} ${error ? errorCls : ''}`}
+      className={`${inputCls} disabled:opacity-50 disabled:cursor-not-allowed ${error ? errorCls : ''}`}
     >
-      <option value="" disabled>{field.placeholder ?? t.returns.form.selectPlaceholder}</option>
+      <option value="" disabled>{placeholder}</option>
       {options.map(opt => (
         <option key={opt.value} value={opt.value}>{opt.label}</option>
       ))}
@@ -176,8 +219,10 @@ function SelectField({ field, value, error, onChange }: DynamicFieldProps) {
 //  Radio — options fournies par le JSON
 // ═════════════════════════════════════════════════════════════════════════════
 
-function RadioField({ field, value, error, onChange }: DynamicFieldProps) {
-  const options = (field.options ?? []).map(normalizeOption)
+function RadioField(props: DynamicFieldProps) {
+  const { field, value, error, onChange, awaitingHint } = props
+  if (awaitingHint !== undefined) return <AwaitingParent hint={awaitingHint} />
+  const options = optionsOf(props)
 
   return (
     <div className={`grid gap-2 ${options.length > 2 ? 'grid-cols-1 sm:grid-cols-2' : ''}`}>
@@ -215,11 +260,15 @@ function RadioField({ field, value, error, onChange }: DynamicFieldProps) {
 //  Checkbox — booléen seul, ou multi-sélection si options fournies
 // ═════════════════════════════════════════════════════════════════════════════
 
-function CheckboxField({ field, value, error, onChange }: DynamicFieldProps) {
-  const options = (field.options ?? []).map(normalizeOption)
+function CheckboxField(props: DynamicFieldProps) {
+  const { field, value, error, onChange, awaitingHint } = props
+  if (awaitingHint !== undefined) return <AwaitingParent hint={awaitingHint} />
+  const options = optionsOf(props)
 
-  // Cas 1 : case à cocher simple (réponse booléenne)
-  if (options.length === 0) {
+  // Cas 1 : case à cocher simple (réponse booléenne). Décidé sur les options
+  // du JSON, pas sur les options filtrées : un champ à choix dépendant sans
+  // option pour ce parent ne doit pas devenir une case booléenne.
+  if ((field.options?.length ?? 0) === 0) {
     return (
       <label className={`flex items-start gap-2.5 p-3 rounded-xl border-2 cursor-pointer text-sm transition-all ${
         value === true

@@ -5,8 +5,11 @@
 // (field.validation + field.required + field.options…).
 // Ce module est compatible client (aucun import serveur).
 
-import type { ReturnField, ReturnFieldValidation, ReturnOption, ReturnAnswer } from '@/lib/flowmerce-types'
+import type { ReturnField, ReturnFieldValidation, ReturnAnswer } from '@/lib/flowmerce-types'
+import { hasUnavailableValue } from '@/lib/flowmerce-dependencies'
 import frReturns from '@/lib/i18n/fr/returns'
+
+export { normalizeOption } from '@/lib/flowmerce-dependencies'
 
 /** Messages d'erreur (dictionnaire t.returns.validation) — français par défaut. */
 export type ValidationMessages = typeof frReturns.validation
@@ -14,12 +17,6 @@ const DEFAULT_MESSAGES: ValidationMessages = frReturns.validation
 
 /** Valeur d'une réponse. */
 type AnswerValue = unknown
-
-/** Normalise une option du JSON (string ou { value, label }) en { value, label }. */
-export function normalizeOption(option: ReturnOption): { value: string; label: string } {
-  if (typeof option === 'string') return { value: option, label: option }
-  return { value: option.value, label: option.label }
-}
 
 /** Extrait l'extension (sans le point) d'une URL ou d'un nom de fichier. */
 function extensionOf(value: string): string {
@@ -137,6 +134,8 @@ export function validateForm(formFields: ReturnField[], answers: ReturnAnswer, m
 
   for (const field of formFields) {
     const error = validateField(field, answers[field.id], msgs)
+      // Champ dépendant (v3) : la réponse doit appartenir au parent choisi.
+      ?? (hasUnavailableValue(field, answers) ? msgs.invalidOption : null)
     if (error) errors[field.id] = error
   }
 

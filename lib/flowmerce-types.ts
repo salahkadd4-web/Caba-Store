@@ -48,8 +48,27 @@ export interface ReturnFieldValidation {
   maxItems?: number
 }
 
-/** Option d'un champ select / radio / checkbox : string simple ou { value, label }. */
-export type ReturnOption = string | { value: string; label: string }
+/** Option d'un champ select / radio / checkbox : string simple ou { value, label }.
+ *  Depuis la version 3 du formulaire, une option peut aussi porter :
+ *  - `parent`   : valeur du champ parent (voir `ReturnField.depends_on`) à
+ *                 laquelle l'option appartient ; elle n'est proposée que si le
+ *                 parent a cette valeur ;
+ *  - `is_other` : option « Autre » — choisie, elle met en avant le champ dont
+ *                 `emphasized_by` désigne ce champ. */
+export type ReturnOption = string | {
+  value: string
+  label: string
+  parent?: string
+  is_other?: boolean
+}
+
+/** Option normalisée (forme objet), utilisée par le moteur. */
+export interface NormalizedOption {
+  value: string
+  label: string
+  parent?: string
+  is_other?: boolean
+}
 
 /** Définition d'un champ du formulaire, tel que renvoyé par Flowmerce. */
 export interface ReturnField {
@@ -73,6 +92,14 @@ export interface ReturnField {
   validation?: ReturnFieldValidation
   /** Autoriser plusieurs fichiers (image/video/file) → tableau d'URLs. */
   multiple?: boolean
+  /** Identifiant du champ parent (v3). Seules les options dont `parent` vaut la
+   *  réponse du champ parent sont proposées ; tant que le parent est vide, le
+   *  champ est désactivé. */
+  depends_on?: string
+  /** Identifiant du champ qui met ce champ en avant (v3) : quand l'option
+   *  choisie dans ce champ a `is_other: true`, ce champ est recommandé (il
+   *  reste facultatif s'il l'était). */
+  emphasized_by?: string
   /** Extras libres du JSON Flowmerce, ignorés par le moteur. */
   [key: string]: unknown
 }
@@ -144,8 +171,11 @@ export interface FlowmerceApiError {
   code?: string
 }
 
-/** Versions de formulaire supportées par le moteur Caba Store. */
-export const ENGINE_VERSION = 1
+/** Version du moteur Caba Store : un formulaire est rendu si son
+ *  `min_compatible_version` est inférieur ou égal à cette valeur.
+ *  v3 : sous-champs dépendants (`depends_on`, `option.parent`) et mise en
+ *  avant (`emphasized_by`, `option.is_other`). */
+export const ENGINE_VERSION = 3
 
 /** Délai de cache (ms) de la définition du formulaire côté serveur. */
 export const RETURN_FORM_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes

@@ -47,6 +47,10 @@ const returns: typeof fr = {
     clearSignature: 'مسح التوقيع',
     clear: 'مسح',
     validateSignature: 'تأكيد التوقيع',
+    awaitingParent: (label: string) => `اختر «${label}» أولاً`,
+    recommended: 'يُنصح به',
+    emphasizedPlaceholder: 'صِف المشكلة التي واجهتها…',
+    emphasizedHelp: 'بضع كلمات تساعدنا على معالجة طلبك بشكل أسرع.',
   },
 
   validation: {
@@ -60,6 +64,7 @@ const returns: typeof fr = {
     invalidFormat: 'صيغة غير صحيحة',
     minValue: (n: number) => `القيمة الدنيا: ${n}`,
     maxValue: (n: number) => `القيمة القصوى: ${n}`,
+    invalidOption: 'هذا الاختيار لم يعد يوافق الاختيار السابق',
     units: { mb: 'م.ب', kb: 'ك.ب', b: 'بايت' },
   },
 
