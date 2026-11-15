@@ -9,6 +9,7 @@
 import 'server-only'
 import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@/generated/prisma/client'
+import { declencherEnvoi, enregistrerChangementsStatut } from '@/lib/flowmerce-statut'
 
 /** Clé d'approbation de l'admin (produits sans vendeur) dans Order.approbationsVendeurs. */
 export const APPROBATION_ADMIN = 'admin'
@@ -46,15 +47,22 @@ export async function enregistrerApprobation(orderId: string, acteur: string): P
       vendeurIds.every(vid => approbations[vid] === true) &&
       (!aDesProduitsAdmin || approbations[APPROBATION_ADMIN] === true)
 
-    const { count } = await prisma.order.updateMany({
-      where: { id: orderId, statut: 'EN_ATTENTE', updatedAt: commande.updatedAt },
-      data: {
-        approbationsVendeurs: approbations,
-        ...(tousOk ? { statut: 'CONFIRMEE' as const } : {}),
-      },
+    // Passage à CONFIRMEE : l'événement Flowmerce est écrit dans la même transaction.
+    const maj = await prisma.$transaction(async tx => {
+      const [ligne] = await tx.order.updateManyAndReturn({
+        where: { id: orderId, statut: 'EN_ATTENTE', updatedAt: commande.updatedAt },
+        data: {
+          approbationsVendeurs: approbations,
+          ...(tousOk ? { statut: 'CONFIRMEE' as const } : {}),
+        },
+      })
+      if (ligne && tousOk) {
+        await enregistrerChangementsStatut(tx, [{ orderId, statut: 'CONFIRMEE', changeLe: ligne.updatedAt }])
+      }
+      return ligne ?? null
     })
-    if (count === 1) {
-      const maj = await prisma.order.findUniqueOrThrow({ where: { id: orderId } })
+    if (maj) {
+      if (tousOk) declencherEnvoi()
       return { ok: true, tousOk, commande: maj }
     }
     // Conflit : un autre acteur a écrit entre-temps → relire et recommencer
@@ -89,19 +97,23 @@ async function reprendreStock(tx: Prisma.TransactionClient, items: LigneStock[])
  * StockInsuffisantError (rien n'est modifié) si le stock ne suffit plus.
  */
 export async function reactiverCommande(orderId: string, statut: 'EN_ATTENTE' | 'CONFIRMEE'): Promise<boolean> {
-  return prisma.$transaction(async tx => {
-    const { count } = await tx.order.updateMany({
-      where: { id: orderId, statut: 'ANNULEE' },
-      data:  { statut },
+  const ok = await prisma.$transaction(async tx => {
+    const [ligne] = await tx.order.updateManyAndReturn({
+      where:  { id: orderId, statut: 'ANNULEE' },
+      data:   { statut },
+      select: { updatedAt: true },
     })
-    if (count === 0) return false
+    if (!ligne) return false
     const items = await tx.orderItem.findMany({
       where:  { orderId },
       select: { productId: true, variantId: true, variantOptionId: true, quantite: true },
     })
     await reprendreStock(tx, items)
+    await enregistrerChangementsStatut(tx, [{ orderId, statut, changeLe: ligne.updatedAt }])
     return true
   })
+  if (ok) declencherEnvoi()
+  return ok
 }
 
 /**
@@ -110,12 +122,14 @@ export async function reactiverCommande(orderId: string, statut: 'EN_ATTENTE' | 
  * le stock n'est donc jamais restitué deux fois.
  */
 export async function annulerCommande(orderId: string): Promise<boolean> {
-  return prisma.$transaction(async tx => {
-    const { count } = await tx.order.updateMany({
-      where: { id: orderId, statut: { notIn: ['ANNULEE', 'LIVREE'] } },
-      data:  { statut: 'ANNULEE' },
+  const ok = await prisma.$transaction(async tx => {
+    const [ligne] = await tx.order.updateManyAndReturn({
+      where:  { id: orderId, statut: { notIn: ['ANNULEE', 'LIVREE'] } },
+      data:   { statut: 'ANNULEE' },
+      select: { updatedAt: true },
     })
-    if (count === 0) return false
+    if (!ligne) return false
+    await enregistrerChangementsStatut(tx, [{ orderId, statut: 'ANNULEE', changeLe: ligne.updatedAt }])
 
     const items = await tx.orderItem.findMany({
       where:  { orderId },
@@ -133,4 +147,6 @@ export async function annulerCommande(orderId: string): Promise<boolean> {
     }
     return true
   })
+  if (ok) declencherEnvoi()
+  return ok
 }

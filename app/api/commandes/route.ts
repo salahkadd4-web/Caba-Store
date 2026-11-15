@@ -9,6 +9,7 @@ import { isProduitVisible } from '@/lib/product-visibility'
 import { randomUUID } from 'crypto'
 import { getI18n } from '@/lib/i18n/server'
 import { validateWilayaCommune } from '@/lib/algeria/server'
+import { declencherEnvoi, enregistrerChangementsStatut, type ChangementStatut } from '@/lib/flowmerce-statut'
 
 /** Rupture de stock détectée pendant la transaction (nom du produit/variante inclus). */
 class StockInsuffisantError extends Error {
@@ -64,7 +65,7 @@ export async function GET() {
 // Compatibilité descendante : si vendeurGroupes est absent, on tombe sur
 // l'ancien comportement (une seule commande, methodeExpedition global).
 export async function POST(req: NextRequest) {
-  const { t } = await getI18n()
+  const { t, locale } = await getI18n()
   try {
     const token = await getAuthToken()
     if (!token) return NextResponse.json({ error: t.api.unauthorized }, { status: 401 })
@@ -204,6 +205,7 @@ export async function POST(req: NextRequest) {
 
         // 2. Créer une commande par groupe de vendeur
         const ids: string[] = []
+        const creees: ChangementStatut[] = []
         for (const groupe of groupesEffectifs) {
           const frais     = FRAIS_EXPEDITION[groupe.methodeExpedition]
           const sousTotal = groupe.items.reduce(
@@ -224,6 +226,7 @@ export async function POST(req: NextRequest) {
               methodeExpedition: groupe.methodeExpedition,
               fraisLivraison:    frais,
               groupeId,            // ← lien entre toutes les commandes de ce panier
+              langue:            locale, // langue des notifications Flowmerce au client
               items: {
                 create: groupe.items.map(item => ({
                   productId:           item.productId,
@@ -238,7 +241,11 @@ export async function POST(req: NextRequest) {
             },
           })
           ids.push(commande.id)
+          creees.push({ orderId: commande.id, statut: commande.statut, changeLe: commande.createdAt })
         }
+
+        // Statut initial (En attente) transmis à Flowmerce, dans la même transaction
+        await enregistrerChangementsStatut(tx, creees)
 
         // 3. Vider le panier
         await tx.cartItem.deleteMany({ where: { cartId: panier.id } })
@@ -246,6 +253,7 @@ export async function POST(req: NextRequest) {
         return ids
       })
 
+      declencherEnvoi()
       return NextResponse.json(
         { message: t.orders.api.created, commandeIds },
         { status: 201 },

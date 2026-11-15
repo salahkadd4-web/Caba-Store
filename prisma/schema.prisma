@@ -261,9 +261,11 @@ model Order {
   refusLivraisonRaison  String?
   approbationsVendeurs  Json?
   livreeLe              DateTime?   // passage au statut LIVREE (base de la commission)
+  langue                String?     // langue du client à la commande ("fr" | "ar" | "en")
   user                  User        @relation(fields: [userId], references: [id])
   items                 OrderItem[]
   returnRequest         ReturnRequest?
+  flowmerceEvenements   FlowmerceStatusEvent[]
 
   @@index([userId])
   @@index([groupeId])
@@ -285,6 +287,35 @@ model ReturnRequest {
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   order             Order               @relation(fields: [orderId], references: [id])
+}
+
+/// File d'envoi des changements de statut vers Flowmerce (cf. lib/flowmerce-statut).
+/// Une ligne par changement de statut, écrite dans la transaction du changement.
+/// id = X-Flowmerce-Event-Id, réutilisé à chaque essai ; corps = JSON exact signé et envoyé.
+model FlowmerceStatusEvent {
+  id             String              @id
+  orderId        String
+  statut         OrderStatus
+  corps          String
+  etat           FlowmerceEnvoiEtat  @default(EN_ATTENTE)
+  tentatives     Int                 @default(0)
+  prochainEssai  DateTime            @default(now())
+  verrouJusqua   DateTime?           // réservé par un worker jusqu'à cette date
+  dernierCode    Int?                // dernier code HTTP reçu
+  derniereErreur String?
+  livreLe        DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  order          Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([etat, prochainEssai])
+  @@index([orderId, createdAt])
+}
+
+enum FlowmerceEnvoiEtat {
+  EN_ATTENTE // à envoyer (premier essai ou relance)
+  LIVRE      // accepté par Flowmerce (200) ou déjà reçu (409)
+  ECHEC      // abandon définitif : 400/401/403 ou tentatives épuisées
 }
 
 enum ReturnRequestStatus {

@@ -6,6 +6,7 @@ import { tr } from '@/lib/i18n'
 import {
   APPROBATION_ADMIN, StockInsuffisantError, annulerCommande, enregistrerApprobation, reactiverCommande,
 } from '@/lib/commandes'
+import { declencherEnvoi, enregistrerChangementsStatut } from '@/lib/flowmerce-statut'
 
 async function checkAdmin() {
   const token = await getAuthToken()
@@ -87,14 +88,24 @@ export async function PATCH(
 
       if (orderRef.groupeId) {
         // Livraison groupée : tous les colis du même panier sont livrés ensemble
-        await prisma.order.updateMany({
-          where: {
-            groupeId: orderRef.groupeId,
-            statut: { notIn: ['ANNULEE', 'LIVREE'] },
-          },
-          // livreeLe : date de livraison, base de la commission vendeur (lib/billing-cron.ts)
-          data: { statut: 'LIVREE', livreeLe: new Date() },
+        const groupeId = orderRef.groupeId
+        await prisma.$transaction(async tx => {
+          const livrees = await tx.order.updateManyAndReturn({
+            where: {
+              groupeId,
+              statut: { notIn: ['ANNULEE', 'LIVREE'] },
+            },
+            // livreeLe : date de livraison, base de la commission vendeur (lib/billing-cron.ts)
+            data: { statut: 'LIVREE', livreeLe: new Date() },
+            select: { id: true, updatedAt: true },
+          })
+          // Un événement Flowmerce par colis réellement passé à LIVREE
+          await enregistrerChangementsStatut(
+            tx,
+            livrees.map(o => ({ orderId: o.id, statut: 'LIVREE', changeLe: o.updatedAt })),
+          )
         })
+        declencherEnvoi()
         return NextResponse.json({
           message: t.msg.groupDelivered(orderRef.groupeId.slice(0, 8)),
         })
@@ -102,16 +113,24 @@ export async function PATCH(
     }
 
     // Mise à jour simple (pas de groupeId, ou statut ≠ LIVREE)
-    const commande = await prisma.order.update({
-      where: { id },
-      data:  {
-        statut,
-        // Date de livraison (base de la commission) : posée au passage à LIVREE, effacée si on en sort.
-        ...(statut === 'LIVREE'
-          ? (actuelle.statut === 'LIVREE' ? {} : { livreeLe: new Date() })
-          : { livreeLe: null }),
-      },
+    const commande = await prisma.$transaction(async tx => {
+      const maj = await tx.order.update({
+        where: { id },
+        data:  {
+          statut,
+          // Date de livraison (base de la commission) : posée au passage à LIVREE, effacée si on en sort.
+          ...(statut === 'LIVREE'
+            ? (actuelle.statut === 'LIVREE' ? {} : { livreeLe: new Date() })
+            : { livreeLe: null }),
+        },
+      })
+      // Statut réellement changé → un événement Flowmerce (rien si l'admin réenregistre le même statut)
+      if (actuelle.statut !== statut) {
+        await enregistrerChangementsStatut(tx, [{ orderId: id, statut, changeLe: maj.updatedAt }])
+      }
+      return maj
     })
+    if (actuelle.statut !== statut) declencherEnvoi()
 
     return NextResponse.json({
       ...commande,

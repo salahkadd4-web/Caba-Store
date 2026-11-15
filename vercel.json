@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/abonnements",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/flowmerce",
+      "schedule": "30 7 * * *"
     }
   ]
 }

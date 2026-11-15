@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getI18n } from '@/lib/i18n/server'
 import { tr } from '@/lib/i18n'
 import { enregistrerApprobation } from '@/lib/commandes'
+import { declencherEnvoi, enregistrerChangementsStatut } from '@/lib/flowmerce-statut'
 
 // Flux linéaire autorisé pour le vendeur. Une commande EN_ATTENTE passe par
 // l'approbation (tous les acteurs doivent approuver) : pas de raccourci ici.
@@ -82,14 +83,21 @@ export async function PATCH(
     }
 
     // Écriture conditionnée au statut lu : deux clics simultanés n'avancent pas deux fois
-    const { count } = await prisma.order.updateMany({
-      where: { id, statut: commande.statut },
-      // livreeLe : date de livraison, base de la commission vendeur (lib/billing-cron.ts)
-      data:  { statut, ...(statut === 'LIVREE' ? { livreeLe: new Date() } : {}) },
+    const avance = await prisma.$transaction(async tx => {
+      const [ligne] = await tx.order.updateManyAndReturn({
+        where:  { id, statut: commande.statut },
+        // livreeLe : date de livraison, base de la commission vendeur (lib/billing-cron.ts)
+        data:   { statut, ...(statut === 'LIVREE' ? { livreeLe: new Date() } : {}) },
+        select: { updatedAt: true },
+      })
+      if (!ligne) return false
+      await enregistrerChangementsStatut(tx, [{ orderId: id, statut, changeLe: ligne.updatedAt }])
+      return true
     })
-    if (count === 0) {
+    if (!avance) {
       return NextResponse.json({ error: t.msg.orderAlreadyProcessed }, { status: 409 })
     }
+    declencherEnvoi()
 
     return NextResponse.json({ id, statut })
   }
