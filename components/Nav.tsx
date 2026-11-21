@@ -89,8 +89,23 @@ export default function Nav() {
   const headerVisible = visible || menuOpen || userMenuOpen
 
   // ── Panier count ──────────────────────────────────────────────────────────
+  // Même règle que les « Route guards » plus bas : sur ces pages le header n'est
+  // pas rendu, le compteur ne sert à rien. Les hooks s'exécutant avant ces
+  // `return null`, il faut couper l'appel ici, sinon /api/panier/count part
+  // sur tout le tableau de bord admin/vendeur.
+  const userId      = session?.user?.id
+  const roleGestion = session?.user?.role === 'ADMIN' || session?.user?.role === 'VENDEUR'
+  const navMasquee  =
+    !!pathname && (
+      pathname.startsWith('/admin') ||
+      pathname.startsWith('/vendeur') ||
+      (roleGestion && (pathname.startsWith('/commandes') || pathname.startsWith('/retours')))
+    )
+
+  // Dépend de l'identifiant, pas de l'objet `session` : next-auth en recrée un à
+  // chaque rafraîchissement (retour sur l'onglet…), ce qui relançait l'appel.
   useEffect(() => {
-    if (!session) return
+    if (!userId || navMasquee) return
     const fetchCount = async () => {
       try {
         const res  = await fetch('/api/panier/count')
@@ -107,7 +122,7 @@ export default function Nav() {
       channel.close()
       setCartCount(0)
     }
-  }, [session])
+  }, [userId, navMasquee])
 
   // Click outside → close user dropdown
   useEffect(() => {
